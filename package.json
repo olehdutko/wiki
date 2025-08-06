@@ -1,0 +1,55 @@
+{
+    "name": "weaponry-encyclopedia",
+    "version": "1.0.0",
+    "description": "Модульна веб-аплікація для впорядкування енциклопедії холодної зброї",
+    "main": "dist/server/index.js",
+    "scripts": {
+        "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+        "build": "npm run build:server && npm run build:client",
+        "build:server": "tsc -p server/tsconfig.json",
+        "build:client": "cd client && npm run build",
+        "server:dev": "nodemon server/src/index.ts",
+        "client:dev": "cd client && npm start",
+        "start": "node dist/server/index.js",
+        "install:all": "npm install && cd client && npm install",
+        "clean": "rimraf dist",
+        "lint": "eslint . --ext .ts,.tsx",
+        "test": "jest"
+    },
+    "keywords": [
+        "weaponry",
+        "encyclopedia",
+        "typescript",
+        "react",
+        "mysql",
+        "material-ui"
+    ],
+    "author": "Your Name",
+    "license": "MIT",
+    "devDependencies": {
+        "@types/cors": "^2.8.13",
+        "@types/express": "^4.17.17",
+        "@types/jest": "^29.5.0",
+        "@types/node": "^20.0.0",
+        "@typescript-eslint/eslint-plugin": "^6.0.0",
+        "@typescript-eslint/parser": "^6.0.0",
+        "concurrently": "^8.2.0",
+        "eslint": "^8.0.0",
+        "jest": "^29.5.0",
+        "nodemon": "^3.0.0",
+        "rimraf": "^5.0.0",
+        "ts-node": "^10.9.0",
+        "typescript": "^5.0.0"
+    },
+    "dependencies": {
+        "class-transformer": "^0.5.1",
+        "class-validator": "^0.14.0",
+        "cors": "^2.8.5",
+        "dotenv": "^16.3.0",
+        "express": "^4.18.2",
+        "express-validator": "^7.2.1",
+        "helmet": "^7.0.0",
+        "mysql2": "^3.6.0",
+        "reflect-metadata": "^0.1.13"
+    }
+}
