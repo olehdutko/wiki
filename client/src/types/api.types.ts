@@ -97,6 +97,12 @@ export interface WeaponItem extends BaseEntity {
 
 export interface WeaponItemResponse extends WeaponItem {
     category?: Category;
+    epoha_data?: Epoha;
+    guard_type_data?: GuardType;
+    blade_type_data?: BladeType;
+    dolls_data?: Dolls;
+    usage_data?: Usage;
+    sharpening_data?: Sharpening;
 }
 
 // ================= DTO для створення/оновлення =================

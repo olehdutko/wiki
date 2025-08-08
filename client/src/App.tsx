@@ -62,7 +62,7 @@ const ENTITY_ICONS: Record<EntityType, React.ReactElement> = {
 };
 
 // Групування сутностей
-const ENTITY_GROUPS = [
+const ENTITY_GROUPS: Array<{ title: string; entities: EntityType[] }> = [
   {
     title: 'Головні дані',
     entities: ['weapons', 'categories']
@@ -194,7 +194,7 @@ function App() {
               {group.title}
             </Typography>
           }>
-            {group.entities.map((entityType) => (
+            {group.entities.map((entityType: EntityType) => (
               <ListItem key={entityType} disablePadding>
                 <ListItemButton
                   selected={currentEntity === entityType}

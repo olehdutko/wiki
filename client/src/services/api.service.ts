@@ -12,7 +12,6 @@ import type {
     BaseEntity,
     NamedEntity,
     Category,
-    WeaponItem,
     WeaponItemResponse,
     CreateWeaponItemDto,
     UpdateWeaponItemDto,
@@ -85,6 +84,9 @@ class ApiService {
         params?: PaginationParams
     ): Promise<PaginatedResponse<T>> {
         const response = await this.api.get<ApiResponse<PaginatedResponse<T>>>(endpoint, { params });
+        console.log('🔍 API Response:', response.data);
+        console.log('🔍 Items sample:', response.data.data?.items?.slice(0, 1));
+
         return response.data.data!;
     }
 
@@ -149,6 +151,15 @@ class ApiService {
      * Пошук записів
      */
     async search<T extends BaseEntity>(endpoint: string, query: string): Promise<T[]> {
+        // Для зброї використовуємо спеціальний ендпоінт, який повертає пагіновані дані
+        if (endpoint === '/weapons') {
+            const response = await this.api.get<ApiResponse<PaginatedResponse<T>>>(`${endpoint}/search`, {
+                params: { q: query, limit: 1000 } // Велика кількість для пошуку
+            });
+            return response.data.data?.items || [];
+        }
+        
+        // Для інших сутностей використовуємо звичайний пошук
         const response = await this.api.get<ApiResponse<T[]>>(`${endpoint}/search`, {
             params: { q: query }
         });
@@ -234,6 +245,10 @@ class ApiService {
 
     async searchCategories(query: string) {
         return this.search<Category>('/categories', query);
+    }
+
+    async getAllCategories() {
+        return this.getAll<Category>('/categories', { limit: 1000 }); // Отримуємо всі категорії
     }
 
     // Weapons (головна сутність)

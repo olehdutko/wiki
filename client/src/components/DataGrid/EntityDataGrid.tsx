@@ -25,25 +25,25 @@ import {
     Alert,
     Chip,
     CircularProgress,
-    FormControlLabel,
-    Checkbox,
-    List,
-    ListItem
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem
 } from '@mui/material';
 import {
     Add as AddIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
     Search as SearchIcon,
-    Refresh as RefreshIcon,
-    ViewColumn as ViewColumnIcon
+    Refresh as RefreshIcon
 } from '@mui/icons-material';
 
 import type {
     EntityType,
     BaseEntity,
     PaginationParams,
-    PaginatedResponse
+    PaginatedResponse,
+    Category
 } from '../../types/api.types';
 import { apiService } from '../../services/api.service';
 import { getEntityConfig, type EntityConfig } from '../../config/entities.config';
@@ -94,92 +94,130 @@ export function EntityDataGrid<T extends BaseEntity>({
     });
     const [searchDialog, setSearchDialog] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [columnVisibilityDialog, setColumnVisibilityDialog] = useState(false);
 
-    // Стан видимості колонок (за замовчуванням приховані)
-    const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(
-        new Set(['total_len', 'blade_len', 'weight'])
-    );
+
+        // Стан для фільтрування по категоріях (тільки для weapons)
+    const [categories, setCategories] = useState<Array<{ id: number, ukr_name: string }>>([]);
+    const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(entityType === 'weapons' ? 1 : null);
+    const [categoriesLoading, setCategoriesLoading] = useState(false);
 
     // Конфігурація
     const config: EntityConfig = getEntityConfig(entityType);
 
+    // Стан видимості колонок для MUI DataGrid (за замовчуванням приховані)
+    const [columnVisibilityModel, setColumnVisibilityModel] = useState(() => {
+        const defaultHidden = ['total_len', 'blade_len', 'weight', 'description_eng', 'description_rus', 'epoha_name', 'guard_type_name', 'blade_type_name', 'dolls_name', 'usage_name', 'sharpening_name'];
+        const visibility: Record<string, boolean> = {};
+        
+        // Всі колонки видимі за замовчуванням
+        config.columns.forEach(col => {
+            visibility[col.field] = !defaultHidden.includes(col.field);
+        });
+        
+        return visibility;
+    });
+
     // ================= ЗАВАНТАЖЕННЯ ДАНИХ =================
 
-    const loadData = useCallback(async (params?: PaginationParams) => {
+    const fetchData = useCallback(async () => {
+        if (!entityType) return;
+
         setLoading({ loading: true, error: null });
 
         try {
-            const paginationParams: PaginationParams = {
-                page: (params?.page ?? pagination.page) + 1, // API використовує 1-based pagination
-                limit: params?.limit ?? pagination.pageSize,
-                sortBy: params?.sortBy ?? 'id',
-                sortOrder: params?.sortOrder ?? 'DESC'
-            };
+            console.log('📊 EntityDataGrid fetching data for:', entityType);
 
-            const response: PaginatedResponse<T> = await apiService.getEntityData(
-                entityType,
-                paginationParams
-            );
+            let result;
 
-            setData(response.items);
+            // Якщо це weapons і вибрана категорія, використовуємо фільтрування
+            if (entityType === 'weapons' && selectedCategoryId) {
+                result = await apiService.getWeaponsByCategory(
+                    selectedCategoryId,
+                    { page: pagination.page, limit: pagination.pageSize }
+                );
+            } else {
+                result = await apiService.getEntityData(
+                    entityType,
+                    { page: pagination.page, limit: pagination.pageSize }
+                );
+            }
+
+            console.log('📊 EntityDataGrid received data:', result);
+            console.log('📊 First item sample:', result.items[0]);
+            console.log('📝 Description fields in first item:', {
+                description_ukr: result.items[0]?.description_ukr,
+                description_eng: result.items[0]?.description_eng,
+                description_rus: result.items[0]?.description_rus
+            });
+
+            // Трансформуємо дані для weapons, щоб додати зручні поля для відображення
+            let processedItems = result.items;
+            if (entityType === 'weapons') {
+                processedItems = result.items.map((item: any) => ({
+                    ...item,
+                    category_name: item.category?.ukr_name || 'Не вказано',
+                    epoha_name: item.epoha_data?.ukr || 'Не вказано',
+                    guard_type_name: item.guard_type_data?.ukr || 'Не вказано',
+                    blade_type_name: item.blade_type_data?.ukr || 'Не вказано',
+                    dolls_name: item.dolls_data?.ukr || 'Не вказано',
+                    usage_name: item.usage_data?.ukr || 'Не вказано',
+                    sharpening_name: item.sharpening_data?.ukr || 'Не вказано'
+                }));
+            }
+
+            setData(processedItems);
             setPagination(prev => ({
                 ...prev,
-                total: response.total,
-                page: response.page - 1 // Конвертуємо назад в 0-based для DataGrid
+                total: result.total,
+                totalPages: Math.ceil(result.total / prev.pageSize)
             }));
 
-            setLoading({ loading: false, error: null });
         } catch (error: any) {
-            console.error('Помилка завантаження даних:', error);
-            setLoading({
-                loading: false,
-                error: error?.response?.data?.message || 'Помилка завантаження даних'
-            });
+            console.error('❌ Помилка завантаження даних:', error);
+            setLoading({ loading: false, error: error.message || 'Помилка завантаження' });
+        } finally {
+            setLoading(prev => ({ ...prev, loading: false }));
         }
-    }, [entityType, pagination.page, pagination.pageSize]);
+    }, [entityType, pagination.page, pagination.pageSize, selectedCategoryId]);
+
+    // Функція для завантаження категорій (тільки для weapons)
+    const fetchCategories = useCallback(async () => {
+        if (entityType !== 'weapons') return;
+
+        setCategoriesLoading(true);
+        try {
+            const result = await apiService.getAllCategories();
+            setCategories(result.items);
+        } catch (error) {
+            console.error('❌ Помилка завантаження категорій:', error);
+        } finally {
+            setCategoriesLoading(false);
+        }
+    }, [entityType]);
 
     // Початкове завантаження
     useEffect(() => {
-        loadData();
-    }, [loadData]);
+        fetchData();
+        fetchCategories();
+    }, [fetchData, fetchCategories]);
 
     // ================= ОБРОБНИКИ ПОДІЙ =================
 
     const handleRefresh = () => {
-        loadData();
+        fetchData();
     };
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }));
-        loadData({ page: newPage });
     };
 
     const handlePageSizeChange = (newPageSize: number) => {
         setPagination(prev => ({ ...prev, pageSize: newPageSize, page: 0 }));
-        loadData({ limit: newPageSize, page: 0 });
     };
 
-    const handleCellEditCommit = async (params: GridCellEditCommitParams) => {
-        const { id, field, value } = params;
-
-        try {
-            const updateData = { [field]: value };
-            await apiService.updateEntity(entityType, id as number, updateData);
-
-            // Оновлюємо локальні дані
-            setData(prev =>
-                prev.map(row =>
-                    row.id === id ? { ...row, [field]: value } : row
-                )
-            );
-
-            console.log('✅ Запис успішно оновлено');
-        } catch (error: any) {
-            console.error('❌ Помилка оновлення:', error);
-            // Повертаємо старе значення
-            loadData();
-        }
+    const handleCategoryChange = (categoryId: number | null) => {
+        setSelectedCategoryId(categoryId);
+        setPagination(prev => ({ ...prev, page: 0 })); // Скидаємо на першу сторінку
     };
 
     const handleDeleteClick = (row: T) => {
@@ -217,21 +255,14 @@ export function EntityDataGrid<T extends BaseEntity>({
         return 'Назва відсутня';
     };
 
-    // Функція для перемикання видимості колонки
-    const toggleColumnVisibility = (field: string) => {
-        const newHiddenColumns = new Set(hiddenColumns);
-        if (newHiddenColumns.has(field)) {
-            newHiddenColumns.delete(field);
-        } else {
-            newHiddenColumns.add(field);
-        }
-        setHiddenColumns(newHiddenColumns);
-    };
+
+
+
 
     const handleSearch = async () => {
         if (!searchQuery.trim() || searchQuery.length < 2) {
             setSearchDialog(false);
-            loadData(); // Повертаємо всі дані
+            fetchData(); // Повертаємо всі дані
             return;
         }
 
@@ -294,17 +325,16 @@ export function EntityDataGrid<T extends BaseEntity>({
                 </Box>
             )
         }] : []),
-        // Інші колонки (тільки видимі)
-        ...config.columns
-            .filter(col => !hiddenColumns.has(col.field))
-            .map(col => ({
-                field: col.field,
-                headerName: col.headerName,
-                width: col.width || 150,
-                editable: col.editable && enableEdit,
-                type: col.type,
-                valueGetter: col.valueGetter
-            }))
+        // ВСІ колонки (видимість контролюється через columnVisibilityModel)
+        ...config.columns.map(col => ({
+            field: col.field,
+            headerName: col.headerName,
+            width: col.width || 150,
+            editable: col.editable && enableEdit,
+            type: col.type,
+            valueGetter: col.valueGetter,
+            renderCell: col.renderCell
+        }))
     ];
 
     // ================= РЕНДЕР =================
@@ -330,12 +360,44 @@ export function EntityDataGrid<T extends BaseEntity>({
                     <Typography variant="h5" component="h1" gutterBottom>
                         {title || config.displayName}
                     </Typography>
-                    <Chip
-                        label={`Всього: ${pagination.total}`}
-                        size="small"
-                        color="primary"
-                        variant="outlined"
-                    />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Chip
+                            label={`Всього: ${pagination.total}`}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                        />
+                        {/* Dropdown для фільтрування по категоріях (тільки для weapons) */}
+                        {entityType === 'weapons' && (
+                            <FormControl size="small" sx={{ minWidth: 200 }}>
+                                <InputLabel id="category-filter-label">Фільтр по категорії</InputLabel>
+                                <Select
+                                    labelId="category-filter-label"
+                                    value={selectedCategoryId || ''}
+                                    label="Фільтр по категорії"
+                                    onChange={(e) => handleCategoryChange(e.target.value === '' ? null : Number(e.target.value))}
+                                    disabled={categoriesLoading}
+                                >
+                                    <MenuItem value="">
+                                        <em>Всі категорії</em>
+                                    </MenuItem>
+                                    {categoriesLoading ? (
+                                        <MenuItem disabled>
+                                            <CircularProgress size={16} sx={{ mr: 1 }} />
+                                            Завантаження...
+                                        </MenuItem>
+                                    ) : (
+                                        categories.map((category) => (
+                                            <MenuItem key={category.id} value={category.id}>
+                                                {category.ukr_name}
+                                            </MenuItem>
+                                        ))
+                                    )}
+                                </Select>
+                            </FormControl>
+                        )}
+
+                    </Box>
                 </Box>
 
                 <Box sx={{ display: 'flex', gap: 1 }}>
@@ -345,13 +407,6 @@ export function EntityDataGrid<T extends BaseEntity>({
                         onClick={() => setSearchDialog(true)}
                     >
                         Пошук
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        startIcon={<ViewColumnIcon />}
-                        onClick={() => setColumnVisibilityDialog(true)}
-                    >
-                        Колонки
                     </Button>
                     <Button
                         variant="outlined"
@@ -379,26 +434,34 @@ export function EntityDataGrid<T extends BaseEntity>({
                 columns={columns}
                 loading={loading.loading}
                 pagination
-                page={pagination.page}
-                pageSize={pagination.pageSize}
+                paginationModel={{
+                    page: pagination.page,
+                    pageSize: pagination.pageSize
+                }}
                 rowCount={pagination.total}
                 paginationMode="server"
-                onPageChange={handlePageChange}
-                onPageSizeChange={handlePageSizeChange}
-                onCellEditCommit={handleCellEditCommit}
+                columnVisibilityModel={columnVisibilityModel}
+                onColumnVisibilityModelChange={setColumnVisibilityModel}
+                onPaginationModelChange={(model) => {
+                    if (model.page !== pagination.page) {
+                        handlePageChange(model.page);
+                    }
+                    if (model.pageSize !== pagination.pageSize) {
+                        handlePageSizeChange(model.pageSize);
+                    }
+                }}
                 onRowClick={onRowSelect ? (params: GridRowParams) => onRowSelect(params.row) : undefined}
-                components={{
-                    Toolbar: GridToolbar,
-                    LoadingOverlay: () => (
+                slots={{
+                    toolbar: GridToolbar,
+                    loadingOverlay: () => (
                         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                             <CircularProgress />
                         </Box>
                     )
                 }}
-                componentsProps={{
+                slotProps={{
                     toolbar: {
-                        showQuickFilter: false,
-                        csvExport: true
+                        showQuickFilter: false
                     }
                 }}
                 sx={{
@@ -476,40 +539,7 @@ export function EntityDataGrid<T extends BaseEntity>({
                 </DialogActions>
             </Dialog>
 
-            {/* Діалог налаштування колонок */}
-            <Dialog
-                open={columnVisibilityDialog}
-                onClose={() => setColumnVisibilityDialog(false)}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle>Налаштування колонок</DialogTitle>
-                <DialogContent>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        Оберіть які колонки відображати в таблиці:
-                    </Typography>
-                    <List>
-                        {config.columns.map((col) => (
-                            <ListItem key={col.field} sx={{ py: 0 }}>
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={!hiddenColumns.has(col.field)}
-                                            onChange={() => toggleColumnVisibility(col.field)}
-                                        />
-                                    }
-                                    label={col.headerName}
-                                />
-                            </ListItem>
-                        ))}
-                    </List>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setColumnVisibilityDialog(false)}>
-                        Закрити
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            
         </Box>
     );
 }

@@ -116,18 +116,40 @@ export class WeaponItemService extends BaseService<WeaponItem> {
 
             const total = countResult[0].total;
 
-            // Отримання записів з інформацією про категорію
+            // Отримання записів з інформацією про всі пов'язані таблиці
             const [rows] = await pool.execute(
-                `SELECT i.*, c.ukr_name as category_ukr_name, c.eng_name as category_eng_name, c.comments as category_comments
-         FROM items i
-         LEFT JOIN categories c ON i.category_id = c.id
-         ORDER BY i.${sortBy} ${sortOrder}
-         LIMIT ${limit} OFFSET ${offset}`
+                `SELECT i.*, 
+                    c.ukr_name as category_ukr_name, c.eng_name as category_eng_name, c.comments as category_comments,
+                    e.ukr as epoha_ukr, e.eng as epoha_eng, e.rus as epoha_rus,
+                    gt.ukr as guard_type_ukr, gt.eng as guard_type_eng, gt.rus as guard_type_rus,
+                    bt.ukr as blade_type_ukr, bt.eng as blade_type_eng, bt.rus as blade_type_rus,
+                    d.ukr as dolls_ukr, d.eng as dolls_eng, d.rus as dolls_rus,
+                    u.ukr as usage_ukr, u.eng as usage_eng, u.rus as usage_rus,
+                    s.ukr as sharpening_ukr, s.eng as sharpening_eng, s.rus as sharpening_rus
+                 FROM items i
+                 LEFT JOIN categories c ON i.category_id = c.id
+                 LEFT JOIN epoha e ON CAST(i.epoha AS UNSIGNED) = e.id AND i.epoha != '' AND i.epoha IS NOT NULL
+                 LEFT JOIN guard_type gt ON CAST(i.guard_type AS UNSIGNED) = gt.id AND i.guard_type != '' AND i.guard_type IS NOT NULL
+                 LEFT JOIN blade_type bt ON CAST(i.blade_type AS UNSIGNED) = bt.id AND i.blade_type != '' AND i.blade_type IS NOT NULL
+                 LEFT JOIN dolls d ON CAST(i.dolls AS UNSIGNED) = d.id AND i.dolls != '' AND i.dolls IS NOT NULL
+                 LEFT JOIN \`usage\` u ON CAST(i.using_it AS UNSIGNED) = u.id AND i.using_it != '' AND i.using_it IS NOT NULL
+                 LEFT JOIN sharpening s ON CAST(i.sharpening AS UNSIGNED) = s.id AND i.sharpening != '' AND i.sharpening IS NOT NULL
+                 ORDER BY i.${sortBy} ${sortOrder}
+                 LIMIT ${limit} OFFSET ${offset}`
             ) as [RowDataPacket[], any];
 
-            // Трансформуємо результат для включення інформації про категорію
+            // Трансформуємо результат для включення інформації про всі пов'язані таблиці
             const items: WeaponItemResponse[] = rows.map((row: any) => {
-                const { category_ukr_name, category_eng_name, category_comments, ...itemData } = row;
+                const {
+                    category_ukr_name, category_eng_name, category_comments,
+                    epoha_ukr, epoha_eng, epoha_rus,
+                    guard_type_ukr, guard_type_eng, guard_type_rus,
+                    blade_type_ukr, blade_type_eng, blade_type_rus,
+                    dolls_ukr, dolls_eng, dolls_rus,
+                    usage_ukr, usage_eng, usage_rus,
+                    sharpening_ukr, sharpening_eng, sharpening_rus,
+                    ...itemData
+                } = row;
 
                 return {
                     ...itemData,
@@ -136,6 +158,42 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                         ukr_name: category_ukr_name,
                         eng_name: category_eng_name,
                         comments: category_comments
+                    } : undefined,
+                    epoha_data: epoha_ukr ? {
+                        id: parseInt(itemData.epoha) || null,
+                        ukr: epoha_ukr,
+                        eng: epoha_eng,
+                        rus: epoha_rus
+                    } : undefined,
+                    guard_type_data: guard_type_ukr ? {
+                        id: parseInt(itemData.guard_type) || null,
+                        ukr: guard_type_ukr,
+                        eng: guard_type_eng,
+                        rus: guard_type_rus
+                    } : undefined,
+                    blade_type_data: blade_type_ukr ? {
+                        id: parseInt(itemData.blade_type) || null,
+                        ukr: blade_type_ukr,
+                        eng: blade_type_eng,
+                        rus: blade_type_rus
+                    } : undefined,
+                    dolls_data: dolls_ukr ? {
+                        id: parseInt(itemData.dolls) || null,
+                        ukr: dolls_ukr,
+                        eng: dolls_eng,
+                        rus: dolls_rus
+                    } : undefined,
+                    usage_data: usage_ukr ? {
+                        id: parseInt(itemData.using_it) || null,
+                        ukr: usage_ukr,
+                        eng: usage_eng,
+                        rus: usage_rus
+                    } : undefined,
+                    sharpening_data: sharpening_ukr ? {
+                        id: parseInt(itemData.sharpening) || null,
+                        ukr: sharpening_ukr,
+                        eng: sharpening_eng,
+                        rus: sharpening_rus
                     } : undefined
                 } as WeaponItemResponse;
             });
@@ -159,10 +217,23 @@ export class WeaponItemService extends BaseService<WeaponItem> {
     async findByIdWithCategory(id: number): Promise<WeaponItemResponse | null> {
         try {
             const [rows] = await pool.execute(
-                `SELECT i.*, c.ukr_name as category_ukr_name, c.eng_name as category_eng_name, c.comments as category_comments
-         FROM items i
-         LEFT JOIN categories c ON i.category_id = c.id
-         WHERE i.id = ?`,
+                `SELECT i.*, 
+                    c.ukr_name as category_ukr_name, c.eng_name as category_eng_name, c.comments as category_comments,
+                    e.ukr as epoha_ukr, e.eng as epoha_eng, e.rus as epoha_rus,
+                    gt.ukr as guard_type_ukr, gt.eng as guard_type_eng, gt.rus as guard_type_rus,
+                    bt.ukr as blade_type_ukr, bt.eng as blade_type_eng, bt.rus as blade_type_rus,
+                    d.ukr as dolls_ukr, d.eng as dolls_eng, d.rus as dolls_rus,
+                    u.ukr as usage_ukr, u.eng as usage_eng, u.rus as usage_rus,
+                    s.ukr as sharpening_ukr, s.eng as sharpening_eng, s.rus as sharpening_rus
+                 FROM items i
+                 LEFT JOIN categories c ON i.category_id = c.id
+                 LEFT JOIN epoha e ON CAST(i.epoha AS UNSIGNED) = e.id AND i.epoha != '' AND i.epoha IS NOT NULL
+                 LEFT JOIN guard_type gt ON CAST(i.guard_type AS UNSIGNED) = gt.id AND i.guard_type != '' AND i.guard_type IS NOT NULL
+                 LEFT JOIN blade_type bt ON CAST(i.blade_type AS UNSIGNED) = bt.id AND i.blade_type != '' AND i.blade_type IS NOT NULL
+                 LEFT JOIN dolls d ON CAST(i.dolls AS UNSIGNED) = d.id AND i.dolls != '' AND i.dolls IS NOT NULL
+                 LEFT JOIN \`usage\` u ON CAST(i.using_it AS UNSIGNED) = u.id AND i.using_it != '' AND i.using_it IS NOT NULL
+                 LEFT JOIN sharpening s ON CAST(i.sharpening AS UNSIGNED) = s.id AND i.sharpening != '' AND i.sharpening IS NOT NULL
+                 WHERE i.id = ?`,
                 [id]
             ) as [RowDataPacket[], any];
 
@@ -171,7 +242,16 @@ export class WeaponItemService extends BaseService<WeaponItem> {
             }
 
             const row = rows[0];
-            const { category_ukr_name, category_eng_name, category_comments, ...itemData } = row;
+            const {
+                category_ukr_name, category_eng_name, category_comments,
+                epoha_ukr, epoha_eng, epoha_rus,
+                guard_type_ukr, guard_type_eng, guard_type_rus,
+                blade_type_ukr, blade_type_eng, blade_type_rus,
+                dolls_ukr, dolls_eng, dolls_rus,
+                usage_ukr, usage_eng, usage_rus,
+                sharpening_ukr, sharpening_eng, sharpening_rus,
+                ...itemData
+            } = row;
 
             return {
                 ...itemData,
@@ -180,6 +260,42 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                     ukr_name: category_ukr_name,
                     eng_name: category_eng_name,
                     comments: category_comments
+                } : undefined,
+                epoha_data: epoha_ukr ? {
+                    id: parseInt(itemData.epoha) || null,
+                    ukr: epoha_ukr,
+                    eng: epoha_eng,
+                    rus: epoha_rus
+                } : undefined,
+                guard_type_data: guard_type_ukr ? {
+                    id: parseInt(itemData.guard_type) || null,
+                    ukr: guard_type_ukr,
+                    eng: guard_type_eng,
+                    rus: guard_type_rus
+                } : undefined,
+                blade_type_data: blade_type_ukr ? {
+                    id: parseInt(itemData.blade_type) || null,
+                    ukr: blade_type_ukr,
+                    eng: blade_type_eng,
+                    rus: blade_type_rus
+                } : undefined,
+                dolls_data: dolls_ukr ? {
+                    id: parseInt(itemData.dolls) || null,
+                    ukr: dolls_ukr,
+                    eng: dolls_eng,
+                    rus: dolls_rus
+                } : undefined,
+                usage_data: usage_ukr ? {
+                    id: parseInt(itemData.using_it) || null,
+                    ukr: usage_ukr,
+                    eng: usage_eng,
+                    rus: usage_rus
+                } : undefined,
+                sharpening_data: sharpening_ukr ? {
+                    id: parseInt(itemData.sharpening) || null,
+                    ukr: sharpening_ukr,
+                    eng: sharpening_eng,
+                    rus: sharpening_rus
                 } : undefined
             } as WeaponItemResponse;
         } catch (error) {
@@ -243,30 +359,48 @@ export class WeaponItemService extends BaseService<WeaponItem> {
             // Підрахунок загальної кількості записів
             const [countResult] = await pool.execute(
                 `SELECT COUNT(*) as total FROM items i
-         WHERE i.ukr_name LIKE ? OR i.eng_name LIKE ? OR i.rus_name LIKE ? 
-            OR i.description_ukr LIKE ? OR i.description_eng LIKE ? OR i.description_rus LIKE ?
-            OR i.theritory LIKE ? OR i.century LIKE ?`,
-                [searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern]
+         WHERE i.ukr_name LIKE ? OR i.eng_name LIKE ? OR i.rus_name LIKE ?`,
+                [searchPattern, searchPattern, searchPattern]
             ) as [RowDataPacket[], any];
 
             const total = countResult[0].total;
 
-            // Отримання записів
+            // Отримання записів з інформацією про всі пов'язані таблиці
             const [rows] = await pool.execute(
-                `SELECT i.*, c.ukr_name as category_ukr_name, c.eng_name as category_eng_name, c.comments as category_comments
-         FROM items i
-         LEFT JOIN categories c ON i.category_id = c.id
-         WHERE i.ukr_name LIKE ? OR i.eng_name LIKE ? OR i.rus_name LIKE ? 
-            OR i.description_ukr LIKE ? OR i.description_eng LIKE ? OR i.description_rus LIKE ?
-            OR i.theritory LIKE ? OR i.century LIKE ?
-         ORDER BY i.${sortBy} ${sortOrder}
-         LIMIT ${limit} OFFSET ${offset}`,
-                [searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern]
+                `SELECT i.*, 
+                    c.ukr_name as category_ukr_name, c.eng_name as category_eng_name, c.comments as category_comments,
+                    e.ukr as epoha_ukr, e.eng as epoha_eng, e.rus as epoha_rus,
+                    gt.ukr as guard_type_ukr, gt.eng as guard_type_eng, gt.rus as guard_type_rus,
+                    bt.ukr as blade_type_ukr, bt.eng as blade_type_eng, bt.rus as blade_type_rus,
+                    d.ukr as dolls_ukr, d.eng as dolls_eng, d.rus as dolls_rus,
+                    u.ukr as usage_ukr, u.eng as usage_eng, u.rus as usage_rus,
+                    s.ukr as sharpening_ukr, s.eng as sharpening_eng, s.rus as sharpening_rus
+                 FROM items i
+                 LEFT JOIN categories c ON i.category_id = c.id
+                 LEFT JOIN epoha e ON CAST(i.epoha AS UNSIGNED) = e.id AND i.epoha != '' AND i.epoha IS NOT NULL
+                 LEFT JOIN guard_type gt ON CAST(i.guard_type AS UNSIGNED) = gt.id AND i.guard_type != '' AND i.guard_type IS NOT NULL
+                 LEFT JOIN blade_type bt ON CAST(i.blade_type AS UNSIGNED) = bt.id AND i.blade_type != '' AND i.blade_type IS NOT NULL
+                 LEFT JOIN dolls d ON CAST(i.dolls AS UNSIGNED) = d.id AND i.dolls != '' AND i.dolls IS NOT NULL
+                 LEFT JOIN \`usage\` u ON CAST(i.using_it AS UNSIGNED) = u.id AND i.using_it != '' AND i.using_it IS NOT NULL
+                 LEFT JOIN sharpening s ON CAST(i.sharpening AS UNSIGNED) = s.id AND i.sharpening != '' AND i.sharpening IS NOT NULL
+                 WHERE i.ukr_name LIKE ? OR i.eng_name LIKE ? OR i.rus_name LIKE ?
+                 ORDER BY i.${sortBy} ${sortOrder}
+                 LIMIT ${limit} OFFSET ${offset}`,
+                [searchPattern, searchPattern, searchPattern]
             ) as [RowDataPacket[], any];
 
-            // Трансформуємо результат
+            // Трансформуємо результат для включення інформації про всі пов'язані таблиці
             const items: WeaponItemResponse[] = rows.map((row: any) => {
-                const { category_ukr_name, category_eng_name, category_comments, ...itemData } = row;
+                const {
+                    category_ukr_name, category_eng_name, category_comments,
+                    epoha_ukr, epoha_eng, epoha_rus,
+                    guard_type_ukr, guard_type_eng, guard_type_rus,
+                    blade_type_ukr, blade_type_eng, blade_type_rus,
+                    dolls_ukr, dolls_eng, dolls_rus,
+                    usage_ukr, usage_eng, usage_rus,
+                    sharpening_ukr, sharpening_eng, sharpening_rus,
+                    ...itemData
+                } = row;
 
                 return {
                     ...itemData,
@@ -275,6 +409,42 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                         ukr_name: category_ukr_name,
                         eng_name: category_eng_name,
                         comments: category_comments
+                    } : undefined,
+                    epoha_data: epoha_ukr ? {
+                        id: parseInt(itemData.epoha) || null,
+                        ukr: epoha_ukr,
+                        eng: epoha_eng,
+                        rus: epoha_rus
+                    } : undefined,
+                    guard_type_data: guard_type_ukr ? {
+                        id: parseInt(itemData.guard_type) || null,
+                        ukr: guard_type_ukr,
+                        eng: guard_type_eng,
+                        rus: guard_type_rus
+                    } : undefined,
+                    blade_type_data: blade_type_ukr ? {
+                        id: parseInt(itemData.blade_type) || null,
+                        ukr: blade_type_ukr,
+                        eng: blade_type_eng,
+                        rus: blade_type_rus
+                    } : undefined,
+                    dolls_data: dolls_ukr ? {
+                        id: parseInt(itemData.dolls) || null,
+                        ukr: dolls_ukr,
+                        eng: dolls_eng,
+                        rus: dolls_rus
+                    } : undefined,
+                    usage_data: usage_ukr ? {
+                        id: parseInt(itemData.using_it) || null,
+                        ukr: usage_ukr,
+                        eng: usage_eng,
+                        rus: usage_rus
+                    } : undefined,
+                    sharpening_data: sharpening_ukr ? {
+                        id: parseInt(itemData.sharpening) || null,
+                        ukr: sharpening_ukr,
+                        eng: sharpening_eng,
+                        rus: sharpening_rus
                     } : undefined
                 } as WeaponItemResponse;
             });
@@ -314,20 +484,42 @@ export class WeaponItemService extends BaseService<WeaponItem> {
 
             const total = countResult[0].total;
 
-            // Отримання записів
+            // Отримання записів з інформацією про всі пов'язані таблиці
             const [rows] = await pool.execute(
-                `SELECT i.*, c.ukr_name as category_ukr_name, c.eng_name as category_eng_name, c.comments as category_comments
-         FROM items i
-         LEFT JOIN categories c ON i.category_id = c.id
-         WHERE i.category_id = ?
-         ORDER BY i.${sortBy} ${sortOrder}
-         LIMIT ${limit} OFFSET ${offset}`,
+                `SELECT i.*, 
+                    c.ukr_name as category_ukr_name, c.eng_name as category_eng_name, c.comments as category_comments,
+                    e.ukr as epoha_ukr, e.eng as epoha_eng, e.rus as epoha_rus,
+                    gt.ukr as guard_type_ukr, gt.eng as guard_type_eng, gt.rus as guard_type_rus,
+                    bt.ukr as blade_type_ukr, bt.eng as blade_type_eng, bt.rus as blade_type_rus,
+                    d.ukr as dolls_ukr, d.eng as dolls_eng, d.rus as dolls_rus,
+                    u.ukr as usage_ukr, u.eng as usage_eng, u.rus as usage_rus,
+                    s.ukr as sharpening_ukr, s.eng as sharpening_eng, s.rus as sharpening_rus
+                 FROM items i
+                 LEFT JOIN categories c ON i.category_id = c.id
+                 LEFT JOIN epoha e ON CAST(i.epoha AS UNSIGNED) = e.id AND i.epoha != '' AND i.epoha IS NOT NULL
+                 LEFT JOIN guard_type gt ON CAST(i.guard_type AS UNSIGNED) = gt.id AND i.guard_type != '' AND i.guard_type IS NOT NULL
+                 LEFT JOIN blade_type bt ON CAST(i.blade_type AS UNSIGNED) = bt.id AND i.blade_type != '' AND i.blade_type IS NOT NULL
+                 LEFT JOIN dolls d ON CAST(i.dolls AS UNSIGNED) = d.id AND i.dolls != '' AND i.dolls IS NOT NULL
+                 LEFT JOIN \`usage\` u ON CAST(i.using_it AS UNSIGNED) = u.id AND i.using_it != '' AND i.using_it IS NOT NULL
+                 LEFT JOIN sharpening s ON CAST(i.sharpening AS UNSIGNED) = s.id AND i.sharpening != '' AND i.sharpening IS NOT NULL
+                 WHERE i.category_id = ?
+                 ORDER BY i.${sortBy} ${sortOrder}
+                 LIMIT ${limit} OFFSET ${offset}`,
                 [categoryId]
             ) as [RowDataPacket[], any];
 
-            // Трансформуємо результат
+            // Трансформуємо результат для включення інформації про всі пов'язані таблиці
             const items: WeaponItemResponse[] = rows.map((row: any) => {
-                const { category_ukr_name, category_eng_name, category_comments, ...itemData } = row;
+                const {
+                    category_ukr_name, category_eng_name, category_comments,
+                    epoha_ukr, epoha_eng, epoha_rus,
+                    guard_type_ukr, guard_type_eng, guard_type_rus,
+                    blade_type_ukr, blade_type_eng, blade_type_rus,
+                    dolls_ukr, dolls_eng, dolls_rus,
+                    usage_ukr, usage_eng, usage_rus,
+                    sharpening_ukr, sharpening_eng, sharpening_rus,
+                    ...itemData
+                } = row;
 
                 return {
                     ...itemData,
@@ -336,6 +528,42 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                         ukr_name: category_ukr_name,
                         eng_name: category_eng_name,
                         comments: category_comments
+                    } : undefined,
+                    epoha_data: epoha_ukr ? {
+                        id: parseInt(itemData.epoha) || null,
+                        ukr: epoha_ukr,
+                        eng: epoha_eng,
+                        rus: epoha_rus
+                    } : undefined,
+                    guard_type_data: guard_type_ukr ? {
+                        id: parseInt(itemData.guard_type) || null,
+                        ukr: guard_type_ukr,
+                        eng: guard_type_eng,
+                        rus: guard_type_rus
+                    } : undefined,
+                    blade_type_data: blade_type_ukr ? {
+                        id: parseInt(itemData.blade_type) || null,
+                        ukr: blade_type_ukr,
+                        eng: blade_type_eng,
+                        rus: blade_type_rus
+                    } : undefined,
+                    dolls_data: dolls_ukr ? {
+                        id: parseInt(itemData.dolls) || null,
+                        ukr: dolls_ukr,
+                        eng: dolls_eng,
+                        rus: dolls_rus
+                    } : undefined,
+                    usage_data: usage_ukr ? {
+                        id: parseInt(itemData.using_it) || null,
+                        ukr: usage_ukr,
+                        eng: usage_eng,
+                        rus: usage_rus
+                    } : undefined,
+                    sharpening_data: sharpening_ukr ? {
+                        id: parseInt(itemData.sharpening) || null,
+                        ukr: sharpening_ukr,
+                        eng: sharpening_eng,
+                        rus: sharpening_rus
                     } : undefined
                 } as WeaponItemResponse;
             });

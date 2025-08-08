@@ -12,6 +12,7 @@ export interface GridColumn {
     editable?: boolean;
     type?: 'string' | 'number' | 'boolean' | 'date';
     valueGetter?: (params: any) => any;
+    renderCell?: (params: any) => any;
 }
 
 export interface FormField {
@@ -53,17 +54,57 @@ const weaponColumns: GridColumn[] = [
     { field: 'ready', headerName: 'Готовність', width: 100, type: 'boolean', editable: false },
     { field: 'ukr_name', headerName: 'Українська назва', width: 200, editable: false },
     { field: 'eng_name', headerName: 'English name', width: 200, editable: false },
+    { field: 'rus_name', headerName: 'Російська назва', width: 200, editable: false },
+        { field: 'description_ukr', headerName: 'Опис українською', width: 300, editable: false },
+    { field: 'description_eng', headerName: 'Description in English', width: 300, editable: false },
+    { field: 'description_rus', headerName: 'Описание на русском', width: 300, editable: false },
     { field: 'total_len', headerName: 'Загальна довжина', width: 150, editable: false },
     { field: 'blade_len', headerName: 'Довжина клинка', width: 150, editable: false },
     { field: 'weight', headerName: 'Вага', width: 100, editable: false },
     { field: 'century', headerName: 'Століття', width: 120, editable: false },
     { field: 'theritory', headerName: 'Територія', width: 150, editable: false },
     {
-        field: 'category',
+        field: 'category_name',
         headerName: 'Категорія',
         width: 200,
         editable: false,
-        valueGetter: (params: any) => params?.row?.category?.ukr_name || 'Не вказано'
+
+    },
+    {
+        field: 'epoha_name',
+        headerName: 'Епоха',
+        width: 150,
+        editable: false
+    },
+    {
+        field: 'guard_type_name',
+        headerName: 'Тип гарди',
+        width: 150,
+        editable: false
+    },
+    {
+        field: 'blade_type_name',
+        headerName: 'Тип клинка',
+        width: 150,
+        editable: false
+    },
+    {
+        field: 'dolls_name',
+        headerName: 'Доли',
+        width: 120,
+        editable: false
+    },
+    {
+        field: 'usage_name',
+        headerName: 'Використання',
+        width: 150,
+        editable: false
+    },
+    {
+        field: 'sharpening_name',
+        headerName: 'Заточення',
+        width: 130,
+        editable: false
     }
 ];
 
