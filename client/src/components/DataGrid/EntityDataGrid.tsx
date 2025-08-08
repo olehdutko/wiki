@@ -96,7 +96,7 @@ export function EntityDataGrid<T extends BaseEntity>({
     const [searchQuery, setSearchQuery] = useState('');
 
 
-        // Стан для фільтрування по категоріях (тільки для weapons)
+    // Стан для фільтрування по категоріях (тільки для weapons)
     const [categories, setCategories] = useState<Array<{ id: number, ukr_name: string }>>([]);
     const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(entityType === 'weapons' ? 1 : null);
     const [categoriesLoading, setCategoriesLoading] = useState(false);
@@ -106,14 +106,14 @@ export function EntityDataGrid<T extends BaseEntity>({
 
     // Стан видимості колонок для MUI DataGrid (за замовчуванням приховані)
     const [columnVisibilityModel, setColumnVisibilityModel] = useState(() => {
-        const defaultHidden = ['total_len', 'blade_len', 'weight', 'description_eng', 'description_rus', 'epoha_name', 'guard_type_name', 'blade_type_name', 'dolls_name', 'usage_name', 'sharpening_name'];
+        const defaultHidden = ['total_len', 'blade_len', 'weight', 'description_rus', 'epoha_name', 'guard_type_name', 'blade_type_name', 'dolls_name', 'usage_name', 'sharpening_name'];
         const visibility: Record<string, boolean> = {};
-        
+
         // Всі колонки видимі за замовчуванням
         config.columns.forEach(col => {
             visibility[col.field] = !defaultHidden.includes(col.field);
         });
-        
+
         return visibility;
     });
 
@@ -294,7 +294,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         ...(enableEdit || enableDelete ? [{
             field: 'actions',
             headerName: 'Дії',
-            width: 120,
+            width: 72,
             sortable: false,
             filterable: false,
             disableColumnMenu: true,
@@ -353,123 +353,112 @@ export function EntityDataGrid<T extends BaseEntity>({
     }
 
     return (
-        <Box sx={{ width: '100%', height }}>
-            {/* Заголовок та кнопки */}
-            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
-                    <Typography variant="h5" component="h1" gutterBottom>
-                        {title || config.displayName}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Chip
-                            label={`Всього: ${pagination.total}`}
-                            size="small"
-                            color="primary"
-                            variant="outlined"
-                        />
-                        {/* Dropdown для фільтрування по категоріях (тільки для weapons) */}
-                        {entityType === 'weapons' && (
-                            <FormControl size="small" sx={{ minWidth: 200 }}>
-                                <InputLabel id="category-filter-label">Фільтр по категорії</InputLabel>
-                                <Select
-                                    labelId="category-filter-label"
-                                    value={selectedCategoryId || ''}
-                                    label="Фільтр по категорії"
-                                    onChange={(e) => handleCategoryChange(e.target.value === '' ? null : Number(e.target.value))}
-                                    disabled={categoriesLoading}
-                                >
-                                    <MenuItem value="">
-                                        <em>Всі категорії</em>
+        <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+            {/* Кнопки */}
+            <Box sx={{ mb: 2, flexShrink: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+                    {/* Dropdown для фільтрування по категоріях (тільки для weapons) */}
+                    {entityType === 'weapons' && (
+                        <FormControl size="small" sx={{ minWidth: 200 }}>
+                            <InputLabel id="category-filter-label">Фільтр по категорії</InputLabel>
+                            <Select
+                                labelId="category-filter-label"
+                                value={selectedCategoryId || ''}
+                                label="Фільтр по категорії"
+                                onChange={(e) => handleCategoryChange(e.target.value === '' ? null : Number(e.target.value))}
+                                disabled={categoriesLoading}
+                            >
+                                <MenuItem value="">
+                                    <em>Всі категорії</em>
+                                </MenuItem>
+                                {categoriesLoading ? (
+                                    <MenuItem disabled>
+                                        <CircularProgress size={16} sx={{ mr: 1 }} />
+                                        Завантаження...
                                     </MenuItem>
-                                    {categoriesLoading ? (
-                                        <MenuItem disabled>
-                                            <CircularProgress size={16} sx={{ mr: 1 }} />
-                                            Завантаження...
+                                ) : (
+                                    categories.map((category) => (
+                                        <MenuItem key={category.id} value={category.id}>
+                                            {category.ukr_name}
                                         </MenuItem>
-                                    ) : (
-                                        categories.map((category) => (
-                                            <MenuItem key={category.id} value={category.id}>
-                                                {category.ukr_name}
-                                            </MenuItem>
-                                        ))
-                                    )}
-                                </Select>
-                            </FormControl>
-                        )}
-
-                    </Box>
-                </Box>
-
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                        variant="outlined"
-                        startIcon={<SearchIcon />}
-                        onClick={() => setSearchDialog(true)}
-                    >
-                        Пошук
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        startIcon={<RefreshIcon />}
-                        onClick={handleRefresh}
-                        disabled={loading.loading}
-                    >
-                        Оновити
-                    </Button>
-                    {enableAdd && (
-                        <Button
-                            variant="contained"
-                            startIcon={<AddIcon />}
-                            onClick={() => {/* TODO: відкрити форму створення */ }}
-                        >
-                            Додати
-                        </Button>
+                                    ))
+                                )}
+                            </Select>
+                        </FormControl>
                     )}
+
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                            variant="outlined"
+                            startIcon={<SearchIcon />}
+                            onClick={() => setSearchDialog(true)}
+                        >
+                            Пошук
+                        </Button>
+                        <Button
+                            variant="outlined"
+                            onClick={handleRefresh}
+                            disabled={loading.loading}
+                        >
+                            <RefreshIcon />
+                        </Button>
+                        {enableAdd && (
+                            <Button
+                                variant="contained"
+                                onClick={() => {/* TODO: відкрити форму створення */ }}
+                            >
+                                <AddIcon />
+                            </Button>
+                        )}
+                    </Box>
                 </Box>
             </Box>
 
             {/* DataGrid */}
-            <DataGrid
-                rows={data}
-                columns={columns}
-                loading={loading.loading}
-                pagination
-                paginationModel={{
-                    page: pagination.page,
-                    pageSize: pagination.pageSize
-                }}
-                rowCount={pagination.total}
-                paginationMode="server"
-                columnVisibilityModel={columnVisibilityModel}
-                onColumnVisibilityModelChange={setColumnVisibilityModel}
-                onPaginationModelChange={(model) => {
-                    if (model.page !== pagination.page) {
-                        handlePageChange(model.page);
-                    }
-                    if (model.pageSize !== pagination.pageSize) {
-                        handlePageSizeChange(model.pageSize);
-                    }
-                }}
-                onRowClick={onRowSelect ? (params: GridRowParams) => onRowSelect(params.row) : undefined}
-                slots={{
-                    toolbar: GridToolbar,
-                    loadingOverlay: () => (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                            <CircularProgress />
-                        </Box>
-                    )
-                }}
-                slotProps={{
-                    toolbar: {
-                        showQuickFilter: false
-                    }
-                }}
-                sx={{
-                    '& .MuiDataGrid-row:hover': {
-                        backgroundColor: 'action.hover'
-                    }
-                }}
-            />
+            <Box sx={{ flexGrow: 1, height: '95%' }}>
+                <DataGrid
+                    rows={data}
+                    columns={columns}
+                    loading={loading.loading}
+                    pagination
+                    paginationModel={{
+                        page: pagination.page,
+                        pageSize: pagination.pageSize
+                    }}
+                    rowCount={pagination.total}
+                    paginationMode="server"
+                    columnVisibilityModel={columnVisibilityModel}
+                    onColumnVisibilityModelChange={setColumnVisibilityModel}
+                    onPaginationModelChange={(model) => {
+                        if (model.page !== pagination.page) {
+                            handlePageChange(model.page);
+                        }
+                        if (model.pageSize !== pagination.pageSize) {
+                            handlePageSizeChange(model.pageSize);
+                        }
+                    }}
+                    onRowClick={onRowSelect ? (params: GridRowParams) => onRowSelect(params.row) : undefined}
+                    rowHeight={31}
+                    slots={{
+                        toolbar: GridToolbar,
+                        loadingOverlay: () => (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                                <CircularProgress />
+                            </Box>
+                        )
+                    }}
+                    slotProps={{
+                        toolbar: {
+                            showQuickFilter: false
+                        }
+                    }}
+                    sx={{
+                        '& .MuiDataGrid-row:hover': {
+                            backgroundColor: 'action.hover'
+                        }
+                    }}
+                />
+            </Box>
 
             {/* Діалог підтвердження видалення */}
             <Dialog
@@ -539,7 +528,7 @@ export function EntityDataGrid<T extends BaseEntity>({
                 </DialogActions>
             </Dialog>
 
-            
+
         </Box>
     );
 }

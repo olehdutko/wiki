@@ -39,7 +39,7 @@ const namedEntityColumns: GridColumn[] = [
     { field: 'id', headerName: 'ID', width: 80 },
     { field: 'ukr', headerName: 'Українська', width: 200, editable: true },
     { field: 'eng', headerName: 'English', width: 200, editable: true },
-    { field: 'rus', headerName: 'Русский', width: 200, editable: true }
+    { field: 'rus', headerName: 'Москальська', width: 200, editable: true }
 ];
 
 const categoryColumns: GridColumn[] = [
@@ -50,26 +50,19 @@ const categoryColumns: GridColumn[] = [
 ];
 
 const weaponColumns: GridColumn[] = [
-    { field: 'id', headerName: 'ID', width: 80 },
+    { field: 'id', headerName: 'ID', width: 58 },
     { field: 'ready', headerName: 'Готовність', width: 100, type: 'boolean', editable: false },
     { field: 'ukr_name', headerName: 'Українська назва', width: 200, editable: false },
     { field: 'eng_name', headerName: 'English name', width: 200, editable: false },
-    { field: 'rus_name', headerName: 'Російська назва', width: 200, editable: false },
-        { field: 'description_ukr', headerName: 'Опис українською', width: 300, editable: false },
-    { field: 'description_eng', headerName: 'Description in English', width: 300, editable: false },
-    { field: 'description_rus', headerName: 'Описание на русском', width: 300, editable: false },
+    { field: 'rus_name', headerName: 'Москальська назва', width: 200, editable: false },
+    { field: 'description_ukr', headerName: 'Опис українською', width: 180, editable: false },
+    { field: 'description_eng', headerName: 'Description in English', width: 180, editable: false },
+    { field: 'description_rus', headerName: 'Опис москальською', width: 300, editable: false },
     { field: 'total_len', headerName: 'Загальна довжина', width: 150, editable: false },
     { field: 'blade_len', headerName: 'Довжина клинка', width: 150, editable: false },
     { field: 'weight', headerName: 'Вага', width: 100, editable: false },
     { field: 'century', headerName: 'Століття', width: 120, editable: false },
-    { field: 'theritory', headerName: 'Територія', width: 150, editable: false },
-    {
-        field: 'category_name',
-        headerName: 'Категорія',
-        width: 200,
-        editable: false,
-
-    },
+    { field: 'theritory', headerName: 'Територія', width: 90, editable: false },
     {
         field: 'epoha_name',
         headerName: 'Епоха',
@@ -113,7 +106,7 @@ const weaponColumns: GridColumn[] = [
 const namedEntityFormFields: FormField[] = [
     { name: 'ukr', label: 'Українська назва', type: 'text', maxLength: 100 },
     { name: 'eng', label: 'English name', type: 'text', maxLength: 100 },
-    { name: 'rus', label: 'Русское название', type: 'text', maxLength: 100 }
+    { name: 'rus', label: 'Москальська назва', type: 'text', maxLength: 100 }
 ];
 
 const categoryFormFields: FormField[] = [
@@ -127,12 +120,12 @@ const weaponFormFields: FormField[] = [
     { name: 'ready', label: 'Готовність', type: 'boolean', required: true },
     { name: 'ukr_name', label: 'Українська назва', type: 'text', maxLength: 120 },
     { name: 'eng_name', label: 'English name', type: 'text', maxLength: 120 },
-    { name: 'rus_name', label: 'Русское название', type: 'text', maxLength: 120 },
+    { name: 'rus_name', label: 'Москальська назва', type: 'text', maxLength: 120 },
 
     // Описи
     { name: 'description_ukr', label: 'Опис українською', type: 'textarea', maxLength: 6300 },
     { name: 'description_eng', label: 'Description in English', type: 'textarea', maxLength: 6300 },
-    { name: 'description_rus', label: 'Описание на русском', type: 'textarea', maxLength: 6300 },
+    { name: 'description_rus', label: 'Опис москальською', type: 'textarea', maxLength: 6300 },
 
     // Розміри
     { name: 'total_len', label: 'Загальна довжина', type: 'text', maxLength: 25 },

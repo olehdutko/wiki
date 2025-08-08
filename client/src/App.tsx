@@ -45,7 +45,7 @@ import { getEntityDisplayName } from './config/entities.config';
 import { apiService } from './services/api.service';
 
 // Конфігурація ширини бічної панелі
-const DRAWER_WIDTH = 280;
+const DRAWER_WIDTH = 224;
 
 // Іконки для кожного типу сутності
 const ENTITY_ICONS: Record<EntityType, React.ReactElement> = {
