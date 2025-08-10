@@ -122,9 +122,12 @@ class ApiService {
         data: D
     ): Promise<T | null> {
         try {
+            console.log('🚀 PUT запит:', `${endpoint}/${id}`, data);
             const response = await this.api.put<ApiResponse<T>>(`${endpoint}/${id}`, data);
+            console.log('✅ PUT відповідь:', response.data);
             return response.data.data || null;
         } catch (error: any) {
+            console.error('❌ PUT помилка:', error);
             if (error?.response?.status === 404) {
                 return null;
             }
@@ -158,7 +161,7 @@ class ApiService {
             });
             return response.data.data?.items || [];
         }
-        
+
         // Для інших сутностей використовуємо звичайний пошук
         const response = await this.api.get<ApiResponse<T[]>>(`${endpoint}/search`, {
             params: { q: query }
@@ -251,6 +254,46 @@ class ApiService {
         return this.getAll<Category>('/categories', { limit: 1000 }); // Отримуємо всі категорії
     }
 
+    // Epoha
+    async getAllEpoha() {
+        return this.getAll<NamedEntity>('/epoha', { limit: 1000 });
+    }
+
+    // Guard Types
+    async getAllGuardTypes() {
+        return this.getAll<NamedEntity>('/guard-type', { limit: 1000 });
+    }
+
+    // Blade Types
+    async getAllBladeTypes() {
+        return this.getAll<NamedEntity>('/blade-type', { limit: 1000 });
+    }
+
+    // Dolls
+    async getAllDolls() {
+        return this.getAll<NamedEntity>('/dolls', { limit: 1000 });
+    }
+
+    // Usage
+    async getAllUsage() {
+        return this.getAll<NamedEntity>('/usage', { limit: 1000 });
+    }
+
+    // Apple
+    async getAllApple() {
+        return this.getAll<NamedEntity>('/apple', { limit: 1000 });
+    }
+
+    // Sharpening
+    async getAllSharpening() {
+        return this.getAll<NamedEntity>('/sharpening', { limit: 1000 });
+    }
+
+    // Global Type
+    async getAllGlobalTypes() {
+        return this.getAll<NamedEntity>('/global-type', { limit: 1000 });
+    }
+
     // Weapons (головна сутність)
     async getWeapons(params?: PaginationParams) {
         return this.getAll<WeaponItemResponse>('/weapons', params);
@@ -301,7 +344,10 @@ class ApiService {
 
     async updateEntity<T extends BaseEntity>(entityType: EntityType, id: number, data: any) {
         const endpoint = this.getEndpointByEntityType(entityType);
-        return this.update<T>(endpoint, id, data);
+        console.log('🔄 updateEntity викликано:', { entityType, id, data, endpoint });
+        const result = await this.update<T>(endpoint, id, data);
+        console.log('✅ updateEntity результат:', result);
+        return result;
     }
 
     async deleteEntity(entityType: EntityType, id: number) {

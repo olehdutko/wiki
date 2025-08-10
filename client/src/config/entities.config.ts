@@ -31,22 +31,23 @@ export interface EntityConfig {
     columns: GridColumn[];
     formFields: FormField[];
     useForm?: boolean; // true для items, false для інших (тільки грід)
+    supportsInlineEditing?: boolean; // true для сутностей, які підтримують inline редагування
 }
 
 // ================= КОЛОНКИ ДЛЯ ГРІДІВ =================
 
 const namedEntityColumns: GridColumn[] = [
     { field: 'id', headerName: 'ID', width: 80 },
-    { field: 'ukr', headerName: 'Українська', width: 200, editable: true },
-    { field: 'eng', headerName: 'English', width: 200, editable: true },
-    { field: 'rus', headerName: 'Москальська', width: 200, editable: true }
+    { field: 'ukr', headerName: 'Українська', width: 200, editable: true, type: 'string' },
+    { field: 'eng', headerName: 'English', width: 200, editable: true, type: 'string' },
+    { field: 'rus', headerName: 'Москальська', width: 200, editable: true, type: 'string' }
 ];
 
 const categoryColumns: GridColumn[] = [
     { field: 'id', headerName: 'ID', width: 80 },
-    { field: 'ukr_name', headerName: 'Українська назва', width: 250, editable: true },
-    { field: 'eng_name', headerName: 'English name', width: 250, editable: true },
-    { field: 'comments', headerName: 'Коментарі', width: 300, editable: true }
+    { field: 'ukr_name', headerName: 'Українська назва', width: 250, editable: true, type: 'string' },
+    { field: 'eng_name', headerName: 'English name', width: 250, editable: true, type: 'string' },
+    { field: 'comments', headerName: 'Коментарі', width: 300, editable: true, type: 'string' }
 ];
 
 const weaponColumns: GridColumn[] = [
@@ -82,9 +83,21 @@ const weaponColumns: GridColumn[] = [
         editable: false
     },
     {
+        field: 'global_type_name',
+        headerName: 'Глобальний тип',
+        width: 150,
+        editable: false
+    },
+    {
         field: 'dolls_name',
         headerName: 'Доли',
         width: 120,
+        editable: false
+    },
+    {
+        field: 'apple_name',
+        headerName: 'Яблуко (навершя)',
+        width: 150,
         editable: false
     },
     {
@@ -131,30 +144,30 @@ const weaponFormFields: FormField[] = [
     { name: 'total_len', label: 'Загальна довжина', type: 'text', maxLength: 25 },
     { name: 'blade_len', label: 'Довжина клинка', type: 'text', maxLength: 25 },
     { name: 'handle_len', label: 'Довжина руків\'я', type: 'text', maxLength: 25 },
-    { name: 'handle_len_w', label: 'Ширина руків\'я', type: 'text', required: true, maxLength: 10 },
-    { name: 'width', label: 'Ширина', type: 'text', maxLength: 25 },
-    { name: 'guard_width', label: 'Ширина гарди', type: 'text', required: true, maxLength: 20 },
-    { name: 'thikness', label: 'Товщина', type: 'text', maxLength: 25 },
-    { name: 'weight', label: 'Вага', type: 'text', maxLength: 25 },
+    { name: 'handle_len_w', label: 'Ширина руків\'я', type: 'text', maxLength: 10 },
+    { name: 'width', label: 'Ширина клинка', type: 'text', maxLength: 25 },
+    { name: 'guard_width', label: 'Ширина гарди', type: 'text', maxLength: 20 },
+    { name: 'thikness', label: 'Товщина клинка', type: 'text', maxLength: 25 },
+    { name: 'weight', label: 'Загальна вага', type: 'text', maxLength: 25 },
 
     // Історичні дані
     { name: 'theritory', label: 'Територія', type: 'text', maxLength: 100 },
     { name: 'century', label: 'Століття', type: 'text', maxLength: 25 },
     { name: 'arch_period', label: 'Археологічний період', type: 'text', maxLength: 50 },
-    { name: 'epoha', label: 'Епоха', type: 'text', maxLength: 50 },
+    { name: 'epoha', label: 'Епоха', type: 'select', maxLength: 50 },
 
     // Типи та характеристики
-    { name: 'global_type', label: 'Глобальний тип', type: 'text', required: true, maxLength: 20 },
-    { name: 'guard_type', label: 'Тип гарди', type: 'text', maxLength: 20 },
-    { name: 'blade_type', label: 'Тип клинка', type: 'text', maxLength: 20 },
-    { name: 'dolls', label: 'Доли', type: 'text', maxLength: 10 },
-    { name: 'apple', label: 'Яблуко (навершя)', type: 'text', required: true, maxLength: 10 },
-    { name: 'using_it', label: 'Використання', type: 'text', maxLength: 50 },
-    { name: 'sharpening', label: 'Заточення', type: 'text', maxLength: 10 },
+    { name: 'global_type', label: 'Глобальний тип', type: 'select', required: true, maxLength: 20 },
+    { name: 'guard_type', label: 'Тип гарди', type: 'select', maxLength: 20 },
+    { name: 'blade_type', label: 'Тип клинка', type: 'select', maxLength: 20 },
+    { name: 'dolls', label: 'Доли', type: 'select', maxLength: 10 },
+    { name: 'apple', label: 'Яблуко (навершя)', type: 'select', required: true },
+    { name: 'using_it', label: 'Використання', type: 'select', maxLength: 50 },
+    { name: 'sharpening', label: 'Заточення', type: 'select', maxLength: 10 },
 
     // Додаткова інформація
     { name: 'category_id', label: 'Категорія', type: 'select', required: true },
-    { name: 'source', label: 'Джерело', type: 'text', required: true, maxLength: 500 },
+    { name: 'source', label: 'Джерело', type: 'textarea', maxLength: 500 },
     { name: 'links', label: 'Посилання', type: 'textarea', maxLength: 750 },
     { name: 'comments', label: 'Коментарі', type: 'textarea', maxLength: 750 }
 ];
@@ -168,7 +181,8 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
         apiEndpoint: '/apple',
         columns: namedEntityColumns,
         formFields: namedEntityFormFields,
-        useForm: false
+        useForm: false,
+        supportsInlineEditing: true
     },
 
     'blade-type': {
@@ -177,7 +191,8 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
         apiEndpoint: '/blade-type',
         columns: namedEntityColumns,
         formFields: namedEntityFormFields,
-        useForm: false
+        useForm: false,
+        supportsInlineEditing: true
     },
 
     'dolls': {
@@ -186,7 +201,8 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
         apiEndpoint: '/dolls',
         columns: namedEntityColumns,
         formFields: namedEntityFormFields,
-        useForm: false
+        useForm: false,
+        supportsInlineEditing: true
     },
 
     'epoha': {
@@ -195,7 +211,8 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
         apiEndpoint: '/epoha',
         columns: namedEntityColumns,
         formFields: namedEntityFormFields,
-        useForm: false
+        useForm: false,
+        supportsInlineEditing: true
     },
 
     'global-type': {
@@ -204,7 +221,8 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
         apiEndpoint: '/global-type',
         columns: namedEntityColumns,
         formFields: namedEntityFormFields,
-        useForm: false
+        useForm: false,
+        supportsInlineEditing: true
     },
 
     'guard-type': {
@@ -213,7 +231,8 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
         apiEndpoint: '/guard-type',
         columns: namedEntityColumns,
         formFields: namedEntityFormFields,
-        useForm: false
+        useForm: false,
+        supportsInlineEditing: true
     },
 
     'sharpening': {
@@ -222,7 +241,8 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
         apiEndpoint: '/sharpening',
         columns: namedEntityColumns,
         formFields: namedEntityFormFields,
-        useForm: false
+        useForm: false,
+        supportsInlineEditing: true
     },
 
     'usage': {
@@ -231,7 +251,8 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
         apiEndpoint: '/usage',
         columns: namedEntityColumns,
         formFields: namedEntityFormFields,
-        useForm: false
+        useForm: false,
+        supportsInlineEditing: true
     },
 
     'categories': {
@@ -240,7 +261,8 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
         apiEndpoint: '/categories',
         columns: categoryColumns,
         formFields: categoryFormFields,
-        useForm: false
+        useForm: false,
+        supportsInlineEditing: true
     },
 
     'weapons': {

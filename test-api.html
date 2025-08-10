@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест API</title>
+</head>
+
+<body>
+    <h1>Тест API оновлення</h1>
+
+    <div>
+        <h2>Оновлення запису</h2>
+        <button onclick="testUpdate()">Тест оновлення</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function testUpdate() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Тестуємо...';
+
+            try {
+                const response = await fetch('http://localhost:3001/api/global-type/11', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        eng: 'Test Knife',
+                        rus: 'Тест Нож'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <h3>Успішно!</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <h3>Помилка!</h3>
+                        <p>Статус: ${response.status}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h3>Помилка мережі!</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+
+</html>

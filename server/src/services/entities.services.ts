@@ -74,7 +74,7 @@ export class CategoryService extends BaseService<Category> {
     async search(searchTerm: string): Promise<Category[]> {
         try {
             const [rows] = await pool.execute(
-                `SELECT * FROM ${this.tableName} 
+                `SELECT * FROM \`${this.tableName}\` 
          WHERE ukr_name LIKE ? OR eng_name LIKE ? OR comments LIKE ?
          ORDER BY ukr_name`,
                 [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`]
@@ -96,6 +96,32 @@ export class WeaponItemService extends BaseService<WeaponItem> {
     }
 
     /**
+     * Конвертує значення з бази даних в правильні типи для WeaponItem
+     */
+    protected convertDatabaseValues(record: any): any {
+        if (!record) return record;
+
+        const converted = { ...record };
+
+        // Конвертуємо boolean поля для WeaponItem
+        if (converted.ready !== undefined) {
+            if (typeof converted.ready === 'number') {
+                converted.ready = Boolean(converted.ready);
+            } else if (typeof converted.ready === 'boolean') {
+                converted.ready = converted.ready;
+            } else if (converted.ready === 'true' || converted.ready === '1' || converted.ready === true) {
+                converted.ready = true;
+            } else if (converted.ready === 'false' || converted.ready === '0' || converted.ready === false || converted.ready === '' || converted.ready === null || converted.ready === undefined) {
+                converted.ready = false;
+            } else {
+                converted.ready = Boolean(converted.ready);
+            }
+        }
+
+        return converted;
+    }
+
+    /**
      * Отримати всі записи з інформацією про категорію
      */
     async findAllWithCategory(params: PaginationParams = {}): Promise<PaginatedResponse<WeaponItemResponse>> {
@@ -111,7 +137,7 @@ export class WeaponItemService extends BaseService<WeaponItem> {
         try {
             // Підрахунок загальної кількості записів
             const [countResult] = await pool.execute(
-                `SELECT COUNT(*) as total FROM ${this.tableName}`
+                `SELECT COUNT(*) as total FROM \`${this.tableName}\``
             ) as [RowDataPacket[], any];
 
             const total = countResult[0].total;
@@ -123,14 +149,23 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                     e.ukr as epoha_ukr, e.eng as epoha_eng, e.rus as epoha_rus,
                     gt.ukr as guard_type_ukr, gt.eng as guard_type_eng, gt.rus as guard_type_rus,
                     bt.ukr as blade_type_ukr, bt.eng as blade_type_eng, bt.rus as blade_type_rus,
+                    glt.ukr as global_type_ukr, glt.eng as global_type_eng, glt.rus as global_type_rus,
                     d.ukr as dolls_ukr, d.eng as dolls_eng, d.rus as dolls_rus,
                     u.ukr as usage_ukr, u.eng as usage_eng, u.rus as usage_rus,
-                    s.ukr as sharpening_ukr, s.eng as sharpening_eng, s.rus as sharpening_rus
+                    s.ukr as sharpening_ukr, s.eng as sharpening_eng, s.rus as sharpening_rus,
+                    e.ukr as epoha_name,
+                    gt.ukr as guard_type_name,
+                    bt.ukr as blade_type_name,
+                    glt.ukr as global_type_name,
+                    d.ukr as dolls_name,
+                    u.ukr as usage_name,
+                    s.ukr as sharpening_name
                  FROM items i
                  LEFT JOIN categories c ON i.category_id = c.id
                  LEFT JOIN epoha e ON CAST(i.epoha AS UNSIGNED) = e.id AND i.epoha != '' AND i.epoha IS NOT NULL
                  LEFT JOIN guard_type gt ON CAST(i.guard_type AS UNSIGNED) = gt.id AND i.guard_type != '' AND i.guard_type IS NOT NULL
                  LEFT JOIN blade_type bt ON CAST(i.blade_type AS UNSIGNED) = bt.id AND i.blade_type != '' AND i.blade_type IS NOT NULL
+                 LEFT JOIN global_type glt ON CAST(i.global_type AS UNSIGNED) = glt.id AND i.global_type != '' AND i.global_type IS NOT NULL
                  LEFT JOIN dolls d ON CAST(i.dolls AS UNSIGNED) = d.id AND i.dolls != '' AND i.dolls IS NOT NULL
                  LEFT JOIN \`usage\` u ON CAST(i.using_it AS UNSIGNED) = u.id AND i.using_it != '' AND i.using_it IS NOT NULL
                  LEFT JOIN sharpening s ON CAST(i.sharpening AS UNSIGNED) = s.id AND i.sharpening != '' AND i.sharpening IS NOT NULL
@@ -145,14 +180,18 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                     epoha_ukr, epoha_eng, epoha_rus,
                     guard_type_ukr, guard_type_eng, guard_type_rus,
                     blade_type_ukr, blade_type_eng, blade_type_rus,
+                    global_type_ukr, global_type_eng, global_type_rus,
                     dolls_ukr, dolls_eng, dolls_rus,
                     usage_ukr, usage_eng, usage_rus,
                     sharpening_ukr, sharpening_eng, sharpening_rus,
                     ...itemData
                 } = row;
 
+                // Конвертуємо boolean поля
+                const convertedItemData = this.convertDatabaseValues(itemData);
+
                 return {
-                    ...itemData,
+                    ...convertedItemData,
                     category: category_ukr_name ? {
                         id: itemData.category_id,
                         ukr_name: category_ukr_name,
@@ -176,6 +215,12 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                         ukr: blade_type_ukr,
                         eng: blade_type_eng,
                         rus: blade_type_rus
+                    } : undefined,
+                    global_type_data: global_type_ukr ? {
+                        id: parseInt(itemData.global_type) || null,
+                        ukr: global_type_ukr,
+                        eng: global_type_eng,
+                        rus: global_type_rus
                     } : undefined,
                     dolls_data: dolls_ukr ? {
                         id: parseInt(itemData.dolls) || null,
@@ -222,14 +267,23 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                     e.ukr as epoha_ukr, e.eng as epoha_eng, e.rus as epoha_rus,
                     gt.ukr as guard_type_ukr, gt.eng as guard_type_eng, gt.rus as guard_type_rus,
                     bt.ukr as blade_type_ukr, bt.eng as blade_type_eng, bt.rus as blade_type_rus,
+                    glt.ukr as global_type_ukr, glt.eng as global_type_eng, glt.rus as global_type_rus,
                     d.ukr as dolls_ukr, d.eng as dolls_eng, d.rus as dolls_rus,
                     u.ukr as usage_ukr, u.eng as usage_eng, u.rus as usage_rus,
-                    s.ukr as sharpening_ukr, s.eng as sharpening_eng, s.rus as sharpening_rus
+                    s.ukr as sharpening_ukr, s.eng as sharpening_eng, s.rus as sharpening_rus,
+                    e.ukr as epoha_name,
+                    gt.ukr as guard_type_name,
+                    bt.ukr as blade_type_name,
+                    glt.ukr as global_type_name,
+                    d.ukr as dolls_name,
+                    u.ukr as usage_name,
+                    s.ukr as sharpening_name
                  FROM items i
                  LEFT JOIN categories c ON i.category_id = c.id
                  LEFT JOIN epoha e ON CAST(i.epoha AS UNSIGNED) = e.id AND i.epoha != '' AND i.epoha IS NOT NULL
                  LEFT JOIN guard_type gt ON CAST(i.guard_type AS UNSIGNED) = gt.id AND i.guard_type != '' AND i.guard_type IS NOT NULL
                  LEFT JOIN blade_type bt ON CAST(i.blade_type AS UNSIGNED) = bt.id AND i.blade_type != '' AND i.blade_type IS NOT NULL
+                 LEFT JOIN global_type glt ON CAST(i.global_type AS UNSIGNED) = glt.id AND i.global_type != '' AND i.global_type IS NOT NULL
                  LEFT JOIN dolls d ON CAST(i.dolls AS UNSIGNED) = d.id AND i.dolls != '' AND i.dolls IS NOT NULL
                  LEFT JOIN \`usage\` u ON CAST(i.using_it AS UNSIGNED) = u.id AND i.using_it != '' AND i.using_it IS NOT NULL
                  LEFT JOIN sharpening s ON CAST(i.sharpening AS UNSIGNED) = s.id AND i.sharpening != '' AND i.sharpening IS NOT NULL
@@ -247,14 +301,18 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                 epoha_ukr, epoha_eng, epoha_rus,
                 guard_type_ukr, guard_type_eng, guard_type_rus,
                 blade_type_ukr, blade_type_eng, blade_type_rus,
+                global_type_ukr, global_type_eng, global_type_rus,
                 dolls_ukr, dolls_eng, dolls_rus,
                 usage_ukr, usage_eng, usage_rus,
                 sharpening_ukr, sharpening_eng, sharpening_rus,
                 ...itemData
             } = row;
 
+            // Конвертуємо boolean поля
+            const convertedItemData = this.convertDatabaseValues(itemData);
+
             return {
-                ...itemData,
+                ...convertedItemData,
                 category: category_ukr_name ? {
                     id: itemData.category_id,
                     ukr_name: category_ukr_name,
@@ -278,6 +336,12 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                     ukr: blade_type_ukr,
                     eng: blade_type_eng,
                     rus: blade_type_rus
+                } : undefined,
+                global_type_data: global_type_ukr ? {
+                    id: parseInt(itemData.global_type) || null,
+                    ukr: global_type_ukr,
+                    eng: global_type_eng,
+                    rus: global_type_rus
                 } : undefined,
                 dolls_data: dolls_ukr ? {
                     id: parseInt(itemData.dolls) || null,
@@ -358,7 +422,7 @@ export class WeaponItemService extends BaseService<WeaponItem> {
 
             // Підрахунок загальної кількості записів
             const [countResult] = await pool.execute(
-                `SELECT COUNT(*) as total FROM items i
+                `SELECT COUNT(*) as total FROM \`items\` i
          WHERE i.ukr_name LIKE ? OR i.eng_name LIKE ? OR i.rus_name LIKE ?`,
                 [searchPattern, searchPattern, searchPattern]
             ) as [RowDataPacket[], any];
@@ -372,14 +436,23 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                     e.ukr as epoha_ukr, e.eng as epoha_eng, e.rus as epoha_rus,
                     gt.ukr as guard_type_ukr, gt.eng as guard_type_eng, gt.rus as guard_type_rus,
                     bt.ukr as blade_type_ukr, bt.eng as blade_type_eng, bt.rus as blade_type_rus,
+                    glt.ukr as global_type_ukr, glt.eng as global_type_eng, glt.rus as global_type_rus,
                     d.ukr as dolls_ukr, d.eng as dolls_eng, d.rus as dolls_rus,
                     u.ukr as usage_ukr, u.eng as usage_eng, u.rus as usage_rus,
-                    s.ukr as sharpening_ukr, s.eng as sharpening_eng, s.rus as sharpening_rus
+                    s.ukr as sharpening_ukr, s.eng as sharpening_eng, s.rus as sharpening_rus,
+                    e.ukr as epoha_name,
+                    gt.ukr as guard_type_name,
+                    bt.ukr as blade_type_name,
+                    glt.ukr as global_type_name,
+                    d.ukr as dolls_name,
+                    u.ukr as usage_name,
+                    s.ukr as sharpening_name
                  FROM items i
                  LEFT JOIN categories c ON i.category_id = c.id
                  LEFT JOIN epoha e ON CAST(i.epoha AS UNSIGNED) = e.id AND i.epoha != '' AND i.epoha IS NOT NULL
                  LEFT JOIN guard_type gt ON CAST(i.guard_type AS UNSIGNED) = gt.id AND i.guard_type != '' AND i.guard_type IS NOT NULL
                  LEFT JOIN blade_type bt ON CAST(i.blade_type AS UNSIGNED) = bt.id AND i.blade_type != '' AND i.blade_type IS NOT NULL
+                 LEFT JOIN global_type glt ON CAST(i.global_type AS UNSIGNED) = glt.id AND i.global_type != '' AND i.global_type IS NOT NULL
                  LEFT JOIN dolls d ON CAST(i.dolls AS UNSIGNED) = d.id AND i.dolls != '' AND i.dolls IS NOT NULL
                  LEFT JOIN \`usage\` u ON CAST(i.using_it AS UNSIGNED) = u.id AND i.using_it != '' AND i.using_it IS NOT NULL
                  LEFT JOIN sharpening s ON CAST(i.sharpening AS UNSIGNED) = s.id AND i.sharpening != '' AND i.sharpening IS NOT NULL
@@ -396,14 +469,18 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                     epoha_ukr, epoha_eng, epoha_rus,
                     guard_type_ukr, guard_type_eng, guard_type_rus,
                     blade_type_ukr, blade_type_eng, blade_type_rus,
+                    global_type_ukr, global_type_eng, global_type_rus,
                     dolls_ukr, dolls_eng, dolls_rus,
                     usage_ukr, usage_eng, usage_rus,
                     sharpening_ukr, sharpening_eng, sharpening_rus,
                     ...itemData
                 } = row;
 
+                // Конвертуємо boolean поля
+                const convertedItemData = this.convertDatabaseValues(itemData);
+
                 return {
-                    ...itemData,
+                    ...convertedItemData,
                     category: category_ukr_name ? {
                         id: itemData.category_id,
                         ukr_name: category_ukr_name,
@@ -427,6 +504,12 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                         ukr: blade_type_ukr,
                         eng: blade_type_eng,
                         rus: blade_type_rus
+                    } : undefined,
+                    global_type_data: global_type_ukr ? {
+                        id: parseInt(itemData.global_type) || null,
+                        ukr: global_type_ukr,
+                        eng: global_type_eng,
+                        rus: global_type_rus
                     } : undefined,
                     dolls_data: dolls_ukr ? {
                         id: parseInt(itemData.dolls) || null,
@@ -478,7 +561,7 @@ export class WeaponItemService extends BaseService<WeaponItem> {
         try {
             // Підрахунок загальної кількості записів
             const [countResult] = await pool.execute(
-                `SELECT COUNT(*) as total FROM items WHERE category_id = ?`,
+                `SELECT COUNT(*) as total FROM \`items\` WHERE category_id = ?`,
                 [categoryId]
             ) as [RowDataPacket[], any];
 
@@ -491,14 +574,23 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                     e.ukr as epoha_ukr, e.eng as epoha_eng, e.rus as epoha_rus,
                     gt.ukr as guard_type_ukr, gt.eng as guard_type_eng, gt.rus as guard_type_rus,
                     bt.ukr as blade_type_ukr, bt.eng as blade_type_eng, bt.rus as blade_type_rus,
+                    glt.ukr as global_type_ukr, glt.eng as global_type_eng, glt.rus as global_type_rus,
                     d.ukr as dolls_ukr, d.eng as dolls_eng, d.rus as dolls_rus,
                     u.ukr as usage_ukr, u.eng as usage_eng, u.rus as usage_rus,
-                    s.ukr as sharpening_ukr, s.eng as sharpening_eng, s.rus as sharpening_rus
+                    s.ukr as sharpening_ukr, s.eng as sharpening_eng, s.rus as sharpening_rus,
+                    e.ukr as epoha_name,
+                    gt.ukr as guard_type_name,
+                    bt.ukr as blade_type_name,
+                    glt.ukr as global_type_name,
+                    d.ukr as dolls_name,
+                    u.ukr as usage_name,
+                    s.ukr as sharpening_name
                  FROM items i
                  LEFT JOIN categories c ON i.category_id = c.id
                  LEFT JOIN epoha e ON CAST(i.epoha AS UNSIGNED) = e.id AND i.epoha != '' AND i.epoha IS NOT NULL
                  LEFT JOIN guard_type gt ON CAST(i.guard_type AS UNSIGNED) = gt.id AND i.guard_type != '' AND i.guard_type IS NOT NULL
                  LEFT JOIN blade_type bt ON CAST(i.blade_type AS UNSIGNED) = bt.id AND i.blade_type != '' AND i.blade_type IS NOT NULL
+                 LEFT JOIN global_type glt ON CAST(i.global_type AS UNSIGNED) = glt.id AND i.global_type != '' AND i.global_type IS NOT NULL
                  LEFT JOIN dolls d ON CAST(i.dolls AS UNSIGNED) = d.id AND i.dolls != '' AND i.dolls IS NOT NULL
                  LEFT JOIN \`usage\` u ON CAST(i.using_it AS UNSIGNED) = u.id AND i.using_it != '' AND i.using_it IS NOT NULL
                  LEFT JOIN sharpening s ON CAST(i.sharpening AS UNSIGNED) = s.id AND i.sharpening != '' AND i.sharpening IS NOT NULL
@@ -515,14 +607,18 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                     epoha_ukr, epoha_eng, epoha_rus,
                     guard_type_ukr, guard_type_eng, guard_type_rus,
                     blade_type_ukr, blade_type_eng, blade_type_rus,
+                    global_type_ukr, global_type_eng, global_type_rus,
                     dolls_ukr, dolls_eng, dolls_rus,
                     usage_ukr, usage_eng, usage_rus,
                     sharpening_ukr, sharpening_eng, sharpening_rus,
                     ...itemData
                 } = row;
 
+                // Конвертуємо boolean поля
+                const convertedItemData = this.convertDatabaseValues(itemData);
+
                 return {
-                    ...itemData,
+                    ...convertedItemData,
                     category: category_ukr_name ? {
                         id: itemData.category_id,
                         ukr_name: category_ukr_name,
@@ -546,6 +642,12 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                         ukr: blade_type_ukr,
                         eng: blade_type_eng,
                         rus: blade_type_rus
+                    } : undefined,
+                    global_type_data: global_type_ukr ? {
+                        id: parseInt(itemData.global_type) || null,
+                        ukr: global_type_ukr,
+                        eng: global_type_eng,
+                        rus: global_type_rus
                     } : undefined,
                     dolls_data: dolls_ukr ? {
                         id: parseInt(itemData.dolls) || null,

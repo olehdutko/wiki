@@ -75,7 +75,7 @@ export interface WeaponItem extends BaseEntity {
     total_len?: string | null;
     blade_len?: string | null;
     width?: string | null;
-    guard_width: string;
+    guard_width?: string | null;
     thikness?: string | null;
     weight?: string | null;
     theritory?: string | null;
@@ -93,6 +93,14 @@ export interface WeaponItem extends BaseEntity {
     comments?: string | null;
     source: string;
     category_id: number;
+    // Додаткові поля для відображення назв
+    epoha_name?: string | null;
+    guard_type_name?: string | null;
+    blade_type_name?: string | null;
+    global_type_name?: string | null;
+    dolls_name?: string | null;
+    usage_name?: string | null;
+    sharpening_name?: string | null;
 }
 
 export interface WeaponItemResponse extends WeaponItem {
@@ -100,6 +108,7 @@ export interface WeaponItemResponse extends WeaponItem {
     epoha_data?: Epoha;
     guard_type_data?: GuardType;
     blade_type_data?: BladeType;
+    global_type_data?: GlobalType;
     dolls_data?: Dolls;
     usage_data?: Usage;
     sharpening_data?: Sharpening;
@@ -121,7 +130,7 @@ export interface UpdateNamedEntityDto extends Partial<CreateNamedEntityDto> { }
 
 // ================= UNION TYPES для сутностей =================
 
-export type EntityType = 
+export type EntityType =
     | 'apple'
     | 'blade-type'
     | 'categories'

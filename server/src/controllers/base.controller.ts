@@ -118,9 +118,18 @@ export abstract class BaseController<T extends BaseEntity> {
      */
     async update(req: Request, res: Response): Promise<void> {
         try {
+            console.log('🔄 UPDATE запит отримано:', {
+                url: req.url,
+                method: req.method,
+                id: req.params.id,
+                body: req.body,
+                headers: req.headers
+            });
+
             // Перевірка валідації
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
+                console.warn('❌ Помилки валідації:', errors.array());
                 const response: ApiResponse = this.createErrorResponse(
                     'Помилки валідації',
                     'VALIDATION_ERROR',
@@ -131,9 +140,15 @@ export abstract class BaseController<T extends BaseEntity> {
             }
 
             const id = this.validateId(req.params.id);
+            console.log('✅ ID валідовано:', id);
+            console.log('📝 Дані для оновлення:', req.body);
+
             const updatedRecord = await this.service.update(id, req.body);
 
+            console.log('🔄 Результат оновлення:', updatedRecord);
+
             if (!updatedRecord) {
+                console.warn('❌ Запис не знайдено для оновлення, ID:', id);
                 const response: ApiResponse = this.createErrorResponse(
                     `Запис з ID ${id} не знайдено`,
                     'NOT_FOUND'
@@ -142,6 +157,7 @@ export abstract class BaseController<T extends BaseEntity> {
                 return;
             }
 
+            console.log('✅ Запис успішно оновлено:', updatedRecord);
             const response: ApiResponse = this.createSuccessResponse(
                 updatedRecord,
                 'Запис успішно оновлено'
@@ -149,7 +165,7 @@ export abstract class BaseController<T extends BaseEntity> {
 
             res.status(200).json(response);
         } catch (error) {
-            console.error('Помилка при оновленні запису:', error);
+            console.error('❌ Помилка при оновленні запису:', error);
             const response: ApiResponse = this.createErrorResponse(
                 'Не вдалося оновити запис',
                 error instanceof Error ? error.message : 'Невідома помилка'

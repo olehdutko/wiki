@@ -15,6 +15,36 @@ export abstract class BaseService<T extends BaseEntity> {
     }
 
     /**
+     * Конвертує значення з бази даних в правильні типи
+     */
+    protected convertDatabaseValues(record: any): any {
+        if (!record) return record;
+
+        const converted = { ...record };
+
+        // Конвертуємо boolean поля (0/1 -> true/false)
+        Object.keys(converted).forEach(key => {
+            const value = converted[key];
+            // Перевіряємо тільки поля, які можуть бути boolean
+            if (key === 'ready' || key === 'active' || key === 'enabled' || key === 'visible') {
+                if (typeof value === 'number') {
+                    converted[key] = Boolean(value);
+                } else if (typeof value === 'boolean') {
+                    converted[key] = value;
+                } else if (value === 'true' || value === '1' || value === true) {
+                    converted[key] = true;
+                } else if (value === 'false' || value === '0' || value === false || value === '' || value === null || value === undefined) {
+                    converted[key] = false;
+                } else {
+                    converted[key] = Boolean(value);
+                }
+            }
+        });
+
+        return converted;
+    }
+
+    /**
      * Отримати всі записи з пагінацією
      */
     async findAll(params: PaginationParams = {}): Promise<PaginatedResponse<T>> {
@@ -30,18 +60,21 @@ export abstract class BaseService<T extends BaseEntity> {
         try {
             // Підрахунок загальної кількості записів
             const [countResult] = await pool.execute(
-                `SELECT COUNT(*) as total FROM ${this.tableName}`
+                `SELECT COUNT(*) as total FROM \`${this.tableName}\``
             ) as [RowDataPacket[], any];
 
             const total = countResult[0].total;
 
             // Отримання записів з пагінацією
             const [rows] = await pool.execute(
-                `SELECT * FROM ${this.tableName} ORDER BY ${sortBy} ${sortOrder} LIMIT ${limit} OFFSET ${offset}`
+                `SELECT * FROM \`${this.tableName}\` ORDER BY ${sortBy} ${sortOrder} LIMIT ${limit} OFFSET ${offset}`
             ) as [RowDataPacket[], any];
 
+            // Конвертуємо значення для всіх записів
+            const convertedRows = rows.map(row => this.convertDatabaseValues(row));
+
             return {
-                items: rows as T[],
+                items: convertedRows as T[],
                 total,
                 page,
                 limit,
@@ -59,11 +92,11 @@ export abstract class BaseService<T extends BaseEntity> {
     async findById(id: number): Promise<T | null> {
         try {
             const [rows] = await pool.execute(
-                `SELECT * FROM ${this.tableName} WHERE id = ?`,
+                `SELECT * FROM \`${this.tableName}\` WHERE id = ?`,
                 [id]
             ) as [RowDataPacket[], any];
 
-            return rows.length > 0 ? rows[0] as T : null;
+            return rows.length > 0 ? this.convertDatabaseValues(rows[0]) as T : null;
         } catch (error) {
             console.error(`Помилка при отриманні запису з ${this.tableName} по ID ${id}:`, error);
             throw new Error(`Не вдалося отримати запис по ID ${id}`);
@@ -74,13 +107,33 @@ export abstract class BaseService<T extends BaseEntity> {
      * Створити новий запис
      */
     async create(data: Omit<T, 'id'>): Promise<T> {
-        const fields = Object.keys(data).join(', ');
-        const placeholders = Object.keys(data).map(() => '?').join(', ');
-        const values = Object.values(data);
+        // Обробка boolean полів перед збереженням
+        const processedData = { ...data } as any;
+
+        // Конвертуємо boolean поля
+        Object.keys(processedData).forEach(key => {
+            const value = processedData[key];
+            // Перевіряємо тільки поля, які можуть бути boolean
+            if (key === 'ready' || key === 'active' || key === 'enabled' || key === 'visible') {
+                if (typeof value === 'boolean') {
+                    processedData[key] = value ? 1 : 0;
+                } else if (value === 'true' || value === true) {
+                    processedData[key] = 1;
+                } else if (value === 'false' || value === false || value === '' || value === null || value === undefined) {
+                    processedData[key] = 0;
+                } else {
+                    processedData[key] = 0; // За замовчуванням false
+                }
+            }
+        });
+
+        const fields = Object.keys(processedData).join(', ');
+        const placeholders = Object.keys(processedData).map(() => '?').join(', ');
+        const values = Object.values(processedData);
 
         try {
             const [result] = await pool.execute(
-                `INSERT INTO ${this.tableName} (${fields}) VALUES (${placeholders})`,
+                `INSERT INTO \`${this.tableName}\` (${fields}) VALUES (${placeholders})`,
                 values
             ) as [ResultSetHeader, any];
 
@@ -100,22 +153,55 @@ export abstract class BaseService<T extends BaseEntity> {
      * Оновити запис
      */
     async update(id: number, data: Partial<Omit<T, 'id'>>): Promise<T | null> {
-        const fields = Object.keys(data).map(key => `${key} = ?`).join(', ');
-        const values = [...Object.values(data), id];
+        console.log('🔄 BaseService.update викликано:', { id, data, tableName: this.tableName });
+
+        // Обробка boolean полів перед збереженням
+        const processedData = { ...data } as any;
+
+        // Конвертуємо boolean поля
+        Object.keys(processedData).forEach(key => {
+            const value = processedData[key];
+            // Перевіряємо тільки поля, які можуть бути boolean
+            if (key === 'ready' || key === 'active' || key === 'enabled' || key === 'visible') {
+                if (typeof value === 'boolean') {
+                    processedData[key] = value ? 1 : 0;
+                } else if (value === 'true' || value === true) {
+                    processedData[key] = 1;
+                } else if (value === 'false' || value === false || value === '' || value === null || value === undefined) {
+                    processedData[key] = 0;
+                } else {
+                    processedData[key] = 0; // За замовчуванням false
+                }
+            }
+        });
+
+        const fields = Object.keys(processedData).map(key => `${key} = ?`).join(', ');
+        const values = [...Object.values(processedData), id];
+
+        console.log('📝 SQL запит:', `UPDATE \`${this.tableName}\` SET ${fields} WHERE id = ?`);
+        console.log('🔢 Значення для SQL:', values);
 
         try {
             const [result] = await pool.execute(
-                `UPDATE ${this.tableName} SET ${fields} WHERE id = ?`,
+                `UPDATE \`${this.tableName}\` SET ${fields} WHERE id = ?`,
                 values
             ) as [ResultSetHeader, any];
 
+            console.log('🔄 Результат SQL оновлення:', result);
+
             if (result.affectedRows === 0) {
+                console.warn('⚠️ Жодного рядка не оновлено, ID:', id);
                 return null;
             }
 
-            return await this.findById(id);
+            console.log('✅ Рядок успішно оновлено, affectedRows:', result.affectedRows);
+
+            const updatedRecord = await this.findById(id);
+            console.log('🔄 Оновлений запис:', updatedRecord);
+
+            return updatedRecord;
         } catch (error) {
-            console.error(`Помилка при оновленні запису в ${this.tableName} з ID ${id}:`, error);
+            console.error(`❌ Помилка при оновленні запису в ${this.tableName} з ID ${id}:`, error);
             throw new Error(`Не вдалося оновити запис з ID ${id}`);
         }
     }
@@ -126,7 +212,7 @@ export abstract class BaseService<T extends BaseEntity> {
     async delete(id: number): Promise<boolean> {
         try {
             const [result] = await pool.execute(
-                `DELETE FROM ${this.tableName} WHERE id = ?`,
+                `DELETE FROM \`${this.tableName}\` WHERE id = ?`,
                 [id]
             ) as [ResultSetHeader, any];
 
@@ -143,7 +229,7 @@ export abstract class BaseService<T extends BaseEntity> {
     async exists(id: number): Promise<boolean> {
         try {
             const [rows] = await pool.execute(
-                `SELECT 1 FROM ${this.tableName} WHERE id = ? LIMIT 1`,
+                `SELECT 1 FROM \`${this.tableName}\` WHERE id = ? LIMIT 1`,
                 [id]
             ) as [RowDataPacket[], any];
 
@@ -163,11 +249,14 @@ export abstract class BaseService<T extends BaseEntity> {
 
         try {
             const [rows] = await pool.execute(
-                `SELECT * FROM ${this.tableName} WHERE ${conditions} ORDER BY id`,
+                `SELECT * FROM \`${this.tableName}\` WHERE ${conditions} ORDER BY id`,
                 values
             ) as [RowDataPacket[], any];
 
-            return rows as T[];
+            // Конвертуємо значення для всіх записів
+            const convertedRows = rows.map(row => this.convertDatabaseValues(row));
+
+            return convertedRows as T[];
         } catch (error) {
             console.error(`Помилка при пошуку в ${this.tableName}:`, error);
             throw new Error(`Не вдалося виконати пошук в ${this.tableName}`);
@@ -180,7 +269,7 @@ export abstract class BaseService<T extends BaseEntity> {
     async count(): Promise<number> {
         try {
             const [rows] = await pool.execute(
-                `SELECT COUNT(*) as count FROM ${this.tableName}`
+                `SELECT COUNT(*) as count FROM \`${this.tableName}\``
             ) as [RowDataPacket[], any];
 
             return rows[0].count;

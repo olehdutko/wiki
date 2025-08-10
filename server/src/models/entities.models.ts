@@ -249,9 +249,10 @@ export class WeaponItem implements BaseEntity {
     @MaxLength(25)
     width?: string | null;
 
+    @IsOptional()
     @IsString()
     @MaxLength(20)
-    guard_width!: string;
+    guard_width?: string | null;
 
     @IsOptional()
     @IsString()
