@@ -1137,6 +1137,31 @@ export function EditEntityForm<T extends BaseEntity>({
     }
   };
 
+  const renderSimilarObjectsTab = () => {
+    if (!config || !entity) return null;
+
+    return (
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Typography variant="h6" sx={{
+          mb: 2,
+          color: '#1976d2',
+          fontWeight: 600,
+          borderBottom: '2px solid #e3f2fd',
+          pb: 1
+        }}>
+          Схожі об'єкти
+        </Typography>
+
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* Тут буде логіка для відображення схожих об'єктів */}
+          <Typography variant="body2" color="text.secondary">
+            Функціонал знаходиться в розробці...
+          </Typography>
+        </Box>
+      </Box>
+    );
+  };
+
   if (!entity || !config) return null;
 
   return (
@@ -1287,6 +1312,7 @@ export function EditEntityForm<T extends BaseEntity>({
             <Tab label="Опис українською" />
             <Tab label="Опис англійською" />
             <Tab label="Опис москальською" />
+            <Tab label="Схожі об'єкти" />
           </Tabs>
         </Box>
 
@@ -1308,6 +1334,7 @@ export function EditEntityForm<T extends BaseEntity>({
           {activeTab === 1 && renderDescriptionTab('description_ukr')}
           {activeTab === 2 && renderDescriptionTab('description_eng')}
           {activeTab === 3 && renderDescriptionTab('description_rus')}
+          {activeTab === 4 && renderSimilarObjectsTab()}
         </Box>
       </DialogContent>
 
