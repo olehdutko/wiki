@@ -124,8 +124,8 @@ const namedEntityFormFields: FormField[] = [
 
 const categoryFormFields: FormField[] = [
     { name: 'ukr_name', label: 'Українська назва', type: 'text', required: true, maxLength: 300 },
-    { name: 'eng_name', label: 'English name', type: 'text', required: true, maxLength: 300 },
-    { name: 'comments', label: 'Коментарі', type: 'textarea', required: true, maxLength: 500 }
+    { name: 'eng_name', label: 'English name', type: 'text', maxLength: 300 },
+    { name: 'comments', label: 'Коментарі', type: 'textarea', maxLength: 500 }
 ];
 
 const weaponFormFields: FormField[] = [

@@ -279,10 +279,20 @@ export abstract class BaseController<T extends BaseEntity> {
             console.log('🔄 GET max-id запит отримано');
             const maxId = await this.service.getMaxId();
             console.log('✅ Максимальний ID:', maxId);
-            res.json({ success: true, data: { maxId } });
+
+            const response: ApiResponse = this.createSuccessResponse(
+                { maxId },
+                'Максимальний ID отримано'
+            );
+
+            res.status(200).json(response);
         } catch (error) {
             console.error('❌ Помилка отримання максимального ID:', error);
-            res.status(500).json({ success: false, error: 'Помилка отримання максимального ID' });
+            const response: ApiResponse = this.createErrorResponse(
+                'Не вдалося отримати максимальний ID',
+                error instanceof Error ? error.message : 'Невідома помилка'
+            );
+            res.status(500).json(response);
         }
     }
 
