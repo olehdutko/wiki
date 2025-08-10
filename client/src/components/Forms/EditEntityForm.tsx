@@ -66,6 +66,9 @@ interface EditEntityFormProps<T extends BaseEntity> {
   entityType: EntityType;
   onClose: () => void;
   onSave: (updatedEntity: T) => void;
+  mode?: 'edit' | 'create';
+  headerColor?: string;
+  saveButtonText?: string;
 }
 
 interface FormData {
@@ -79,7 +82,10 @@ export function EditEntityForm<T extends BaseEntity>({
   entity,
   entityType,
   onClose,
-  onSave
+  onSave,
+  mode = 'edit',
+  headerColor,
+  saveButtonText
 }: EditEntityFormProps<T>) {
   const [formData, setFormData] = useState<FormData>({});
   const [loading, setLoading] = useState(false);
@@ -438,7 +444,16 @@ export function EditEntityForm<T extends BaseEntity>({
       console.log('📤 Відправляємо дані:', preparedData);
 
       const { apiService } = await import('../../services/api.service');
-      const updatedEntity = await apiService.updateEntity(entityType, entity.id, preparedData);
+      let updatedEntity;
+
+      if (mode === 'create') {
+        // Видаляємо ID з даних при створенні нового запису
+        const { id, ...createData } = preparedData;
+        updatedEntity = await apiService.createEntity(entityType, createData);
+      } else {
+        updatedEntity = await apiService.updateEntity(entityType, entity.id, preparedData);
+      }
+
       onSave(updatedEntity);
       onClose();
     } catch (error: any) {
@@ -1143,7 +1158,7 @@ export function EditEntityForm<T extends BaseEntity>({
       }}
     >
       <DialogTitle sx={{
-        background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+        background: headerColor || 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
         color: 'white',
         borderRadius: '12px 12px 0 0',
         padding: '24px 32px',
@@ -1355,7 +1370,7 @@ export function EditEntityForm<T extends BaseEntity>({
             }
           }}
         >
-          {isFormValid() ? 'Зберегти' : `Зберегти (${getFormErrors().length} помилок)`}
+          {isFormValid() ? (saveButtonText || 'Зберегти') : `${saveButtonText || 'Зберегти'} (${getFormErrors().length} помилок)`}
         </Button>
       </DialogActions>
     </Dialog>

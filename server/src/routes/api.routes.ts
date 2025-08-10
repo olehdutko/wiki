@@ -149,6 +149,9 @@ router.post('/apple', namedEntityValidation, appleController.create.bind(appleCo
 router.put('/apple/:id', namedEntityUpdateValidation, appleController.update.bind(appleController));
 router.delete('/apple/:id', appleController.delete.bind(appleController));
 
+// Отримання максимального ID
+router.get('/apple/max-id', appleController.getMaxId.bind(appleController));
+
 // Blade Type (типи клинків)
 router.get('/blade-type', bladeTypeController.getAll.bind(bladeTypeController));
 router.get('/blade-type/search', bladeTypeController.search.bind(bladeTypeController));
@@ -157,6 +160,9 @@ router.get('/blade-type/:id', bladeTypeController.getById.bind(bladeTypeControll
 router.post('/blade-type', namedEntityValidation, bladeTypeController.create.bind(bladeTypeController));
 router.put('/blade-type/:id', namedEntityUpdateValidation, bladeTypeController.update.bind(bladeTypeController));
 router.delete('/blade-type/:id', bladeTypeController.delete.bind(bladeTypeController));
+
+// Отримання максимального ID
+router.get('/blade-type/max-id', bladeTypeController.getMaxId.bind(bladeTypeController));
 
 // Dolls (доли)
 router.get('/dolls', dollsController.getAll.bind(dollsController));
@@ -167,6 +173,9 @@ router.post('/dolls', namedEntityValidation, dollsController.create.bind(dollsCo
 router.put('/dolls/:id', namedEntityUpdateValidation, dollsController.update.bind(dollsController));
 router.delete('/dolls/:id', dollsController.delete.bind(dollsController));
 
+// Отримання максимального ID
+router.get('/dolls/max-id', dollsController.getMaxId.bind(dollsController));
+
 // Epoha (епохи)
 router.get('/epoha', epohaController.getAll.bind(epohaController));
 router.get('/epoha/search', epohaController.search.bind(epohaController));
@@ -175,6 +184,9 @@ router.get('/epoha/:id', epohaController.getById.bind(epohaController));
 router.post('/epoha', namedEntityValidation, epohaController.create.bind(epohaController));
 router.put('/epoha/:id', namedEntityUpdateValidation, epohaController.update.bind(epohaController));
 router.delete('/epoha/:id', epohaController.delete.bind(epohaController));
+
+// Отримання максимального ID
+router.get('/epoha/max-id', epohaController.getMaxId.bind(epohaController));
 
 // Global Type (глобальні типи)
 router.get('/global-type', globalTypeController.getAll.bind(globalTypeController));
@@ -185,6 +197,9 @@ router.post('/global-type', namedEntityValidation, globalTypeController.create.b
 router.put('/global-type/:id', namedEntityUpdateValidation, globalTypeController.update.bind(globalTypeController));
 router.delete('/global-type/:id', globalTypeController.delete.bind(globalTypeController));
 
+// Отримання максимального ID
+router.get('/global-type/max-id', globalTypeController.getMaxId.bind(globalTypeController));
+
 // Guard Type (типи гард)
 router.get('/guard-type', guardTypeController.getAll.bind(guardTypeController));
 router.get('/guard-type/search', guardTypeController.search.bind(guardTypeController));
@@ -193,6 +208,9 @@ router.get('/guard-type/:id', guardTypeController.getById.bind(guardTypeControll
 router.post('/guard-type', namedEntityValidation, guardTypeController.create.bind(guardTypeController));
 router.put('/guard-type/:id', namedEntityUpdateValidation, guardTypeController.update.bind(guardTypeController));
 router.delete('/guard-type/:id', guardTypeController.delete.bind(guardTypeController));
+
+// Отримання максимального ID
+router.get('/guard-type/max-id', guardTypeController.getMaxId.bind(guardTypeController));
 
 // Sharpening (заточення)
 router.get('/sharpening', sharpeningController.getAll.bind(sharpeningController));
@@ -203,6 +221,9 @@ router.post('/sharpening', namedEntityValidation, sharpeningController.create.bi
 router.put('/sharpening/:id', namedEntityUpdateValidation, sharpeningController.update.bind(sharpeningController));
 router.delete('/sharpening/:id', sharpeningController.delete.bind(sharpeningController));
 
+// Отримання максимального ID
+router.get('/sharpening/max-id', sharpeningController.getMaxId.bind(sharpeningController));
+
 // Usage (використання)
 router.get('/usage', usageController.getAll.bind(usageController));
 router.get('/usage/search', usageController.search.bind(usageController));
@@ -211,6 +232,9 @@ router.get('/usage/:id', usageController.getById.bind(usageController));
 router.post('/usage', namedEntityValidation, usageController.create.bind(usageController));
 router.put('/usage/:id', namedEntityUpdateValidation, usageController.update.bind(usageController));
 router.delete('/usage/:id', usageController.delete.bind(usageController));
+
+// Отримання максимального ID
+router.get('/usage/max-id', usageController.getMaxId.bind(usageController));
 
 // ================= КАТЕГОРІЇ =================
 
@@ -222,19 +246,21 @@ router.post('/categories', categoryValidation, categoryController.create.bind(ca
 router.put('/categories/:id', categoryUpdateValidation, categoryController.update.bind(categoryController));
 router.delete('/categories/:id', categoryController.delete.bind(categoryController));
 
+// Отримання максимального ID
+router.get('/categories/max-id', categoryController.getMaxId.bind(categoryController));
+
 // ================= ГОЛОВНА СУТНІСТЬ - WEAPON ITEMS =================
 
 // Основні CRUD операції
 router.get('/weapons', weaponItemController.getAllWithCategory.bind(weaponItemController));
 router.get('/weapons/search', weaponItemController.searchWeapons.bind(weaponItemController));
 router.get('/weapons/count', weaponItemController.getCount.bind(weaponItemController));
+router.get('/weapons/max-id', weaponItemController.getMaxId.bind(weaponItemController));
+router.get('/weapons/category/:categoryId', weaponItemController.getByCategory.bind(weaponItemController));
 router.get('/weapons/:id', weaponItemController.getByIdWithCategory.bind(weaponItemController));
 router.post('/weapons', weaponItemValidation, weaponItemController.createWeapon.bind(weaponItemController));
 router.put('/weapons/:id', weaponItemUpdateValidation, weaponItemController.updateWeapon.bind(weaponItemController));
 router.delete('/weapons/:id', weaponItemController.delete.bind(weaponItemController));
-
-// Додаткові роути для зброї
-router.get('/weapons/category/:categoryId', weaponItemController.getByCategory.bind(weaponItemController));
 
 // ================= ЗДОРОВ'Я API =================
 

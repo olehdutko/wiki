@@ -280,6 +280,27 @@ export abstract class BaseService<T extends BaseEntity> {
     }
 
     /**
+     * Отримати максимальний ID з таблиці
+     */
+    async getMaxId(): Promise<number> {
+        try {
+            console.log('🔄 BaseService.getMaxId викликано:', { tableName: this.tableName });
+
+            const [result] = await pool.execute(
+                `SELECT MAX(id) as maxId FROM \`${this.tableName}\``
+            ) as [RowDataPacket[], any];
+
+            const maxId = result[0]?.maxId ?? 0;
+            console.log('✅ Максимальний ID:', maxId);
+
+            return maxId;
+        } catch (error) {
+            console.error('❌ Помилка отримання максимального ID:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Створити стандартну відповідь API
      */
     protected createApiResponse<TData>(success: boolean, data?: TData, message?: string, error?: string): ApiResponse<TData> {

@@ -355,6 +355,17 @@ class ApiService {
         return this.delete(endpoint, id);
     }
 
+    async getMaxId(entityType: EntityType): Promise<number> {
+        const endpoint = this.getEndpointByEntityType(entityType);
+        try {
+            const response = await this.api.get<ApiResponse<{ maxId: number }>>(`${endpoint}/max-id`);
+            return response.data.data?.maxId || 0;
+        } catch (error) {
+            console.error('❌ Помилка отримання максимального ID:', error);
+            return 0;
+        }
+    }
+
     private getEndpointByEntityType(entityType: EntityType): string {
         const endpointMap: Record<EntityType, string> = {
             'apple': '/apple',

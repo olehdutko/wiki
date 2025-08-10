@@ -274,6 +274,18 @@ export abstract class BaseController<T extends BaseEntity> {
         }
     }
 
+    async getMaxId(_req: Request, res: Response) {
+        try {
+            console.log('🔄 GET max-id запит отримано');
+            const maxId = await this.service.getMaxId();
+            console.log('✅ Максимальний ID:', maxId);
+            res.json({ success: true, data: { maxId } });
+        } catch (error) {
+            console.error('❌ Помилка отримання максимального ID:', error);
+            res.status(500).json({ success: false, error: 'Помилка отримання максимального ID' });
+        }
+    }
+
     // ================= УТИЛІТНІ МЕТОДИ =================
 
     /**

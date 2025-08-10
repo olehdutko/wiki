@@ -50,6 +50,7 @@ import type {
 import { apiService } from '../../services/api.service';
 import { getEntityConfig, type EntityConfig } from '../../config/entities.config';
 import { EditEntityForm } from '../Forms/EditEntityForm';
+import { CreateEntityForm } from '../Forms/CreateEntityForm';
 
 // ================= ТИПИ =================
 
@@ -106,6 +107,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         row: null
     });
     const [searchDialog, setSearchDialog] = useState(false);
+    const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [editDialog, setEditDialog] = useState<{ open: boolean; row: T | null }>({
         open: false,
@@ -702,11 +704,23 @@ export function EntityDataGrid<T extends BaseEntity>({
                         {enableAdd && !supportsInlineEditing(entityType) && (
                             <Button
                                 variant="contained"
-                                onClick={() => {/* TODO: відкрити форму створення */ }}
+                                onClick={() => setCreateDialogOpen(true)}
                             >
                                 <AddIcon />
                             </Button>
                         )}
+                        
+                        {/* Форма створення */}
+                        <CreateEntityForm
+                            open={createDialogOpen}
+                            entityType={entityType}
+                            onClose={() => setCreateDialogOpen(false)}
+                            onSave={(newEntity: T) => {
+                                console.log('✅ Нову сутність створено:', newEntity);
+                                handleRefresh();
+                                setCreateDialogOpen(false);
+                            }}
+                        />
                     </Box>
                 </Box>
             </Box>
