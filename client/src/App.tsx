@@ -21,11 +21,14 @@ import {
   Alert,
   Chip,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Slide,
+  Fade
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
   Refresh as RefreshIcon,
   SportsEsports as WeaponsIcon,
   Category as CategoryIcon,
@@ -85,6 +88,7 @@ const ENTITY_GROUPS: Array<{ title: string; entities: EntityType[] }> = [
 function App() {
   // Стан
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentEntity, setCurrentEntity] = useState<EntityType>('weapons');
   const [apiHealthy, setApiHealthy] = useState<boolean | null>(null);
 
@@ -127,6 +131,11 @@ function App() {
     // TODO: Відкрити форму редагування
   };
 
+  // Обробник для згортання/розгортання панелі
+  const handleSidebarToggle = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   // Рендер навігаційної панелі
   const renderDrawerContent = () => (
     <Box>
@@ -137,13 +146,51 @@ function App() {
           alignItems: 'center',
           justifyContent: 'space-between',
           px: [1],
+          py: 1,
+          minHeight: '80px'
         }}
       >
-        <Typography variant="h6" noWrap component="div">
-          Енциклопедія зброї
-        </Typography>
+        {sidebarOpen ? (
+          <Fade in={sidebarOpen}>
+            <Box sx={{
+              flex: 1,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              mr: 1
+            }}>
+              <Typography
+                variant="h6"
+                component="div"
+                align="center"
+                sx={{
+                  wordWrap: 'break-word',
+                  whiteSpace: 'normal',
+                  lineHeight: 1.2,
+                  fontSize: '1.1rem',
+                  maxWidth: '160px'
+                }}
+              >
+                Енциклопедія холодної зброї
+              </Typography>
+            </Box>
+          </Fade>
+        ) : (
+          <Box sx={{ width: '100%' }} />
+        )}
+        <IconButton
+          onClick={isMobile ? handleDrawerToggle : handleSidebarToggle}
+          sx={{
+            display: { xs: 'none', md: 'flex' }
+          }}
+        >
+          {sidebarOpen ? <ChevronLeftIcon /> : <ChevronRightIcon />}
+        </IconButton>
         {isMobile && (
-          <IconButton onClick={handleDrawerToggle}>
+          <IconButton
+            onClick={handleDrawerToggle}
+            sx={{ display: { md: 'none' } }}
+          >
             <ChevronLeftIcon />
           </IconButton>
         )}
@@ -152,34 +199,36 @@ function App() {
       <Divider />
 
       {/* Статус API */}
-      <Box sx={{ p: 2 }}>
-        {apiHealthy === null && (
-          <Chip
-            label="Перевірка API..."
-            size="small"
-            color="default"
-            icon={<RefreshIcon />}
-          />
-        )}
-        {apiHealthy === true && (
-          <Chip
-            label="API активний"
-            size="small"
-            color="success"
-            variant="outlined"
-          />
-        )}
-        {apiHealthy === false && (
-          <Chip
-            label="API недоступний"
-            size="small"
-            color="error"
-            icon={<RefreshIcon />}
-            onClick={checkApiHealth}
-            clickable
-          />
-        )}
-      </Box>
+      <Fade in={sidebarOpen}>
+        <Box sx={{ p: 2 }}>
+          {apiHealthy === null && (
+            <Chip
+              label="Перевірка API..."
+              size="small"
+              color="default"
+              icon={<RefreshIcon />}
+            />
+          )}
+          {apiHealthy === true && (
+            <Chip
+              label="API активний"
+              size="small"
+              color="success"
+              variant="outlined"
+            />
+          )}
+          {apiHealthy === false && (
+            <Chip
+              label="API недоступний"
+              size="small"
+              color="error"
+              icon={<RefreshIcon />}
+              onClick={checkApiHealth}
+              clickable
+            />
+          )}
+        </Box>
+      </Fade>
 
       <Divider />
 
@@ -187,12 +236,14 @@ function App() {
       {ENTITY_GROUPS.map((group) => (
         <Box key={group.title}>
           <List subheader={
-            <Typography
-              variant="overline"
-              sx={{ px: 2, py: 1, color: 'text.secondary', fontWeight: 'bold' }}
-            >
-              {group.title}
-            </Typography>
+            <Fade in={sidebarOpen}>
+              <Typography
+                variant="overline"
+                sx={{ px: 2, py: 1, color: 'text.secondary', fontWeight: 'bold' }}
+              >
+                {group.title}
+              </Typography>
+            </Fade>
           }>
             {group.entities.map((entityType: EntityType) => (
               <ListItem key={entityType} disablePadding>
@@ -202,6 +253,8 @@ function App() {
                   sx={{
                     mx: 1,
                     borderRadius: 1,
+                    minWidth: sidebarOpen ? 'auto' : '40px',
+                    justifyContent: sidebarOpen ? 'flex-start' : 'center',
                     '&.Mui-selected': {
                       backgroundColor: 'primary.main',
                       color: 'primary.contrastText',
@@ -214,16 +267,19 @@ function App() {
                     },
                   }}
                 >
-                  <ListItemIcon>
+                  <ListItemIcon sx={{ minWidth: sidebarOpen ? 40 : 'auto' }}>
                     {ENTITY_ICONS[entityType]}
                   </ListItemIcon>
-                  <ListItemText
-                    primary={getEntityDisplayName(entityType)}
-                    primaryTypographyProps={{
-                      variant: 'body2',
-                      fontWeight: currentEntity === entityType ? 600 : 400
-                    }}
-                  />
+                  <Fade in={sidebarOpen}>
+                    <ListItemText
+                      primary={getEntityDisplayName(entityType)}
+                      primaryTypographyProps={{
+                        variant: 'body2',
+                        fontWeight: currentEntity === entityType ? 600 : 400
+                      }}
+                      sx={{ display: sidebarOpen ? 'block' : 'none' }}
+                    />
+                  </Fade>
                 </ListItemButton>
               </ListItem>
             ))}
@@ -242,8 +298,12 @@ function App() {
       <AppBar
         position="fixed"
         sx={{
-          width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
-          ml: { md: `${DRAWER_WIDTH}px` },
+          width: { md: `calc(100% - ${sidebarOpen ? DRAWER_WIDTH : 58}px)` },
+          ml: { md: `${sidebarOpen ? DRAWER_WIDTH : 58}px` },
+          transition: theme.transitions.create(['width', 'margin'], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
         }}
       >
         <Toolbar>
@@ -259,16 +319,20 @@ function App() {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             {getEntityDisplayName(currentEntity)}
           </Typography>
-          <IconButton color="inherit" onClick={checkApiHealth} title="Перевірити API">
-            <RefreshIcon />
-          </IconButton>
         </Toolbar>
       </AppBar>
 
       {/* Бічна навігаційна панель */}
       <Box
         component="nav"
-        sx={{ width: { md: DRAWER_WIDTH }, flexShrink: { md: 0 } }}
+        sx={{
+          width: { md: sidebarOpen ? DRAWER_WIDTH : 58 },
+          flexShrink: { md: 0 },
+          transition: theme.transitions.create('width', {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
+        }}
       >
         {/* Мобільна версія */}
         <Drawer
@@ -276,7 +340,7 @@ function App() {
           open={mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{
-            keepMounted: true, // Кращий performance на мобільних пристроях
+            keepMounted: true,
           }}
           sx={{
             display: { xs: 'block', md: 'none' },
@@ -296,7 +360,13 @@ function App() {
             display: { xs: 'none', md: 'block' },
             '& .MuiDrawer-paper': {
               boxSizing: 'border-box',
-              width: DRAWER_WIDTH,
+              width: sidebarOpen ? DRAWER_WIDTH : 58,
+              overflowX: 'hidden',
+              transition: theme.transitions.create('width', {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.enteringScreen,
+              }),
+              position: 'fixed',
             },
           }}
           open
@@ -311,7 +381,11 @@ function App() {
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
+          width: { md: `calc(100% - ${sidebarOpen ? DRAWER_WIDTH : 58}px)` },
+          transition: theme.transitions.create(['width', 'margin'], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
         }}
       >
         <Toolbar />

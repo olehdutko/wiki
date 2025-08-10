@@ -811,13 +811,16 @@ export function EntityDataGrid<T extends BaseEntity>({
                     )}
 
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button
-                            variant="outlined"
-                            startIcon={<SearchIcon />}
-                            onClick={() => setSearchDialog(true)}
-                        >
-                            Пошук
-                        </Button>
+                        {/* Показуємо кнопку пошуку тільки для weapons */}
+                        {entityType === 'weapons' && (
+                            <Button
+                                variant="outlined"
+                                startIcon={<SearchIcon />}
+                                onClick={() => setSearchDialog(true)}
+                            >
+                                Пошук
+                            </Button>
+                        )}
                         <Button
                             variant="outlined"
                             onClick={handleRefresh}
@@ -830,15 +833,16 @@ export function EntityDataGrid<T extends BaseEntity>({
                                 variant="contained"
                                 onClick={handleAddNewRow}
                                 disabled={isCreating}
-                                startIcon={<AddIcon />}
+                                sx={{ minWidth: 40, width: 40, height: 40, p: 0 }}
                             >
-                                Додати
+                                <AddIcon />
                             </Button>
                         )}
                         {enableAdd && !supportsInlineEditing(entityType) && (
                             <Button
                                 variant="contained"
                                 onClick={() => setCreateDialogOpen(true)}
+                                sx={{ minWidth: 40, width: 40, height: 40, p: 0 }}
                             >
                                 <AddIcon />
                             </Button>
@@ -983,39 +987,41 @@ export function EntityDataGrid<T extends BaseEntity>({
             </Dialog>
 
             {/* Діалог пошуку */}
-            <Dialog
-                open={searchDialog}
-                onClose={() => setSearchDialog(false)}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle>Пошук записів</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Пошуковий запит"
-                        fullWidth
-                        variant="outlined"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                        helperText="Мінімум 2 символи"
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setSearchDialog(false)}>
-                        Скасувати
-                    </Button>
-                    <Button
-                        onClick={handleSearch}
-                        variant="contained"
-                        disabled={searchQuery.length < 2}
-                    >
-                        Шукати
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            {entityType === 'weapons' && (
+                <Dialog
+                    open={searchDialog}
+                    onClose={() => setSearchDialog(false)}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle>Пошук записів</DialogTitle>
+                    <DialogContent>
+                        <TextField
+                            autoFocus
+                            margin="dense"
+                            label="Пошуковий запит"
+                            fullWidth
+                            variant="outlined"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                            helperText="Мінімум 2 символи"
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setSearchDialog(false)}>
+                            Скасувати
+                        </Button>
+                        <Button
+                            onClick={handleSearch}
+                            variant="contained"
+                            disabled={searchQuery.length < 2}
+                        >
+                            Шукати
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            )}
 
             {/* Форма редагування */}
             <EditEntityForm<T>
