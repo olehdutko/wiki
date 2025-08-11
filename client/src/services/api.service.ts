@@ -383,6 +383,47 @@ class ApiService {
         return endpointMap[entityType];
     }
 
+    // ================= МЕТОДИ ДЛЯ ПОШУКУ ЗВ'ЯЗКІВ =================
+
+    /**
+     * Отримати пов'язані об'єкти для заданого ID
+     */
+    async getLinkedObjects(itemId: number) {
+        try {
+            const response = await this.api.get<ApiResponse<Array<{
+                id: number;
+                ukr_name: string;
+                eng_name: string;
+                rus_name: string;
+            }>>>(`/links/${itemId}`);
+
+            console.log('API відповідь для пов\'язаних об\'єктів:', {
+                success: response.data.success,
+                dataType: typeof response.data.data,
+                isArray: Array.isArray(response.data.data),
+                data: response.data.data
+            });
+
+            return response.data.data || [];
+        } catch (error) {
+            console.error('❌ Помилка отримання пов\'язаних об\'єктів:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Видалити лінк за ID
+     */
+    async deleteLink(linkId: number): Promise<boolean> {
+        try {
+            const response = await this.api.delete<ApiResponse>(`/links/${linkId}`);
+            return response.data.success;
+        } catch (error) {
+            console.error('❌ Помилка видалення лінка:', error);
+            return false;
+        }
+    }
+
     // ================= ЗДОРОВ'Я API =================
 
     async checkHealth() {

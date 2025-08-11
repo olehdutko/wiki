@@ -7,7 +7,7 @@ import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { pool } from '../config/database.config';
 import { BaseEntity, PaginationParams, PaginatedResponse, ApiResponse } from '../types/base.types';
 
-export abstract class BaseService<T extends BaseEntity> {
+export class BaseService<T extends BaseEntity> {
     protected tableName: string;
 
     constructor(tableName: string) {

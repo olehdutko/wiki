@@ -9,6 +9,7 @@ import {
     EpohaController, GlobalTypeController, GuardTypeController, SharpeningController,
     UsageController, WeaponItemController
 } from '../controllers/entities.controllers';
+import { LinksController } from '../controllers/links.controller';
 
 const router = Router();
 
@@ -24,6 +25,7 @@ const guardTypeController = new GuardTypeController();
 const sharpeningController = new SharpeningController();
 const usageController = new UsageController();
 const weaponItemController = new WeaponItemController();
+const linksController = new LinksController();
 
 // ================= ВАЛІДАТОРИ =================
 
@@ -242,6 +244,12 @@ router.get('/weapons/:id', weaponItemController.getByIdWithCategory.bind(weaponI
 router.post('/weapons', weaponItemValidation, weaponItemController.createWeapon.bind(weaponItemController));
 router.put('/weapons/:id', weaponItemUpdateValidation, weaponItemController.updateWeapon.bind(weaponItemController));
 router.delete('/weapons/:id', weaponItemController.delete.bind(weaponItemController));
+
+// ================= РОУТИ ДЛЯ ЗВ'ЯЗКІВ =================
+
+// Роути для лінків
+router.get('/links/:id', linksController.getLinkedObjects.bind(linksController));
+router.delete('/links/:id', linksController.deleteLink.bind(linksController));
 
 // ================= ЗДОРОВ'Я API =================
 

@@ -21,9 +21,12 @@ import {
   InputLabel,
   FormHelperText,
   IconButton,
-  Tooltip
+  Tooltip,
+  DialogContentText
 } from '@mui/material';
-import { VolumeUp } from '@mui/icons-material';
+import { VolumeUp, Delete } from '@mui/icons-material';
+import type { GridColDef } from '@mui/x-data-grid';
+import { DataGrid } from '@mui/x-data-grid';
 
 // Типи
 interface BaseEntity {
@@ -103,6 +106,54 @@ export function EditEntityForm<T extends BaseEntity>({
   const [activeTab, setActiveTab] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentVoice, setCurrentVoice] = useState<string>('');
+  const [linkedObjects, setLinkedObjects] = useState<Array<{
+    id: number;
+    item_id: number;
+    other_item: number;
+    ukr_name: string;
+    eng_name: string;
+    rus_name: string;
+  }>>([]);
+  const [linkedObjectsLoading, setLinkedObjectsLoading] = useState(false);
+  const [linkedObjectsError, setLinkedObjectsError] = useState<string | null>(null);
+
+  // Стани для діалогу видалення
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [linkToDelete, setLinkToDelete] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Функції для обробки видалення
+  const handleDeleteClick = (linkId: number) => {
+    setLinkToDelete(linkId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (linkToDelete === null) return;
+
+    setIsDeleting(true);
+    try {
+      const { apiService } = await import('../../services/api.service');
+      const success = await apiService.deleteLink(linkToDelete);
+
+      if (success) {
+        // Оновлюємо список лінків після видалення
+        const updatedLinks = linkedObjects.filter(obj => obj.id !== linkToDelete);
+        setLinkedObjects(updatedLinks);
+      }
+    } catch (error) {
+      console.error('Помилка при видаленні лінка:', error);
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setLinkToDelete(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setLinkToDelete(null);
+  };
 
   // Функція для завантаження доступних голосів
   const loadVoices = () => {
@@ -353,6 +404,55 @@ export function EditEntityForm<T extends BaseEntity>({
       console.error('Помилка завантаження довідкових даних:', error);
     }
   };
+
+  useEffect(() => {
+    const loadLinkedObjects = async () => {
+      if (entity && open && entityType === 'weapons') {
+        setLinkedObjectsLoading(true);
+        setLinkedObjectsError(null);
+        try {
+          const { apiService } = await import('../../services/api.service');
+          const response = await apiService.getLinkedObjects(entity.id);
+          console.log('📥 Отримано пов\'язані об\'єкти:', {
+            count: response.length,
+            data: response
+          });
+
+          if (Array.isArray(response)) {
+            // Перевіряємо структуру даних
+            const validData = response.every(item =>
+              item &&
+              typeof item === 'object' &&
+              'id' in item &&
+              'ukr_name' in item &&
+              'eng_name' in item &&
+              'rus_name' in item
+            );
+
+            if (validData) {
+              setLinkedObjects(response);
+              console.log('✅ Дані пов\'язаних об\'єктів встановлено:', {
+                count: response.length,
+                firstItem: response[0]
+              });
+            } else {
+              console.error('❌ Неправильна структура даних:', response);
+              setLinkedObjectsError('Неправильний формат даних від сервера');
+            }
+          } else {
+            console.error('❌ Неправильний тип даних:', typeof response);
+            setLinkedObjectsError('Неправильний формат даних від сервера');
+          }
+        } catch (error) {
+          console.error('❌ Помилка при завантаженні пов\'язаних об\'єктів:', error);
+          setLinkedObjectsError('Не вдалося завантажити пов\'язані об\'єкти');
+        } finally {
+          setLinkedObjectsLoading(false);
+        }
+      }
+    };
+    loadLinkedObjects();
+  }, [entity?.id, open, entityType]);
 
   const handleInputChange = (fieldName: string, value: any) => {
     console.log(`🔄 handleInputChange: ${fieldName} = ${value} (${typeof value})`);
@@ -1140,6 +1240,77 @@ export function EditEntityForm<T extends BaseEntity>({
   const renderSimilarObjectsTab = () => {
     if (!config || !entity) return null;
 
+    // Перевіряємо наявність даних
+    if (!Array.isArray(linkedObjects)) {
+      console.error('linkedObjects не є масивом:', linkedObjects);
+      return null;
+    }
+
+    // Готуємо дані для таблиці
+    const rows = linkedObjects.map((obj, index) => {
+      console.log(`Обробка об'єкту ${index}:`, obj);
+      return {
+        id: index,
+        link_id: obj.id,
+        ukr_name: obj.ukr_name,
+        eng_name: obj.eng_name,
+        rus_name: obj.rus_name,
+        item_id: obj.item_id
+      };
+    });
+
+    console.log('Підготовлені рядки для таблиці:', rows);
+
+    const columns = [
+      {
+        field: 'actions',
+        headerName: 'Дії',
+        width: 70,
+        sortable: false,
+        renderCell: (params) => (
+          <Tooltip title="Видалити">
+            <IconButton
+              onClick={() => handleDeleteClick(params.row.link_id)}
+              size="small"
+              color="error"
+            >
+              <Delete fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )
+      },
+      {
+        field: 'link_id',
+        headerName: 'ID лінка',
+        width: 100,
+        type: 'number'
+      },
+      {
+        field: 'ukr_name',
+        headerName: 'Українська назва',
+        flex: 1,
+        minWidth: 250
+      },
+      {
+        field: 'eng_name',
+        headerName: 'Англійська назва',
+        flex: 1,
+        minWidth: 250
+      },
+      {
+        field: 'rus_name',
+        headerName: 'Московська назва',
+        flex: 1,
+        minWidth: 250
+      },
+      {
+        field: 'item_id',
+        headerName: 'ID об\'єкта',
+        width: 100,
+        type: 'number'
+      }
+    ];
+
     return (
       <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
         <Typography variant="h6" sx={{
@@ -1149,15 +1320,97 @@ export function EditEntityForm<T extends BaseEntity>({
           borderBottom: '2px solid #e3f2fd',
           pb: 1
         }}>
-          Схожі об'єкти
+          Схожі об'єкти ({rows.length})
         </Typography>
 
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {/* Тут буде логіка для відображення схожих об'єктів */}
-          <Typography variant="body2" color="text.secondary">
-            Функціонал знаходиться в розробці...
-          </Typography>
+        <Box sx={{ flex: 1, minHeight: 400 }}>
+          {linkedObjectsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <CircularProgress />
+            </Box>
+          ) : linkedObjectsError ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {linkedObjectsError}
+            </Alert>
+          ) : rows.length === 0 ? (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Немає пов'язаних об'єктів
+            </Alert>
+          ) : (
+            <Box sx={{ height: 400, width: '100%' }}>
+              <DataGrid
+                rows={rows}
+                columns={columns}
+                disableColumnMenu
+                disableRowSelectionOnClick
+                hideFooterPagination
+                hideFooter
+                getRowId={(row) => row.id}
+                density="comfortable"
+                initialState={{
+                  sorting: {
+                    sortModel: [{ field: 'link_id', sort: 'asc' }]
+                  }
+                }}
+                sx={{
+                  border: 'none',
+                  '& .MuiDataGrid-cell': {
+                    borderColor: '#f1f5f9',
+                    fontSize: '0.875rem',
+                    padding: '8px 16px'
+                  },
+                  '& .MuiDataGrid-columnHeaders': {
+                    backgroundColor: '#f8fafc',
+                    borderRadius: 1,
+                    borderBottom: '2px solid #e2e8f0'
+                  },
+                  '& .MuiDataGrid-row': {
+                    '&:hover': {
+                      backgroundColor: '#f1f5f9'
+                    }
+                  },
+                  '& .MuiDataGrid-columnHeaderTitle': {
+                    fontWeight: 600,
+                    color: '#475569'
+                  }
+                }}
+              />
+            </Box>
+          )}
         </Box>
+
+        {/* Діалог підтвердження видалення */}
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={handleDeleteCancel}
+          aria-labelledby="delete-dialog-title"
+          aria-describedby="delete-dialog-description"
+        >
+          <DialogTitle id="delete-dialog-title">
+            Підтвердження видалення
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="delete-dialog-description">
+              Ви дійсно хочете видалити зв'язок з ID {linkToDelete}? Цю дію неможливо відмінити.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={handleDeleteCancel}
+              disabled={isDeleting}
+            >
+              Скасувати
+            </Button>
+            <Button
+              onClick={handleDeleteConfirm}
+              color="error"
+              disabled={isDeleting}
+              startIcon={isDeleting ? <CircularProgress size={20} /> : null}
+            >
+              Видалити
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     );
   };
