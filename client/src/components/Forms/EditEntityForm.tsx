@@ -1299,7 +1299,7 @@ export function EditEntityForm<T extends BaseEntity>({
       },
       {
         field: 'rus_name',
-        headerName: 'Московська назва',
+        headerName: 'Москальська назва',
         flex: 1,
         minWidth: 250
       },
@@ -1343,15 +1343,18 @@ export function EditEntityForm<T extends BaseEntity>({
                 columns={columns}
                 disableColumnMenu
                 disableRowSelectionOnClick
-                hideFooterPagination
-                hideFooter
                 getRowId={(row) => row.id}
                 density="comfortable"
                 initialState={{
                   sorting: {
                     sortModel: [{ field: 'link_id', sort: 'asc' }]
+                  },
+                  pagination: {
+                    paginationModel: { pageSize: 10, page: 0 },
                   }
                 }}
+                pageSizeOptions={[5, 10, 15, 20, 25]}
+                pagination
                 sx={{
                   border: 'none',
                   '& .MuiDataGrid-cell': {
@@ -1372,6 +1375,10 @@ export function EditEntityForm<T extends BaseEntity>({
                   '& .MuiDataGrid-columnHeaderTitle': {
                     fontWeight: 600,
                     color: '#475569'
+                  },
+                  '& .MuiDataGrid-footer': {
+                    borderTop: '1px solid #e2e8f0',
+                    backgroundColor: '#f8fafc'
                   }
                 }}
               />

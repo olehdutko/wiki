@@ -97,7 +97,7 @@ export function EntityDataGrid<T extends BaseEntity>({
     const [loading, setLoading] = useState<LoadingState>({ loading: true, error: null });
     const [pagination, setPagination] = useState({
         page: 0,
-        pageSize: 20,
+        pageSize: 25,
         total: 0
     });
 
@@ -885,6 +885,7 @@ export function EntityDataGrid<T extends BaseEntity>({
                         page: pagination.page,
                         pageSize: pagination.pageSize
                     }}
+                    pageSizeOptions={[20, 25, 35, 50, 75, 100]}
                     rowCount={pagination.total}
                     paginationMode="server"
                     columnVisibilityModel={columnVisibilityModel}
