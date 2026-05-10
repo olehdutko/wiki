@@ -3,10 +3,14 @@
  */
 
 import mysql from 'mysql2/promise';
+import dotenv from 'dotenv';
 import { DatabaseConfig } from '../types/base.types';
 
+// Ensure environment variables are loaded before reading process.env
+dotenv.config();
+
 export const dbConfig: DatabaseConfig = {
-    host: process.env.DB_HOST || 'localhost',
+    host: process.env.DB_HOST || '192.168.1.132',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'weaponry_online_db',

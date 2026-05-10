@@ -439,6 +439,49 @@ class ApiService {
         const response = await this.api.get<ApiResponse>('/info');
         return response.data.data;
     }
+
+    /**
+     * Завантажити повний SQL-дамп БД (mysqldump на сервері).
+     * Якщо на сервері задано DUMP_SECRET, у .env клієнта має бути VITE_DUMP_SECRET з тим самим значенням.
+     */
+    async downloadDatabaseDump(): Promise<void> {
+        const headers: Record<string, string> = {};
+        const secret = import.meta.env.VITE_DUMP_SECRET;
+        if (typeof secret === 'string' && secret.length > 0) {
+            headers['X-Dump-Secret'] = secret;
+        }
+
+        const response = await fetch('/api/database/dump', { method: 'GET', headers });
+
+        if (!response.ok) {
+            let msg = response.statusText;
+            try {
+                const j = (await response.json()) as { message?: string };
+                if (j.message) msg = j.message;
+            } catch {
+                /* ignore */
+            }
+            throw new Error(msg);
+        }
+
+        const blob = await response.blob();
+        let filename = `weaponry_full_${new Date().toISOString().replace(/[:.]/g, '-')}.sql`;
+        const cd = response.headers.get('Content-Disposition');
+        if (cd) {
+            const m = /filename="([^"]+)"/.exec(cd) || /filename=([^;\s]+)/.exec(cd);
+            if (m) filename = decodeURIComponent(m[1].replace(/"/g, ''));
+        }
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    }
 }
 
 // Експорт singleton instance

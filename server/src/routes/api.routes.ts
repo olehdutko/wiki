@@ -10,6 +10,7 @@ import {
     UsageController, WeaponItemController
 } from '../controllers/entities.controllers';
 import { LinksController } from '../controllers/links.controller';
+import { exportDatabaseDump } from '../controllers/database.controller';
 
 const router = Router();
 
@@ -251,6 +252,10 @@ router.delete('/weapons/:id', weaponItemController.delete.bind(weaponItemControl
 router.get('/links/:id', linksController.getLinkedObjects.bind(linksController));
 router.delete('/links/:id', linksController.deleteLink.bind(linksController));
 
+// ================= ЕКСПОРТ БД (mysqldump) =================
+
+router.get('/database/dump', exportDatabaseDump);
+
 // ================= ЗДОРОВ'Я API =================
 
 router.get('/health', (_req, res) => {
@@ -283,7 +288,7 @@ router.get('/info', (_req, res) => {
                 ],
                 categories: ['/api/categories'],
                 weapons: ['/api/weapons'],
-                utilities: ['/api/health', '/api/info']
+                utilities: ['/api/health', '/api/info', '/api/database/dump']
             }
         }
     });

@@ -22,14 +22,16 @@ import {
   Chip,
   useTheme,
   useMediaQuery,
-  Slide,
-  Fade
+  Fade,
+  Snackbar,
+  CircularProgress
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   Refresh as RefreshIcon,
+  CloudDownload as CloudDownloadIcon,
   SportsEsports as WeaponsIcon,
   Category as CategoryIcon,
   Engineering as TypeIcon,
@@ -91,6 +93,8 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentEntity, setCurrentEntity] = useState<EntityType>('weapons');
   const [apiHealthy, setApiHealthy] = useState<boolean | null>(null);
+  const [dumpLoading, setDumpLoading] = useState(false);
+  const [dumpMessage, setDumpMessage] = useState<{ text: string; isError: boolean } | null>(null);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -134,6 +138,20 @@ function App() {
   // Обробник для згортання/розгортання панелі
   const handleSidebarToggle = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleExportDatabase = async () => {
+    setDumpMessage(null);
+    setDumpLoading(true);
+    try {
+      await apiService.downloadDatabaseDump();
+      setDumpMessage({ text: 'Файл дампу збережено', isError: false });
+    } catch (e) {
+      const text = e instanceof Error ? e.message : 'Не вдалося створити дамп';
+      setDumpMessage({ text, isError: true });
+    } finally {
+      setDumpLoading(false);
+    }
   };
 
   // Рендер навігаційної панелі
@@ -287,6 +305,49 @@ function App() {
           <Divider />
         </Box>
       ))}
+
+      <List subheader={
+        <Fade in={sidebarOpen}>
+          <Typography
+            variant="overline"
+            sx={{ px: 2, py: 1, color: 'text.secondary', fontWeight: 'bold' }}
+          >
+            База даних
+          </Typography>
+        </Fade>
+      }>
+        <ListItem disablePadding>
+          <ListItemButton
+            onClick={handleExportDatabase}
+            disabled={apiHealthy !== true || dumpLoading}
+            aria-label="Експорт бази даних (mysqldump)"
+            title="Завантажити SQL-дамп через mysqldump на сервері"
+            sx={{
+              mx: 1,
+              borderRadius: 1,
+              minWidth: sidebarOpen ? 'auto' : '40px',
+              justifyContent: sidebarOpen ? 'flex-start' : 'center',
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: sidebarOpen ? 40 : 'auto' }}>
+              {dumpLoading ? (
+                <CircularProgress size={22} color="inherit" />
+              ) : (
+                <CloudDownloadIcon />
+              )}
+            </ListItemIcon>
+            <Fade in={sidebarOpen}>
+              <ListItemText
+                primary="Експорт БД (dump)"
+                secondary="mysqldump"
+                primaryTypographyProps={{ variant: 'body2' }}
+                secondaryTypographyProps={{ variant: 'caption' }}
+                sx={{ display: sidebarOpen ? 'block' : 'none' }}
+              />
+            </Fade>
+          </ListItemButton>
+        </ListItem>
+      </List>
     </Box>
   );
 
@@ -415,6 +476,24 @@ function App() {
           />
         </Container>
       </Box>
+
+      <Snackbar
+        open={dumpMessage !== null}
+        autoHideDuration={dumpMessage?.isError ? 8000 : 4000}
+        onClose={() => setDumpMessage(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        {dumpMessage ? (
+          <Alert
+            onClose={() => setDumpMessage(null)}
+            severity={dumpMessage.isError ? 'error' : 'success'}
+            variant="filled"
+            sx={{ width: '100%' }}
+          >
+            {dumpMessage.text}
+          </Alert>
+        ) : undefined}
+      </Snackbar>
     </Box>
   );
 }

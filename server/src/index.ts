@@ -121,6 +121,12 @@ async function startServer() {
 
         // Запускаємо сервер
         const server = app.listen(PORT, () => {
+            if (!process.env.DUMP_SECRET) {
+                console.warn(
+                    '⚠️ DUMP_SECRET не задано: /api/database/dump доступний без секрету. ' +
+                        'Для обмеження доступу задайте DUMP_SECRET і X-Dump-Secret на клієнті (VITE_DUMP_SECRET).'
+                );
+            }
             console.log('=================================');
             console.log('🚀 Сервер успішно запущено!');
             console.log(`📍 Адреса: http://localhost:${PORT}`);
