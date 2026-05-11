@@ -27,6 +27,7 @@ import {
 import { VolumeUp, Delete } from '@mui/icons-material';
 import type { GridColDef } from '@mui/x-data-grid';
 import { DataGrid } from '@mui/x-data-grid';
+import { getEntityDisplayName } from '../../config/entities.config';
 
 // Типи
 interface BaseEntity {
@@ -77,6 +78,10 @@ interface EditEntityFormProps<T extends BaseEntity> {
 interface FormData {
   [key: string]: any;
 }
+
+/** Однорядкові поля: сумарно −4px до попереднього макету (40px → 36px). */
+const COMPACT_FIELD_HEIGHT = 36;
+const COMPACT_FIELD_INPUT_PADDING = '6px 12px';
 
 // Імпорт функцій буде виконано динамічно
 
@@ -238,6 +243,21 @@ export function EditEntityForm<T extends BaseEntity>({
   // Функція для отримання назви предмету
   const getItemName = () => {
     if (!entity) return '';
+
+    if (mode === 'create') {
+      if (entityType === 'weapons') {
+        const ukrName = (entity as any).ukr_name;
+        const engName = (entity as any).eng_name;
+        const name = ukrName || engName;
+        if (name) return name;
+      } else {
+        const ukrName = (entity as any).ukr || (entity as any).ukr_name;
+        const engName = (entity as any).eng || (entity as any).eng_name;
+        const name = ukrName || engName;
+        if (name) return name;
+      }
+      return `Новий запис: ${getEntityDisplayName(entityType)}`;
+    }
 
     // Для зброї спробуємо отримати українську назву, потім англійську
     if (entityType === 'weapons') {
@@ -671,13 +691,13 @@ export function EditEntityForm<T extends BaseEntity>({
     return (
       <Box>
         {/* Основна інформація */}
-        <Box sx={{ mb: 4 }}>
+        <Box sx={{ mb: 2 }}>
           <Typography variant="h6" sx={{
             mb: 2,
             color: '#1976d2',
             fontWeight: 600,
             borderBottom: '2px solid #e3f2fd',
-            pb: 1
+            pb: 0
           }}>
             Основна інформація
           </Typography>
@@ -712,17 +732,17 @@ export function EditEntityForm<T extends BaseEntity>({
         </Box>
 
         {/* Розміри */}
-        <Box sx={{ mb: 4 }}>
+        <Box sx={{ mb: 2 }}>
           <Typography variant="h6" sx={{
             mb: 2,
             color: '#1976d2',
             fontWeight: 600,
             borderBottom: '2px solid #e3f2fd',
-            pb: 1
+            pb: 0
           }}>
             Розміри
           </Typography>
-          <Grid container spacing={2} sx={{ mb: 2 }}>
+          <Grid container spacing={2} sx={{ mb: 1 }}>
             {sizeFieldsList.map((field) => (
               <Grid item xs={12} sm={6} md={3} lg={1.5} key={field.name} sx={{ flex: 1 }}>
                 {renderField(field)}
@@ -888,8 +908,8 @@ export function EditEntityForm<T extends BaseEntity>({
               '& .MuiOutlinedInput-root': {
                 borderRadius: 1,
                 background: isReadOnly ? '#f8fafc' : 'white',
-                height: field.name.includes('description_') ? '100%' : '40px',
-                minHeight: field.name.includes('description_') ? '500px' : '40px',
+                height: field.name.includes('description_') ? '100%' : COMPACT_FIELD_HEIGHT,
+                minHeight: field.name.includes('description_') ? '500px' : COMPACT_FIELD_HEIGHT,
                 '&:hover': {
                   '& .MuiOutlinedInput-notchedOutline': {
                     borderColor: fieldError ? '#d32f2f' : '#1976d2'
@@ -931,7 +951,7 @@ export function EditEntityForm<T extends BaseEntity>({
               '& .MuiOutlinedInput-root': {
                 borderRadius: 1,
                 background: isReadOnly ? '#f8fafc' : 'white',
-                height: '40px',
+                height: COMPACT_FIELD_HEIGHT,
                 '&:hover': {
                   '& .MuiOutlinedInput-notchedOutline': {
                     borderColor: fieldError ? '#d32f2f' : '#1976d2'
@@ -965,7 +985,7 @@ export function EditEntityForm<T extends BaseEntity>({
                 }
               },
               '& .MuiInputBase-input': {
-                padding: '8px 12px',
+                padding: COMPACT_FIELD_INPUT_PADDING,
                 fontSize: '0.875rem'
               }
             }}
@@ -1000,7 +1020,7 @@ export function EditEntityForm<T extends BaseEntity>({
                 sx={{
                   borderRadius: 1,
                   background: isReadOnly ? '#f8fafc' : 'white',
-                  height: '40px',
+                  height: COMPACT_FIELD_HEIGHT,
                   '&:hover': {
                     '& .MuiOutlinedInput-notchedOutline': {
                       borderColor: fieldError ? '#d32f2f' : '#1976d2'
@@ -1013,7 +1033,7 @@ export function EditEntityForm<T extends BaseEntity>({
                     }
                   },
                   '& .MuiInputBase-input': {
-                    padding: '8px 12px',
+                    padding: COMPACT_FIELD_INPUT_PADDING,
                     fontSize: '0.875rem'
                   }
                 }}
@@ -1109,7 +1129,7 @@ export function EditEntityForm<T extends BaseEntity>({
                 sx={{
                   borderRadius: 1,
                   background: '#f8fafc',
-                  height: '40px'
+                  height: COMPACT_FIELD_HEIGHT
                 }}
               >
                 <MenuItem>Завантаження...</MenuItem>
@@ -1151,7 +1171,7 @@ export function EditEntityForm<T extends BaseEntity>({
               sx={{
                 borderRadius: 1,
                 background: isReadOnly ? '#f8fafc' : 'white',
-                height: '40px',
+                height: COMPACT_FIELD_HEIGHT,
                 '&:hover': {
                   '& .MuiOutlinedInput-notchedOutline': {
                     borderColor: fieldError ? '#d32f2f' : '#1976d2'
@@ -1164,7 +1184,7 @@ export function EditEntityForm<T extends BaseEntity>({
                   }
                 },
                 '& .MuiInputBase-input': {
-                  padding: '8px 12px',
+                  padding: COMPACT_FIELD_INPUT_PADDING,
                   fontSize: '0.875rem'
                 }
               }}
@@ -1199,7 +1219,7 @@ export function EditEntityForm<T extends BaseEntity>({
               '& .MuiOutlinedInput-root': {
                 borderRadius: 1,
                 background: isReadOnly ? '#f8fafc' : 'white',
-                height: '40px',
+                height: COMPACT_FIELD_HEIGHT,
                 '&:hover': {
                   '& .MuiOutlinedInput-notchedOutline': {
                     borderColor: fieldError ? '#d32f2f' : '#1976d2'
@@ -1228,7 +1248,7 @@ export function EditEntityForm<T extends BaseEntity>({
                 transform: 'translate(14px, -9px) scale(0.75) !important'
               },
               '& .MuiInputBase-input': {
-                padding: '8px 12px',
+                padding: COMPACT_FIELD_INPUT_PADDING,
                 fontSize: '0.875rem'
               }
             }}
@@ -1446,7 +1466,9 @@ export function EditEntityForm<T extends BaseEntity>({
         background: headerColor || 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
         color: 'white',
         borderRadius: '12px 12px 0 0',
-        padding: '24px 32px',
+        pt: 2,
+        px: 3,
+        pb: 1.5,
         position: 'relative',
         '&::after': {
           content: '""',
@@ -1455,7 +1477,7 @@ export function EditEntityForm<T extends BaseEntity>({
           left: 0,
           right: 0,
           height: '1px',
-          background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)'
+          background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.25) 50%, transparent 100%)'
         }
       }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1463,9 +1485,11 @@ export function EditEntityForm<T extends BaseEntity>({
             <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
               {getItemName()}
             </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.875rem' }}>
-              ID: {entity.id}
-            </Typography>
+            {mode !== 'create' && (
+              <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.875rem' }}>
+                ID: {entity.id}
+              </Typography>
+            )}
           </Box>
           <Box sx={{
             display: 'flex',
@@ -1519,6 +1543,51 @@ export function EditEntityForm<T extends BaseEntity>({
             )}
           </Box>
         </Box>
+
+        <Tabs
+          value={activeTab}
+          onChange={handleTabChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          aria-label="edit form tabs"
+          sx={{
+            mt: 1.5,
+            mx: -0.5,
+            minHeight: 0,
+            '& .MuiTab-root': {
+              minHeight: 40,
+              borderRadius: 1.5,
+              mx: 0.5,
+              py: 0.75,
+              fontWeight: 500,
+              textTransform: 'none',
+              fontSize: '0.8125rem',
+              color: 'rgba(255,255,255,0.82)',
+              '&.Mui-selected': {
+                color: '#0f172a',
+                background: 'rgba(255,255,255,0.95)',
+                boxShadow: 'none'
+              },
+              '&:not(.Mui-selected):hover': {
+                color: 'white',
+                background: 'rgba(255,255,255,0.12)'
+              }
+            },
+            '& .MuiTabs-indicator': {
+              display: 'none'
+            },
+            '& .MuiTabs-scrollButtons': {
+              color: 'rgba(255,255,255,0.9)'
+            }
+          }}
+        >
+          <Tab label="Основна інформація" />
+          <Tab label="Опис українською" />
+          <Tab label="Опис англійською" />
+          <Tab label="Опис москальською" />
+          <Tab label="Схожі об'єкти" />
+        </Tabs>
       </DialogTitle>
 
       <DialogContent>
@@ -1527,54 +1596,6 @@ export function EditEntityForm<T extends BaseEntity>({
             {error}
           </Alert>
         )}
-
-        {/* Таби */}
-        <Box sx={{
-          background: 'linear-gradient(135deg, #f8fafc 0%, #e3f2fd 100%)',
-          borderRadius: 2,
-          mx: 3,
-          mt: 3,
-          p: 1
-        }}>
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            aria-label="edit form tabs"
-            sx={{
-              '& .MuiTab-root': {
-                minHeight: 48,
-                borderRadius: 2,
-                mx: 0.5,
-                fontWeight: 500,
-                textTransform: 'none',
-                fontSize: '0.875rem',
-                '&.Mui-selected': {
-                  background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
-                  color: 'white',
-                  boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
-                  transform: 'translateY(-1px)',
-                  transition: 'all 0.2s ease-in-out'
-                },
-                '&:not(.Mui-selected)': {
-                  color: '#64748b',
-                  '&:hover': {
-                    background: 'rgba(25, 118, 210, 0.08)',
-                    color: '#1976d2'
-                  }
-                }
-              },
-              '& .MuiTabs-indicator': {
-                display: 'none'
-              }
-            }}
-          >
-            <Tab label="Основна інформація" />
-            <Tab label="Опис українською" />
-            <Tab label="Опис англійською" />
-            <Tab label="Опис москальською" />
-            <Tab label="Схожі об'єкти" />
-          </Tabs>
-        </Box>
 
         {/* Контент табів */}
         <Box sx={{
@@ -1599,26 +1620,28 @@ export function EditEntityForm<T extends BaseEntity>({
       </DialogContent>
 
       <DialogActions sx={{
-        p: 3,
-        background: 'linear-gradient(135deg, #f8fafc 0%, #e3f2fd 100%)',
+        px: 2,
+        py: 1.25,
+        gap: 1,
+        background: '#fafafa',
+        borderTop: '1px solid',
+        borderColor: 'divider',
         borderRadius: '0 0 12px 12px',
-        borderTop: '1px solid rgba(0, 0, 0, 0.06)'
+        justifyContent: 'flex-end'
       }}>
         <Button
           onClick={handleCancel}
           disabled={loading}
+          variant="text"
+          size="small"
           sx={{
-            borderRadius: 2,
-            px: 4,
-            py: 1.5,
-            fontWeight: 600,
             textTransform: 'none',
             fontSize: '0.875rem',
-            border: '2px solid #e2e8f0',
-            color: '#64748b',
+            color: 'text.secondary',
+            minWidth: 'auto',
+            px: 1.5,
             '&:hover': {
-              borderColor: '#cbd5e1',
-              background: 'rgba(0, 0, 0, 0.04)'
+              background: 'action.hover'
             }
           }}
         >
@@ -1628,32 +1651,16 @@ export function EditEntityForm<T extends BaseEntity>({
           onClick={handleSave}
           variant="contained"
           disabled={loading || !isFormValid()}
+          size="small"
           startIcon={loading ? <CircularProgress size={16} /> : null}
           sx={{
-            borderRadius: 2,
-            px: 4,
-            py: 1.5,
-            fontWeight: 600,
             textTransform: 'none',
             fontSize: '0.875rem',
-            background: isFormValid()
-              ? 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)'
-              : 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)',
-            boxShadow: isFormValid()
-              ? '0 4px 12px rgba(25, 118, 210, 0.3)'
-              : '0 2px 4px rgba(0, 0, 0, 0.1)',
+            fontWeight: 500,
+            px: 2,
+            boxShadow: 'none',
             '&:hover': {
-              background: isFormValid()
-                ? 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)'
-                : 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)',
-              boxShadow: isFormValid()
-                ? '0 6px 16px rgba(25, 118, 210, 0.4)'
-                : '0 2px 4px rgba(0, 0, 0, 0.1)',
-              transform: isFormValid() ? 'translateY(-1px)' : 'none'
-            },
-            '&:disabled': {
-              background: '#e2e8f0',
-              color: '#94a3b8'
+              boxShadow: 'none'
             }
           }}
         >
