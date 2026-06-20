@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { EditEntityForm } from './EditEntityForm';
 import { apiService } from '../../services/api.service';
+import type { EntityType } from '../../types/api.types';
 
 interface BaseEntity {
     id: number;
@@ -8,7 +9,7 @@ interface BaseEntity {
 
 interface CreateEntityFormProps<T extends BaseEntity> {
     open: boolean;
-    entityType: string;
+    entityType: EntityType;
     onClose: () => void;
     onSave: (newEntity: T) => void;
 }

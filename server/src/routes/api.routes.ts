@@ -95,7 +95,16 @@ const weaponItemValidation = [
     body('links').optional().isString().isLength({ max: 750 }),
     body('comments').optional().isString().isLength({ max: 750 }),
     body('source').notEmpty().isString().isLength({ max: 500 }),
-    body('category_id').isInt({ min: 1 })
+    body('category_id').optional().isInt({ min: 1 }),
+    body('category_ids').optional().isArray({ min: 1 }).custom((value) => {
+        if (!Array.isArray(value)) return true;
+        for (const id of value) {
+            if (!Number.isInteger(id) || id < 1) {
+                throw new Error('category_ids must contain positive integers');
+            }
+        }
+        return true;
+    })
 ];
 
 // Валідація для часткового оновлення зброї
@@ -138,7 +147,16 @@ const weaponItemUpdateValidation = [
     body('links').optional().isString().isLength({ max: 750 }),
     body('comments').optional().isString().isLength({ max: 750 }),
     body('source').optional().isString().isLength({ max: 500 }),
-    body('category_id').optional().isInt({ min: 1 })
+    body('category_id').optional().isInt({ min: 1 }),
+    body('category_ids').optional().isArray().custom((value) => {
+        if (!Array.isArray(value)) return true;
+        for (const id of value) {
+            if (!Number.isInteger(id) || id < 1) {
+                throw new Error('category_ids must contain positive integers');
+            }
+        }
+        return true;
+    })
 ];
 
 // ================= БАЗОВІ CRUD РОУТИ ДЛЯ ДОВІДКОВИХ СУТНОСТЕЙ =================

@@ -147,7 +147,7 @@ export class WeaponItemController {
                 sortOrder: (req.query.sortOrder as 'ASC' | 'DESC') || 'DESC'
             };
 
-            const result = await this.weaponService.findAllWithCategory(params);
+            const result = await this.weaponService.findAllWithCategories(params);
 
             res.status(200).json({
                 success: true,
@@ -175,7 +175,7 @@ export class WeaponItemController {
                 return;
             }
 
-            const record = await this.weaponService.findByIdWithCategory(id);
+            const record = await this.weaponService.findByIdWithCategories(id);
 
             if (!record) {
                 res.status(404).json({
@@ -270,7 +270,7 @@ export class WeaponItemController {
 
     async createWeapon(req: Request, res: Response): Promise<void> {
         try {
-            const result = await this.weaponService.create(req.body);
+            const result = await this.weaponService.createWeaponItem(req.body);
 
             res.status(201).json({
                 success: true,
@@ -298,7 +298,7 @@ export class WeaponItemController {
                 return;
             }
 
-            const result = await this.weaponService.update(id, req.body);
+            const result = await this.weaponService.updateWeaponItem(id, req.body);
 
             if (!result) {
                 res.status(404).json({

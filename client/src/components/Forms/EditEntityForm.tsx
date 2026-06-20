@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -9,6 +9,7 @@ import {
   FormControlLabel,
   Switch,
   Box,
+  Chip,
   Grid,
   Typography,
   CircularProgress,
@@ -17,6 +18,7 @@ import {
   Tab,
   Select,
   MenuItem,
+  Autocomplete,
   FormControl,
   InputLabel,
   FormHelperText,
@@ -25,7 +27,7 @@ import {
   DialogContentText
 } from '@mui/material';
 import { VolumeUp, Delete } from '@mui/icons-material';
-import type { GridColDef } from '@mui/x-data-grid';
+
 import { DataGrid } from '@mui/x-data-grid';
 import { getEntityDisplayName } from '../../config/entities.config';
 
@@ -58,7 +60,7 @@ interface EntityConfig {
 interface FormField {
   name: string;
   label: string;
-  type: 'text' | 'textarea' | 'select' | 'number' | 'boolean';
+  type: 'text' | 'textarea' | 'select' | 'multiselect' | 'number' | 'boolean';
   required?: boolean;
   maxLength?: number;
   options?: { value: any; label: string }[];
@@ -110,7 +112,7 @@ export function EditEntityForm<T extends BaseEntity>({
   const [config, setConfig] = useState<EntityConfig | null>(null);
   const [activeTab, setActiveTab] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [currentVoice, setCurrentVoice] = useState<string>('');
+
   const [linkedObjects, setLinkedObjects] = useState<Array<{
     id: number;
     item_id: number;
@@ -178,7 +180,7 @@ export function EditEntityForm<T extends BaseEntity>({
   };
 
   // Функція для тексту в мову
-  const speakText = (text: string, language: string = 'uk-UA') => {
+  const speakText = (text: string, _language: string = 'uk-UA') => {
     if ('speechSynthesis' in window) {
       // Зупиняємо поточне озвучування
       window.speechSynthesis.cancel();
@@ -211,10 +213,10 @@ export function EditEntityForm<T extends BaseEntity>({
       // Якщо знайшли український голос, використовуємо його
       if (ukrainianVoice) {
         utterance.voice = ukrainianVoice;
-        setCurrentVoice(ukrainianVoice.name);
+        
         console.log('🎤 Використовується український голос:', ukrainianVoice.name);
       } else {
-        setCurrentVoice('Стандартний голос');
+        
         console.log('⚠️ Український голос не знайдено, використовується стандартний');
       }
 
@@ -309,12 +311,20 @@ export function EditEntityForm<T extends BaseEntity>({
 
       const initialData: FormData = {};
       config.formFields.forEach(field => {
-        let value = entity[field.name as keyof T];
+        let value: any = (entity as any)[field.name];
 
         console.log(`🔍 Поле ${field.name}:`, { value, type: typeof value, fieldType: field.type });
 
         // Обробляємо різні типи полів
-        if (field.type === 'boolean') {
+        if (field.type === 'multiselect') {
+          if (value === null || value === undefined || value === '') {
+            value = [];
+          } else if (!Array.isArray(value)) {
+            value = [Number(value)];
+          } else {
+            value = value.map((v: any) => Number(v));
+          }
+        } else if (field.type === 'boolean') {
           // Для boolean полів використовуємо Boolean() для конвертації
           // Обробляємо випадки null, undefined, порожній рядок
           if (value === null || value === undefined || value === '') {
@@ -450,7 +460,7 @@ export function EditEntityForm<T extends BaseEntity>({
             );
 
             if (validData) {
-              setLinkedObjects(response);
+              setLinkedObjects(response as any);
               console.log('✅ Дані пов\'язаних об\'єктів встановлено:', {
                 count: response.length,
                 firstItem: response[0]
@@ -523,6 +533,10 @@ export function EditEntityForm<T extends BaseEntity>({
             if (value === null || value === undefined || value === '' || value === 0) {
               validationErrors.push(`Поле "${field.label}" є обов'язковим`);
             }
+          } else if (field.type === 'multiselect') {
+            if (!Array.isArray(value) || value.length === 0) {
+              validationErrors.push(`Поле "${field.label}" є обов'язковим`);
+            }
           } else {
             // Для текстових полів перевіряємо, чи не пустий рядок
             if (!value || value.toString().trim() === '') {
@@ -558,6 +572,10 @@ export function EditEntityForm<T extends BaseEntity>({
           } else if (preparedData[field.name] === '' || preparedData[field.name] === null || preparedData[field.name] === undefined) {
             preparedData[field.name] = null;
           }
+        } else if (field.type === 'multiselect') {
+          preparedData[field.name] = Array.isArray(preparedData[field.name])
+            ? preparedData[field.name].map((v: any) => Number(v))
+            : [];
         }
       });
 
@@ -574,7 +592,7 @@ export function EditEntityForm<T extends BaseEntity>({
         updatedEntity = await apiService.updateEntity(entityType, entity.id, preparedData);
       }
 
-      onSave(updatedEntity);
+      onSave(updatedEntity as T);
       onClose();
     } catch (error: any) {
       setError(error.message || 'Помилка збереження');
@@ -587,7 +605,7 @@ export function EditEntityForm<T extends BaseEntity>({
     onClose();
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
@@ -602,6 +620,8 @@ export function EditEntityForm<T extends BaseEntity>({
       return true; // Boolean поля завжди валідні
     } else if (field.type === 'select') {
       return value !== null && value !== undefined && value !== '' && value !== 0;
+    } else if (field.type === 'multiselect') {
+      return Array.isArray(value) && value.length > 0;
     } else {
       return value && value.toString().trim() !== '';
     }
@@ -658,7 +678,7 @@ export function EditEntityForm<T extends BaseEntity>({
       !sizeFields.includes(field.name) &&
       !bottomFields.includes(field.name) &&
       field.name !== 'ready' &&
-      field.name !== 'category_id'
+      field.name !== 'category_ids'
     );
 
     // Функція для групування полів по 3 в ряд
@@ -706,11 +726,11 @@ export function EditEntityForm<T extends BaseEntity>({
 
           {/* Поле категорії окремим рядком */}
           {(() => {
-            const categoryField = mainFields.find(field => field.name === 'category_id');
+            const categoryField = mainFields.find(field => field.name === 'category_ids');
             if (categoryField) {
               return (
                 <Grid container spacing={2} sx={{ mb: 2 }}>
-                  <Grid item xs={12}>
+                  <Grid  size={{ xs: 12 }}>
                     {renderField(categoryField)}
                   </Grid>
                 </Grid>
@@ -723,7 +743,7 @@ export function EditEntityForm<T extends BaseEntity>({
           {basicInfoGroups.map((group, groupIndex) => (
             <Grid container spacing={2} key={`basic-${groupIndex}`} sx={{ mb: 2 }}>
               {group.map((field) => (
-                <Grid item xs={12} sm={6} md={4} lg={4} key={field.name} sx={{ flex: 1 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 4, lg: 4 }} key={field.name} sx={{ flex: 1 }}>
                   {renderField(field)}
                 </Grid>
               ))}
@@ -744,7 +764,7 @@ export function EditEntityForm<T extends BaseEntity>({
           </Typography>
           <Grid container spacing={2} sx={{ mb: 1 }}>
             {sizeFieldsList.map((field) => (
-              <Grid item xs={12} sm={6} md={3} lg={1.5} key={field.name} sx={{ flex: 1 }}>
+              <Grid key={field.name} sx={{ flex: 1 }} size={{ xs: 12, sm: 6, md: 3, lg: 1.5 }}>
                 {renderField(field)}
               </Grid>
             ))}
@@ -765,7 +785,7 @@ export function EditEntityForm<T extends BaseEntity>({
           {otherGroups.map((group, groupIndex) => (
             <Grid container spacing={2} key={`other-${groupIndex}`} sx={{ mb: 2 }}>
               {group.map((field) => (
-                <Grid item xs={12} sm={6} md={3} lg={3} key={field.name} sx={{ flex: 1 }}>
+                <Grid size={{ xs: 12, sm: 6, md: 3, lg: 3 }} key={field.name} sx={{ flex: 1 }}>
                   {renderField(field)}
                 </Grid>
               ))}
@@ -786,7 +806,7 @@ export function EditEntityForm<T extends BaseEntity>({
           </Typography>
           <Grid container spacing={2}>
             {bottomFieldsList.map((field) => (
-              <Grid item xs={12} sm={6} md={4} lg={4} key={field.name} sx={{ flex: 1 }}>
+              <Grid size={{ xs: 12, sm: 6, md: 4, lg: 4 }} key={field.name} sx={{ flex: 1 }}>
                 {renderField(field)}
               </Grid>
             ))}
@@ -992,67 +1012,81 @@ export function EditEntityForm<T extends BaseEntity>({
           />
         );
 
-      case 'select':
-        if (field.name === 'category_id') {
-          return (
-            <FormControl fullWidth size="small" error={!!fieldError}>
-              <InputLabel
-                id={`${field.name}-label`}
-                sx={{
-                  fontWeight: 500,
-                  color: fieldError ? '#d32f2f' : '#64748b',
-                  fontSize: '0.75rem',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  maxWidth: '100%'
-                }}
-              >
-                {getLabel()}
-              </InputLabel>
-              <Select
-                labelId={`${field.name}-label`}
-                value={String(value || '')}
+      case 'multiselect':
+        return (
+          <Autocomplete
+            multiple
+            size="small"
+            disabled={isReadOnly}
+            options={categories || []}
+            value={(categories || []).filter(c => Array.isArray(value) && value.includes(c.id))}
+            getOptionLabel={(option) => option.ukr_name || ''}
+            isOptionEqualToValue={(option, val) => option.id === val.id}
+            onChange={(_, newValue) => {
+              handleInputChange(field.name, newValue.map(c => c.id));
+            }}
+            renderTags={(selected, getTagProps) => (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                {selected.map((category, index) => (
+                  <Chip
+                    {...getTagProps({ index })}
+                    key={category.id}
+                    label={category.ukr_name}
+                    size="small"
+                    onDelete={() => {
+                      const newIds = (Array.isArray(value) ? value : []).filter(id => id !== category.id);
+                      handleInputChange(field.name, newIds);
+                    }}
+                    sx={{
+                      backgroundColor: '#e3f2fd',
+                      '&:hover': {
+                        backgroundColor: '#bbdefb'
+                      },
+                      '& .MuiChip-deleteIcon': {
+                        color: '#ef9a9a',
+                        transition: 'color 0.2s ease',
+                        '&:hover': {
+                          color: '#d32f2f'
+                        }
+                      }
+                    }}
+                  />
+                ))}
+              </Box>
+            )}
+            renderOption={(props, option, { selected }) => (
+              <li {...props} style={{ backgroundColor: selected ? '#e3f2fd' : 'inherit', fontWeight: selected ? 600 : 400 }}>
+                {option.ukr_name}
+              </li>
+            )}
+            renderInput={(params) => (
+              <TextField
+                {...params}
                 label={getLabel()}
-                onChange={(e) => handleInputChange(field.name, Number(e.target.value))}
-                disabled={isReadOnly}
+                error={!!fieldError}
+                helperText={fieldError}
+                size="small"
                 required={isRequired}
                 sx={{
                   borderRadius: 1,
                   background: isReadOnly ? '#f8fafc' : 'white',
-                  height: COMPACT_FIELD_HEIGHT,
-                  '&:hover': {
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: fieldError ? '#d32f2f' : '#1976d2'
-                    }
+                  minHeight: COMPACT_FIELD_HEIGHT,
+                  '& .MuiInputBase-root': {
+                    paddingTop: '3px',
+                    paddingBottom: '3px',
+                    minHeight: COMPACT_FIELD_HEIGHT
                   },
-                  '&.Mui-focused': {
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: fieldError ? '#d32f2f' : '#1976d2',
-                      borderWidth: 2
-                    }
-                  },
-                  '& .MuiInputBase-input': {
-                    padding: COMPACT_FIELD_INPUT_PADDING,
-                    fontSize: '0.875rem'
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: fieldError ? '#d32f2f' : undefined
                   }
                 }}
-              >
-                <MenuItem value="">Виберіть...</MenuItem>
-                {categories?.map((category) => (
-                  <MenuItem key={category.id} value={category.id}>
-                    {category.ukr_name}
-                  </MenuItem>
-                )) || []}
-              </Select>
-              {fieldError && (
-                <FormHelperText error>{fieldError}</FormHelperText>
-              )}
-            </FormControl>
-          );
-        }
+              />
+            )}
+          />
+        );
 
-        // Обробка інших select полів
+      case 'select':
+        // Обробка select полів
         let options: Array<{ id: number, ukr: string }> = [];
         switch (field.name) {
           case 'epoha':
@@ -1281,13 +1315,13 @@ export function EditEntityForm<T extends BaseEntity>({
 
     console.log('Підготовлені рядки для таблиці:', rows);
 
-    const columns = [
+    const columns: any[] = [
       {
         field: 'actions',
         headerName: 'Дії',
         width: 70,
         sortable: false,
-        renderCell: (params) => (
+        renderCell: (params: any) => (
           <Tooltip title="Видалити">
             <IconButton
               onClick={() => handleDeleteClick(params.row.link_id)}

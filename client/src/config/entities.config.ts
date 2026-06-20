@@ -18,7 +18,7 @@ export interface GridColumn {
 export interface FormField {
     name: string;
     label: string;
-    type: 'text' | 'textarea' | 'select' | 'number' | 'boolean';
+    type: 'text' | 'textarea' | 'select' | 'multiselect' | 'number' | 'boolean';
     required?: boolean;
     maxLength?: number;
     options?: { value: any; label: string }[];
@@ -166,7 +166,7 @@ const weaponFormFields: FormField[] = [
     { name: 'sharpening', label: 'Заточення', type: 'select', maxLength: 10 },
 
     // Додаткова інформація
-    { name: 'category_id', label: 'Категорія', type: 'select', required: true },
+    { name: 'category_ids', label: 'Категорії', type: 'multiselect', required: true },
     { name: 'source', label: 'Джерело', type: 'textarea', maxLength: 500 },
     { name: 'links', label: 'Посилання', type: 'textarea', maxLength: 750 },
     { name: 'comments', label: 'Коментарі', type: 'textarea', maxLength: 750 }

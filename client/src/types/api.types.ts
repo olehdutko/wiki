@@ -93,7 +93,9 @@ export interface WeaponItem extends BaseEntity {
     comments?: string | null;
     source: string;
     category_id: number;
+    category_ids?: number[];
     // Додаткові поля для відображення назв
+    category_name?: string | null;
     epoha_name?: string | null;
     guard_type_name?: string | null;
     blade_type_name?: string | null;
@@ -116,7 +118,7 @@ export interface WeaponItemResponse extends WeaponItem {
 
 // ================= DTO для створення/оновлення =================
 
-export interface CreateWeaponItemDto extends Omit<WeaponItem, 'id'> { }
+export interface CreateWeaponItemDto extends Omit<WeaponItem, 'id' | 'category_name'> { }
 
 export interface UpdateWeaponItemDto extends Partial<CreateWeaponItemDto> { }
 

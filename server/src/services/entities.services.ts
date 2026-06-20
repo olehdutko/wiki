@@ -138,7 +138,155 @@ export class WeaponItemService extends BaseService<WeaponItem> {
         return converted;
     }
 
-    async findAllWithCategory(params: PaginationParams): Promise<PaginatedResponse<WeaponItem>> {
+    /**
+     * Отримати категорії для списку айтемів
+     */
+    private async loadCategoriesForItems(itemIds: number[]): Promise<Map<number, Category[]>> {
+        if (itemIds.length === 0) {
+            return new Map();
+        }
+
+        const placeholders = itemIds.map(() => '?').join(',');
+        const [rows] = await pool.execute(
+            `SELECT ic.item_id, ic.category_id, ic.is_primary, c.ukr_name, c.eng_name, c.comments
+             FROM item_categories ic
+             JOIN categories c ON ic.category_id = c.id
+             WHERE ic.item_id IN (${placeholders})
+             ORDER BY ic.is_primary DESC, c.ukr_name`,
+            itemIds
+        ) as [RowDataPacket[], any];
+
+        const result = new Map<number, Category[]>();
+        for (const row of rows) {
+            const category: Category = {
+                id: row.category_id,
+                ukr_name: row.ukr_name,
+                eng_name: row.eng_name,
+                comments: row.comments
+            };
+
+            if (!result.has(row.item_id)) {
+                result.set(row.item_id, []);
+            }
+            result.get(row.item_id)!.push(category);
+        }
+
+        return result;
+    }
+
+    /**
+     * Зберегти зв'язки категорій для айтема
+     */
+    private async saveItemCategories(itemId: number, categoryIds: number[] | undefined, isPrimaryCategoryId?: number | null): Promise<Category[]> {
+        // Якщо categoryIds не передано — нічого не змінюємо, повертаємо поточні
+        if (!categoryIds || !Array.isArray(categoryIds)) {
+            return this.getItemCategories(itemId);
+        }
+
+        // Нормалізуємо: унікальні ID, перше — основне
+        const uniqueIds = [...new Set(categoryIds.filter(id => Number.isInteger(id) && id > 0))];
+        if (uniqueIds.length === 0) {
+            await pool.execute('DELETE FROM item_categories WHERE item_id = ?', [itemId]);
+            return [];
+        }
+
+        const primaryId = isPrimaryCategoryId && uniqueIds.includes(isPrimaryCategoryId)
+            ? isPrimaryCategoryId
+            : uniqueIds[0];
+
+        const connection = await pool.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            // Видалити старі зв'язки
+            await connection.execute('DELETE FROM item_categories WHERE item_id = ?', [itemId]);
+
+            // Вставити нові
+            const values = uniqueIds.map((catId) => [
+                itemId,
+                catId,
+                catId === primaryId ? 1 : 0
+            ]);
+
+            await connection.query(
+                `INSERT INTO item_categories (item_id, category_id, is_primary) VALUES ?`,
+                [values]
+            );
+
+            await connection.commit();
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+
+        return this.getItemCategories(itemId);
+    }
+
+    /**
+     * Отримати категорії конкретного айтема
+     */
+    private async getItemCategories(itemId: number): Promise<Category[]> {
+        const [rows] = await pool.execute(
+            `SELECT ic.category_id, ic.is_primary, c.ukr_name, c.eng_name, c.comments
+             FROM item_categories ic
+             JOIN categories c ON ic.category_id = c.id
+             WHERE ic.item_id = ?
+             ORDER BY ic.is_primary DESC, c.ukr_name`,
+            [itemId]
+        ) as [RowDataPacket[], any];
+
+        return rows.map((row: any) => ({
+            id: row.category_id,
+            ukr_name: row.ukr_name,
+            eng_name: row.eng_name,
+            comments: row.comments
+        })) as Category[];
+    }
+
+    /**
+     * Допоміжний метод для отримання items з опціональним фільтром.
+     * Не використовує GROUP_CONCAT для категорій, щоб уникнути втрати категорій
+     * при фільтрації по одній з них.
+     */
+    private buildItemWithCategoriesQuery(whereClause = '', orderBy = 'i.id', limit?: number, offset?: number): string {
+        let sql = `SELECT i.* FROM items i`;
+
+        if (whereClause) {
+            sql += ` WHERE ${whereClause}`;
+        }
+
+        sql += ` ORDER BY ${orderBy}`;
+
+        if (limit !== undefined && offset !== undefined) {
+            sql += ` LIMIT ${limit} OFFSET ${offset}`;
+        }
+
+        return sql;
+    }
+
+    /**
+     * Видалити запис зброї та всі зв'язки з категоріями
+     */
+    async delete(id: number): Promise<boolean> {
+        const connection = await pool.getConnection();
+        try {
+            await connection.beginTransaction();
+            await connection.execute('DELETE FROM item_categories WHERE item_id = ?', [id]);
+            await connection.execute('DELETE FROM links WHERE item_id = ? OR other_item = ?', [id, id]);
+            await connection.execute('DELETE FROM items WHERE id = ?', [id]);
+            await connection.commit();
+            return true;
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
+
+    async findAllWithCategories(params: PaginationParams): Promise<PaginatedResponse<WeaponItemResponse>> {
         const {
             page = 1,
             limit = 20,
@@ -156,41 +304,66 @@ export class WeaponItemService extends BaseService<WeaponItem> {
 
             const total = countResult[0].total;
 
-            // Get items with category
-            const [rows] = await pool.query(`
-                SELECT i.*, c.ukr_name as category_name
-                FROM items i
-                LEFT JOIN categories c ON i.category_id = c.id
-                ORDER BY i.${sortBy} ${sortOrder}
-                LIMIT ? OFFSET ?
-            `, [limit, offset]);
+            // Get items with categories
+            const [rows] = await pool.query(
+                this.buildItemWithCategoriesQuery('', `i.${sortBy} ${sortOrder}`, limit, offset)
+            );
+
+            const items = (rows as any[]).map(row => {
+                const converted = this.convertDatabaseValues(row);
+                converted.category_ids = [];
+                converted.categories_data = [];
+                return converted;
+            });
+
+            // Явно завантажуємо категорії, щоб у відповіді були повні об'єкти
+            const itemIds = items.map(item => item.id);
+            const categoriesMap = await this.loadCategoriesForItems(itemIds);
+            for (const item of items) {
+                item.categories_data = categoriesMap.get(item.id) || [];
+                item.category_ids = (item.categories_data as any[]).map((c: any) => c.id);
+                (item as any).category_names = (item.categories_data as any[]).map((c: any) => c.ukr_name).join(', ');
+                if (item.categories_data.length > 0 && !item.category_name) {
+                    item.category_name = item.categories_data[0].ukr_name;
+                }
+            }
 
             return {
-                items: rows as WeaponItem[],
+                items: items as WeaponItemResponse[],
                 total,
                 page,
                 limit,
                 totalPages: Math.ceil(total / limit)
             };
         } catch (error) {
-            console.error('Error in findAllWithCategory:', error);
+            console.error('Error in findAllWithCategories:', error);
             throw error;
         }
     }
 
-    async findByIdWithCategory(id: number): Promise<WeaponItem | null> {
+    async findByIdWithCategories(id: number): Promise<WeaponItemResponse | null> {
         try {
-            const [rows] = await pool.query(`
-                SELECT i.*, c.ukr_name as category_name
-                FROM items i
-                LEFT JOIN categories c ON i.category_id = c.id
-                WHERE i.id = ?
-            `, [id]);
+            const [rows] = await pool.query(
+                this.buildItemWithCategoriesQuery('i.id = ?'),
+                [id]
+            );
 
-            const items = rows as WeaponItem[];
-            return items.length > 0 ? items[0] : null;
+            const items = rows as any[];
+            if (items.length === 0) {
+                return null;
+            }
+
+            const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
+            converted.categories_data = await this.getItemCategories(id);
+            converted.category_ids = (converted.categories_data as any[]).map((c: any) => c.id);
+            (converted as any).category_names = (converted.categories_data as any[]).map((c: any) => c.ukr_name).join(', ');
+            if (converted.categories_data.length > 0 && !converted.category_name) {
+                converted.category_name = converted.categories_data[0].ukr_name;
+            }
+
+            return converted;
         } catch (error) {
-            console.error('Error in findByIdWithCategory:', error);
+            console.error('Error in findByIdWithCategories:', error);
             throw error;
         }
     }
@@ -200,14 +373,31 @@ export class WeaponItemService extends BaseService<WeaponItem> {
      */
     async createWeaponItem(data: CreateWeaponItemDto): Promise<WeaponItemResponse> {
         try {
-            const created = await this.create(data);
-            const withCategory = await this.findByIdWithCategory(created.id);
+            const categoryIds = data.category_ids;
 
-            if (!withCategory) {
+            // Видаляємо масив категорій перед базовим create, бо в таблиці items немає такої колонки
+            const itemData = { ...data } as any;
+            delete itemData.category_ids;
+
+            // Визначаємо primary category_id для резервного поля items.category_id
+            if (categoryIds && Array.isArray(categoryIds) && categoryIds.length > 0) {
+                itemData.category_id = categoryIds[0];
+            } else if (!itemData.category_id) {
+                itemData.category_id = 1; // fallback
+            }
+
+            const created = await this.create(itemData);
+
+            if (categoryIds) {
+                await this.saveItemCategories(created.id, categoryIds, itemData.category_id);
+            }
+
+            const withCategories = await this.findByIdWithCategories(created.id);
+            if (!withCategories) {
                 throw new Error('Створений запис не знайдено');
             }
 
-            return withCategory;
+            return withCategories;
         } catch (error) {
             console.error('Помилка при створенні запису зброї:', error);
             throw new Error('Не вдалося створити запис зброї');
@@ -219,12 +409,28 @@ export class WeaponItemService extends BaseService<WeaponItem> {
      */
     async updateWeaponItem(id: number, data: UpdateWeaponItemDto): Promise<WeaponItemResponse | null> {
         try {
-            const updated = await this.update(id, data);
+            const categoryIds = data.category_ids;
+
+            // Видаляємо масив категорій перед базовим update
+            const itemData = { ...data } as any;
+            delete itemData.category_ids;
+
+            // Якщо прийшов новий масив — синхронізуємо category_id в items
+            if (categoryIds && Array.isArray(categoryIds)) {
+                const uniqueIds = [...new Set(categoryIds.filter(id => Number.isInteger(id) && id > 0))];
+                itemData.category_id = uniqueIds.length > 0 ? uniqueIds[0] : null;
+            }
+
+            const updated = await this.update(id, itemData);
             if (!updated) {
                 return null;
             }
 
-            return await this.findByIdWithCategory(id);
+            if (categoryIds !== undefined) {
+                await this.saveItemCategories(id, categoryIds, itemData.category_id);
+            }
+
+            return await this.findByIdWithCategories(id);
         } catch (error) {
             console.error(`Помилка при оновленні запису зброї з ID ${id}:`, error);
             throw new Error(`Не вдалося оновити запис зброї з ID ${id}`);
@@ -246,7 +452,7 @@ export class WeaponItemService extends BaseService<WeaponItem> {
     /**
      * Extended search method with pagination support
      */
-    async searchWithPagination(searchTerm: string, params: PaginationParams): Promise<PaginatedResponse<WeaponItem>> {
+    async searchWithPagination(searchTerm: string, params: PaginationParams): Promise<PaginatedResponse<WeaponItemResponse>> {
         const {
             page = 1,
             limit = 20,
@@ -268,17 +474,35 @@ export class WeaponItemService extends BaseService<WeaponItem> {
             const total = countResult[0].total;
 
             // Get search results
-            const [rows] = await pool.query(`
-                SELECT i.*, c.ukr_name as category_name
-                FROM items i
-                LEFT JOIN categories c ON i.category_id = c.id
-                WHERE i.ukr_name LIKE ? OR i.eng_name LIKE ? OR i.rus_name LIKE ?
-                ORDER BY i.${sortBy} ${sortOrder}
-                LIMIT ? OFFSET ?
-            `, [searchPattern, searchPattern, searchPattern, limit, offset]);
+            const [rows] = await pool.query(
+                this.buildItemWithCategoriesQuery(
+                    'i.ukr_name LIKE ? OR i.eng_name LIKE ? OR i.rus_name LIKE ?',
+                    `i.${sortBy} ${sortOrder}`,
+                    limit,
+                    offset
+                ),
+                [searchPattern, searchPattern, searchPattern]
+            );
+
+            const items = (rows as any[]).map(row => {
+                const converted = this.convertDatabaseValues(row);
+                converted.category_ids = [];
+                return converted;
+            });
+
+            const itemIds = items.map(item => item.id);
+            const categoriesMap = await this.loadCategoriesForItems(itemIds);
+            for (const item of items) {
+                item.categories_data = categoriesMap.get(item.id) || [];
+                item.category_ids = (item.categories_data as any[]).map((c: any) => c.id);
+                (item as any).category_names = (item.categories_data as any[]).map((c: any) => c.ukr_name).join(', ');
+                if (item.categories_data.length > 0 && !item.category_name) {
+                    item.category_name = item.categories_data[0].ukr_name;
+                }
+            }
 
             return {
-                items: rows as WeaponItem[],
+                items: items as WeaponItemResponse[],
                 total,
                 page,
                 limit,
@@ -290,7 +514,7 @@ export class WeaponItemService extends BaseService<WeaponItem> {
         }
     }
 
-    async findByCategory(categoryId: number, params: PaginationParams): Promise<PaginatedResponse<WeaponItem>> {
+    async findByCategory(categoryId: number, params: PaginationParams): Promise<PaginatedResponse<WeaponItemResponse>> {
         const {
             page = 1,
             limit = 20,
@@ -301,26 +525,44 @@ export class WeaponItemService extends BaseService<WeaponItem> {
         const offset = (page - 1) * limit;
 
         try {
-            // Get total count for category
+            // Get total count for category (use item_categories table)
             const [countResult] = await pool.execute(
-                'SELECT COUNT(*) as total FROM items WHERE category_id = ?',
+                'SELECT COUNT(DISTINCT item_id) as total FROM item_categories WHERE category_id = ?',
                 [categoryId]
             ) as [RowDataPacket[], any];
 
             const total = countResult[0].total;
 
-            // Get items for category
-            const [rows] = await pool.query(`
-                SELECT i.*, c.ukr_name as category_name
-                FROM items i
-                LEFT JOIN categories c ON i.category_id = c.id
-                WHERE i.category_id = ?
-                ORDER BY i.${sortBy} ${sortOrder}
-                LIMIT ? OFFSET ?
-            `, [categoryId, limit, offset]);
+            // Get items for category via subselect to keep all item categories
+            const [rows] = await pool.query(
+                this.buildItemWithCategoriesQuery(
+                    `i.id IN (SELECT item_id FROM item_categories WHERE category_id = ?)`,
+                    `i.${sortBy} ${sortOrder}`,
+                    limit,
+                    offset
+                ),
+                [categoryId]
+            );
+
+            const items = (rows as any[]).map(row => {
+                const converted = this.convertDatabaseValues(row);
+                converted.category_ids = [];
+                return converted;
+            });
+
+            const itemIds = items.map(item => item.id);
+            const categoriesMap = await this.loadCategoriesForItems(itemIds);
+            for (const item of items) {
+                item.categories_data = categoriesMap.get(item.id) || [];
+                item.category_ids = (item.categories_data as any[]).map((c: any) => c.id);
+                (item as any).category_names = (item.categories_data as any[]).map((c: any) => c.ukr_name).join(', ');
+                if (item.categories_data.length > 0 && !item.category_name) {
+                    item.category_name = item.categories_data[0].ukr_name;
+                }
+            }
 
             return {
-                items: rows as WeaponItem[],
+                items: items as WeaponItemResponse[],
                 total,
                 page,
                 limit,
@@ -378,4 +620,4 @@ export class ServiceFactory {
 
         return this.instances.get(entityName);
     }
-} 
+}

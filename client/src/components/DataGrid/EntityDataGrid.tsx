@@ -23,7 +23,7 @@ import {
     IconButton,
     Tooltip,
     Alert,
-    Chip,
+
     CircularProgress,
     FormControl,
     InputLabel,
@@ -42,10 +42,7 @@ import {
 
 import type {
     EntityType,
-    BaseEntity,
-    PaginationParams,
-    PaginatedResponse,
-    Category
+    BaseEntity
 } from '../../types/api.types';
 import { apiService } from '../../services/api.service';
 import { getEntityConfig, type EntityConfig } from '../../config/entities.config';
@@ -59,6 +56,7 @@ interface EntityDataGridProps<T extends BaseEntity> {
     title?: string;
     onRowSelect?: (row: T) => void;
     onRowEdit?: (row: T) => void;
+
     height?: number;
     enableAdd?: boolean;
     enableEdit?: boolean;
@@ -185,10 +183,11 @@ export function EntityDataGrid<T extends BaseEntity>({
 
             console.log('📊 EntityDataGrid received data:', result);
             console.log('📊 First item sample:', result.items[0]);
+            const firstItem = result.items[0] as any;
             console.log('📝 Description fields in first item:', {
-                description_ukr: result.items[0]?.description_ukr,
-                description_eng: result.items[0]?.description_eng,
-                description_rus: result.items[0]?.description_rus
+                description_ukr: firstItem?.description_ukr,
+                description_eng: firstItem?.description_eng,
+                description_rus: firstItem?.description_rus
             });
 
             // Трансформуємо дані для weapons, щоб додати зручні поля для відображення
@@ -196,7 +195,13 @@ export function EntityDataGrid<T extends BaseEntity>({
             if (entityType === 'weapons') {
                 processedItems = result.items.map((item: any) => ({
                     ...item,
-                    category_name: item.category?.ukr_name || 'Не вказано',
+                    category_name: (item.categories_data || item.category_data || item.category?.ukr_name)
+                        ? Array.isArray(item.categories_data)
+                            ? item.categories_data.map((c: any) => c.ukr_name || c.ukr || 'Невідомо').join(', ')
+                            : Array.isArray(item.category_data)
+                                ? item.category_data.map((c: any) => c.ukr_name || c.ukr || 'Невідомо').join(', ')
+                                : item.category?.ukr_name || 'Не вказано'
+                        : 'Не вказано',
                     epoha_name: item.epoha_data?.ukr || 'Не вказано',
                     guard_type_name: item.guard_type_data?.ukr || 'Не вказано',
                     blade_type_name: item.blade_type_data?.ukr || 'Не вказано',
@@ -206,7 +211,7 @@ export function EntityDataGrid<T extends BaseEntity>({
                 }));
             }
 
-            setData(processedItems);
+            setData(processedItems as any);
             setPagination(prev => ({
                 ...prev,
                 total: result.total,
@@ -286,6 +291,7 @@ export function EntityDataGrid<T extends BaseEntity>({
     };
 
     const handleEditClick = (row: T) => {
+        if (onRowEdit) onRowEdit(row);
         setEditDialog({ open: true, row });
     };
 
@@ -329,7 +335,7 @@ export function EntityDataGrid<T extends BaseEntity>({
                 searchQuery.trim()
             );
 
-            setData(results as T[]);
+            setData(results as any[]);
             setPagination(prev => ({ ...prev, total: results.length, page: 0 }));
             setLoading({ loading: false, error: null });
             setSearchDialog(false);
@@ -345,7 +351,7 @@ export function EntityDataGrid<T extends BaseEntity>({
     // ================= INLINE EDITING =================
 
     // Стан для нового рядка
-    const [newRow, setNewRow] = useState<{ id: string; ukr: string; eng: string; rus: string; isNew: boolean } | null>(null);
+    const [newRow, setNewRow] = useState<any | null>(null);
     const [isCreating, setIsCreating] = useState(false);
 
     // Функція для отримання полів для нового рядка
@@ -353,6 +359,8 @@ export function EntityDataGrid<T extends BaseEntity>({
         switch (entityType) {
             case 'categories':
                 return ['ukr_name', 'eng_name', 'comments'];
+            case 'weapons':
+                return ['ukr_name', 'eng_name', 'rus_name', 'category_ids'];
             default:
                 return ['ukr', 'eng', 'rus'];
         }
@@ -433,7 +441,7 @@ export function EntityDataGrid<T extends BaseEntity>({
             console.log('✅ Нова сутність створена:', createdEntity);
 
             // Додаємо новий рядок до таблиці
-            setData(prev => [createdEntity, ...prev.filter(item => !item.isNew)]);
+            setData((prev: any[]) => [createdEntity, ...prev.filter((item: any) => !item.isNew)] as any);
             setPagination(prev => ({ ...prev, total: prev.total + 1 }));
 
             // Очищаємо стан
@@ -452,42 +460,9 @@ export function EntityDataGrid<T extends BaseEntity>({
         setIsCreating(false);
     };
 
-    // Функція для зміни значень у новому рядку
-    const handleNewRowChange = (field: string, value: string) => {
-        console.log('🔄 handleNewRowChange викликано:', { field, value, currentNewRow: newRow });
-
-        if (!newRow) {
-            console.warn('❌ handleNewRowChange: немає даних нового рядка');
-            return;
-        }
-
-        const updatedRow = {
-            ...newRow,
-            [field]: value
-        };
-
-        console.log('📝 Оновлюємо рядок:', {
-            oldRow: newRow,
-            updatedRow,
-            field,
-            value
-        });
-
-        setNewRow(updatedRow);
-
-        // Оновлюємо дані в таблиці
-        setData(prev => {
-            const newData = [...prev];
-            const index = newData.findIndex(row => row.id === newRow.id);
-            if (index !== -1) {
-                newData[index] = updatedRow;
-            }
-            return newData;
-        });
-    };
 
     // Функція для обробки зміни значень в клітинках
-    const handleCellEditCommit = async (params: any) => {
+    const handleCellEditCommit = async (params: { id: number; field: string; value: any; row: any }) => {
         console.log('🔄 handleCellEditCommit викликано з параметрами:', params);
         console.log('🔍 Тип сутності:', entityType);
         console.log('✅ Підтримує inline редагування:', supportsInlineEditing(entityType));
@@ -500,7 +475,7 @@ export function EntityDataGrid<T extends BaseEntity>({
             // Якщо це новий рядок, просто оновлюємо локальний стан
             if (isNewRow) {
                 console.log('📝 Оновлюємо дані нового рядка:', { field, value });
-                setNewRow(prev => prev ? { ...prev, [field]: value } : null);
+                setNewRow((prev: any) => prev ? { ...prev, [field]: value } : null);
                 return;
             }
 
@@ -786,7 +761,7 @@ export function EntityDataGrid<T extends BaseEntity>({
                             <InputLabel id="category-filter-label">Фільтр по категорії</InputLabel>
                             <Select
                                 labelId="category-filter-label"
-                                value={selectedCategoryId || ''}
+                                value={String(selectedCategoryId || '')}
                                 label="Фільтр по категорії"
                                 onChange={(e) => handleCategoryChange(e.target.value === '' ? null : Number(e.target.value))}
                                 disabled={categoriesLoading}
@@ -867,7 +842,7 @@ export function EntityDataGrid<T extends BaseEntity>({
             <Box sx={{ flexGrow: 1, height: '95%' }}>
                 <DataGrid
                     rows={newRow ? [newRow, ...data] : data}
-                    getRowId={(row) => row.isNew ? newRow?.id || -1 : row.id}
+                    getRowId={(row) => row.isNew ? (newRow?.id ?? -1) : row.id}
                     columns={columns.map(col => ({
                         ...col,
                         editable: getNewRowFields(entityType).includes(col.field),

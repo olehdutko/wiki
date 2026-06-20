@@ -333,16 +333,24 @@ export class WeaponItem implements BaseEntity {
 
     @IsNumber()
     category_id!: number;
+
+    @IsOptional()
+    category_ids?: number[];
+
+    @IsOptional()
+    categories_data?: Category[];
 }
 
 // ================= DTO для API =================
 
-export interface CreateWeaponItemDto extends Omit<WeaponItem, 'id'> { }
+export interface CreateWeaponItemDto extends Omit<WeaponItem, 'id' | 'categories_data'> { }
 
 export interface UpdateWeaponItemDto extends Partial<CreateWeaponItemDto> { }
 
 export interface WeaponItemResponse extends WeaponItem {
     category?: Category;
+    category_name?: string;
+    categories_data?: Category[];
     epoha_data?: Epoha;
     guard_type_data?: GuardType;
     blade_type_data?: BladeType;
