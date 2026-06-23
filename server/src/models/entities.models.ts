@@ -12,15 +12,18 @@ export class Apple implements NamedEntity {
     id!: number;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(100)
     ukr?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(100)
     eng?: string | null;
 
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(100)
@@ -32,15 +35,18 @@ export class BladeType implements NamedEntity {
     id!: number;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(100)
     ukr?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(100)
     eng?: string | null;
 
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(100)
@@ -52,15 +58,18 @@ export class Dolls implements NamedEntity {
     id!: number;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(100)
     ukr?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(100)
     eng?: string | null;
 
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(100)
@@ -72,15 +81,18 @@ export class Epoha implements NamedEntity {
     id!: number;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(100)
     ukr?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(100)
     eng?: string | null;
 
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(100)
@@ -92,15 +104,18 @@ export class GlobalType implements NamedEntity {
     id!: number;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(100)
     ukr?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(100)
     eng?: string | null;
 
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(100)
@@ -112,15 +127,18 @@ export class GuardType implements NamedEntity {
     id!: number;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(100)
     ukr?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(100)
     eng?: string | null;
 
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(100)
@@ -132,15 +150,18 @@ export class Sharpening implements NamedEntity {
     id!: number;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(100)
     ukr?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(100)
     eng?: string | null;
 
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(100)
@@ -152,15 +173,18 @@ export class Usage implements NamedEntity {
     id!: number;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(100)
     ukr?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(100)
     eng?: string | null;
 
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(100)
@@ -173,16 +197,19 @@ export class Category implements BaseEntity {
     @IsNumber()
     id!: number;
 
+    @IsOptional()
     @IsString()
     @MaxLength(300)
     ukr_name!: string;
 
+    @IsOptional()
     @IsString()
     @MaxLength(300)
     eng_name!: string;
 
+    @IsOptional()
     @IsString()
-    @MaxLength(500)
+    @MaxLength(800)
     comments!: string;
 }
 
@@ -196,139 +223,167 @@ export class WeaponItem implements BaseEntity {
     ready!: boolean;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(6300)
     description_ukr?: string | null;
 
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(6300)
     description_eng?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(6300)
     description_rus?: string | null;
 
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(120)
     ukr_name?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(120)
     eng_name?: string | null;
 
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(120)
     rus_name?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(25)
     handle_len?: string | null;
 
+    @IsOptional()
     @IsString()
     @MaxLength(10)
     handle_len_w!: string;
 
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(25)
     total_len?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(25)
     blade_len?: string | null;
 
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(25)
     width?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(20)
     guard_width?: string | null;
 
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(25)
     thikness?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(25)
     weight?: string | null;
 
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(100)
     theritory?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(25)
     century?: string | null;
 
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(50)
     arch_period?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(50)
     epoha?: string | null;
 
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(20)
     guard_type?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(20)
     blade_type?: string | null;
 
+    @IsOptional()
     @IsString()
     @MaxLength(20)
-    global_type!: string;
+    global_type?: string | null;
 
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(10)
     dolls?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(50)
     using_it?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
     @MaxLength(10)
     sharpening?: string | null;
 
-    @IsString()
-    @MaxLength(10)
-    apple!: string;
-
     @IsOptional()
     @IsString()
-    @MaxLength(750)
+    @MaxLength(10)
+    apple?: string | null;
+
+    @IsOptional()
+    @IsOptional()
+    @IsString()
+    @MaxLength(800)
     links?: string | null;
 
     @IsOptional()
+    @IsOptional()
     @IsString()
-    @MaxLength(750)
+    @MaxLength(800)
     comments?: string | null;
 
+    @IsOptional()
     @IsString()
-    @MaxLength(500)
+    @MaxLength(800)
     source!: string;
 
     @IsNumber()

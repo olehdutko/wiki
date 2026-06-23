@@ -30,6 +30,8 @@ import { VolumeUp, Delete } from '@mui/icons-material';
 
 import { DataGrid } from '@mui/x-data-grid';
 import { getEntityDisplayName } from '../../config/entities.config';
+import { SourceLinksField } from '../Fields/SourceLinksField';
+import { NotesField } from '../Fields/NotesField';
 
 // Типи
 interface BaseEntity {
@@ -804,12 +806,19 @@ export function EditEntityForm<T extends BaseEntity>({
           }}>
             Додаткова інформація
           </Typography>
+          <Grid container spacing={2} justifyContent="center" sx={{ mb: 2 }}>
+            <Grid size={{ xs: 12, md: 9 }} key="comments">
+              {renderField(bottomFieldsList.find(f => f.name === 'comments'))}
+            </Grid>
+          </Grid>
+          
           <Grid container spacing={2}>
-            {bottomFieldsList.map((field) => (
-              <Grid size={{ xs: 12, sm: 6, md: 4, lg: 4 }} key={field.name} sx={{ flex: 1 }}>
-                {renderField(field)}
-              </Grid>
-            ))}
+            <Grid size={{ xs: 12, sm: 6 }} key="links">
+              {renderField(bottomFieldsList.find(f => f.name === 'links'))}
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }} key="source">
+              {renderField(bottomFieldsList.find(f => f.name === 'source'))}
+            </Grid>
           </Grid>
         </Box>
       </Box>
@@ -897,6 +906,31 @@ export function EditEntityForm<T extends BaseEntity>({
         );
 
       case 'textarea':
+        // Dla source oraz links używamy chipów
+        if (field.name === 'source' || field.name === 'links') {
+          return (
+            <SourceLinksField
+              label={field.label}
+              value={value || ''}
+              onChange={(val) => handleInputChange(field.name, val)}
+              disabled={isReadOnly}
+            />
+          );
+        }
+        
+        // Dla comments używamy stylu notatnika
+        if (field.name === 'comments') {
+          return (
+            <NotesField
+              label={field.label}
+              value={value || ''}
+              onChange={(val) => handleInputChange(field.name, val)}
+              disabled={isReadOnly}
+              maxLength={field.maxLength}
+            />
+          );
+        }
+        
         return (
           <TextField
             fullWidth

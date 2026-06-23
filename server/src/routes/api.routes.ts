@@ -46,14 +46,14 @@ const namedEntityUpdateValidation = [
 const categoryValidation = [
     body('ukr_name').notEmpty().withMessage('Українська назва обов\'язкова').isString().isLength({ max: 300 }),
     body('eng_name').optional().isString().isLength({ max: 300 }),
-    body('comments').optional().isString().isLength({ max: 500 })
+    body('comments').optional().isString().isLength({ max: 800 })
 ];
 
 // Валідація для часткового оновлення категорій
 const categoryUpdateValidation = [
     body('ukr_name').optional().isString().isLength({ max: 300 }),
     body('eng_name').optional().isString().isLength({ max: 300 }),
-    body('comments').optional().isString().isLength({ max: 500 })
+    body('comments').optional().isString().isLength({ max: 800 })
 ];
 
 const weaponItemValidation = [
@@ -87,14 +87,14 @@ const weaponItemValidation = [
     body('epoha').optional().isString().isLength({ max: 50 }),
     body('guard_type').optional().isString().isLength({ max: 20 }),
     body('blade_type').optional().isString().isLength({ max: 20 }),
-    body('global_type').notEmpty().isString().isLength({ max: 20 }),
+    body('global_type').optional().isString().isLength({ max: 20 }),
     body('dolls').optional().isString().isLength({ max: 10 }),
     body('using_it').optional().isString().isLength({ max: 50 }),
     body('sharpening').optional().isString().isLength({ max: 10 }),
-    body('apple').notEmpty().isString().isLength({ max: 20 }),
-    body('links').optional().isString().isLength({ max: 750 }),
-    body('comments').optional().isString().isLength({ max: 750 }),
-    body('source').notEmpty().isString().isLength({ max: 500 }),
+    body('apple').optional().isString().isLength({ max: 20 }),
+    body('links').optional().isString().isLength({ max: 1500 }),
+    body('comments').optional().isString().isLength({ max: 800 }),
+    body('source').notEmpty().isString().isLength({ max: 800 }),
     body('category_id').optional().isInt({ min: 1 }),
     body('category_ids').optional().isArray({ min: 1 }).custom((value) => {
         if (!Array.isArray(value)) return true;
@@ -144,9 +144,9 @@ const weaponItemUpdateValidation = [
     body('using_it').optional().isString().isLength({ max: 50 }),
     body('sharpening').optional().isString().isLength({ max: 10 }),
     body('apple').optional().isString().isLength({ max: 20 }),
-    body('links').optional().isString().isLength({ max: 750 }),
-    body('comments').optional().isString().isLength({ max: 750 }),
-    body('source').optional().isString().isLength({ max: 500 }),
+    body('links').optional().isString().isLength({ max: 1500 }),
+    body('comments').optional().isString().isLength({ max: 800 }),
+    body('source').optional().isString().isLength({ max: 800 }),
     body('category_id').optional().isInt({ min: 1 }),
     body('category_ids').optional().isArray().custom((value) => {
         if (!Array.isArray(value)) return true;

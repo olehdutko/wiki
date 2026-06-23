@@ -152,24 +152,24 @@ const weaponFormFields: FormField[] = [
 
     // Історичні дані
     { name: 'theritory', label: 'Територія', type: 'text', maxLength: 100 },
-    { name: 'century', label: 'Століття', type: 'text', maxLength: 25 },
+    { name: 'century', label: 'Роки/Століття', type: 'text', maxLength: 25 },
     { name: 'arch_period', label: 'Археологічний період', type: 'text', maxLength: 50 },
     { name: 'epoha', label: 'Епоха', type: 'select', maxLength: 50 },
 
     // Типи та характеристики
-    { name: 'global_type', label: 'Глобальний тип', type: 'select', required: true, maxLength: 20 },
+    { name: 'global_type', label: 'Глобальний тип', type: 'select', maxLength: 20 },
     { name: 'guard_type', label: 'Тип гарди', type: 'select', maxLength: 20 },
     { name: 'blade_type', label: 'Тип клинка', type: 'select', maxLength: 20 },
     { name: 'dolls', label: 'Доли', type: 'select', maxLength: 10 },
-    { name: 'apple', label: 'Яблуко (навершя)', type: 'select', required: true },
+    { name: 'apple', label: 'Яблуко (навершя)', type: 'select', maxLength: 20 },
     { name: 'using_it', label: 'Використання', type: 'select', maxLength: 50 },
     { name: 'sharpening', label: 'Заточення', type: 'select', maxLength: 10 },
 
     // Додаткова інформація
     { name: 'category_ids', label: 'Категорії', type: 'multiselect', required: true },
-    { name: 'source', label: 'Джерело', type: 'textarea', maxLength: 500 },
-    { name: 'links', label: 'Посилання', type: 'textarea', maxLength: 750 },
-    { name: 'comments', label: 'Коментарі', type: 'textarea', maxLength: 750 }
+    { name: 'source', label: 'Джерело', type: 'textarea', maxLength: 800 },
+    { name: 'links', label: 'Посилання', type: 'textarea', maxLength: 1500 },
+    { name: 'comments', label: 'Коментарі', type: 'textarea', maxLength: 800 }
 ];
 
 // ================= КОНФІГУРАЦІЯ СУТНОСТЕЙ =================
