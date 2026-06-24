@@ -24,7 +24,14 @@ export const createConnectionPool = () => {
         waitForConnections: true,
         connectionLimit: 10,
         queueLimit: 0,
-        charset: 'utf8mb4'
+        charset: 'utf8mb4',
+        // Додаткові налаштування для стабільності
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 10000,
+        // Таймаути
+        connectTimeout: 60000,
+        // Перепідключення
+        reconnect: true
     });
 };
 

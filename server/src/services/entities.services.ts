@@ -428,13 +428,13 @@ export class WeaponItemService extends BaseService<WeaponItem> {
             delete itemData.category_ids;
             
             // Автоматично додаємо імперські одиниці
-            itemData.totalLenIn = mmToInches(itemData.totalLen);
-            itemData.bladeLenIn = mmToInches(itemData.bladeLen);
-            itemData.handleLenIn = mmToInches(itemData.handleLen);
-            itemData.widthIn = mmToInches(itemData.width);
-            itemData.guardWidthIn = mmToInches(itemData.guardWidth);
-            itemData.thiknessIn = mmToInches(itemData.thikness);
-            itemData.weightLb = gramsToPounds(itemData.weight);
+            itemData.total_len_in = mmToInches(itemData.total_len);
+            itemData.blade_len_in = mmToInches(itemData.blade_len);
+            itemData.handle_len_in = mmToInches(itemData.handle_len);
+            itemData.width_in = mmToInches(itemData.width);
+            itemData.guard_width_in = mmToInches(itemData.guard_width);
+            itemData.thikness_in = mmToInches(itemData.thikness);
+            itemData.weight_lb = gramsToPounds(itemData.weight);
 
             // Визначаємо primary category_id для резервного поля items.category_id
             if (categoryIds && Array.isArray(categoryIds) && categoryIds.length > 0) {
@@ -473,22 +473,22 @@ export class WeaponItemService extends BaseService<WeaponItem> {
             delete itemData.category_ids;
             
             // Автоматично додаємо імперські одиниці
-            itemData.totalLenIn = mmToInches(itemData.totalLen);
-            itemData.bladeLenIn = mmToInches(itemData.bladeLen);
-            itemData.handleLenIn = mmToInches(itemData.handleLen);
-            itemData.widthIn = mmToInches(itemData.width);
-            itemData.guardWidthIn = mmToInches(itemData.guardWidth);
-            itemData.thiknessIn = mmToInches(itemData.thikness);
-            itemData.weightLb = gramsToPounds(itemData.weight);
+            itemData.total_len_in = mmToInches(itemData.total_len);
+            itemData.blade_len_in = mmToInches(itemData.blade_len);
+            itemData.handle_len_in = mmToInches(itemData.handle_len);
+            itemData.width_in = mmToInches(itemData.width);
+            itemData.guard_width_in = mmToInches(itemData.guard_width);
+            itemData.thikness_in = mmToInches(itemData.thikness);
+            itemData.weight_lb = gramsToPounds(itemData.weight);
             
             // Автоматично додаємо імперські одиниці
-            itemData.totalLenIn = mmToInches(itemData.totalLen);
-            itemData.bladeLenIn = mmToInches(itemData.bladeLen);
-            itemData.handleLenIn = mmToInches(itemData.handleLen);
-            itemData.widthIn = mmToInches(itemData.width);
-            itemData.guardWidthIn = mmToInches(itemData.guardWidth);
-            itemData.thiknessIn = mmToInches(itemData.thikness);
-            itemData.weightLb = gramsToPounds(itemData.weight);
+            itemData.total_len_in = mmToInches(itemData.total_len);
+            itemData.blade_len_in = mmToInches(itemData.blade_len);
+            itemData.handle_len_in = mmToInches(itemData.handle_len);
+            itemData.width_in = mmToInches(itemData.width);
+            itemData.guard_width_in = mmToInches(itemData.guard_width);
+            itemData.thikness_in = mmToInches(itemData.thikness);
+            itemData.weight_lb = gramsToPounds(itemData.weight);
 
             // Якщо прийшов новий масив — синхронізуємо category_id в items
             if (categoryIds && Array.isArray(categoryIds)) {
