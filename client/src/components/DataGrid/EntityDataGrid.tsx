@@ -119,6 +119,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         row: null
     });
     const [searchDialog, setSearchDialog] = useState(false);
+    const [isSearchActive, setIsSearchActive] = useState(false);
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [imageUploadRow, setImageUploadRow] = useState<any>(null);
@@ -176,6 +177,7 @@ export function EntityDataGrid<T extends BaseEntity>({
 
     const fetchData = useCallback(async () => {
         if (!entityType) return;
+        if (isSearchActive) return; // Skip fetching when search is active
 
         setLoading({ loading: true, error: null });
 
@@ -262,7 +264,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         } finally {
             setLoading(prev => ({ ...prev, loading: false }));
         }
-    }, [entityType, pagination.page, pagination.pageSize, selectedCategoryId, filterModel]);
+    }, [entityType, pagination.page, pagination.pageSize, selectedCategoryId, filterModel, isSearchActive]);
 
     // Функція для завантаження категорій (тільки для weapons)
     const fetchCategories = useCallback(async () => {
@@ -301,6 +303,7 @@ export function EntityDataGrid<T extends BaseEntity>({
 
     const handleCategoryChange = (categoryId: number | null) => {
         setSelectedCategoryId(categoryId);
+        setIsSearchActive(false); // Скидаємо пошук при зміні категорії
         setPagination(prev => ({ ...prev, page: 0 })); // Скидаємо на першу сторінку
         setFilterModel({ items: [] }); // Скидаємо фільтри колонок
          // Скидаємо швидкий фільтр
@@ -393,6 +396,7 @@ export function EntityDataGrid<T extends BaseEntity>({
             setFilterModel({ items: [] }); // Скидаємо фільтри колонок
             setLoading({ loading: false, error: null });
             setSearchDialog(false);
+            setIsSearchActive(true); // Позначаємо, що активний пошук
             
             console.log(`✅ Знайдено ${searchResults.length} результатів для "${searchQuery}"`);
         } catch (error: any) {
