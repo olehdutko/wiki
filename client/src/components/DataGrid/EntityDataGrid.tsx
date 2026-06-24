@@ -107,6 +107,11 @@ export function EntityDataGrid<T extends BaseEntity>({
     const [filterModel, setFilterModel] = useState({
         items: []
     });
+    
+    // Server-side sorting state
+    const [sortModel, setSortModel] = useState([
+        { field: 'id', sort: 'asc' }
+    ]);
 
     // Діалоги
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; row: T | null }>({
@@ -183,15 +188,32 @@ export function EntityDataGrid<T extends BaseEntity>({
             const currentPage = pagination.page + 1; // API uses 1-based indexing
             const pageSize = pagination.pageSize;
             
+            // Prepare sort parameters
+            const sortBy = sortModel[0]?.field || 'id';
+            const sortOrder = sortModel[0]?.sort?.toUpperCase() || 'ASC';
+            
+            // Prepare filter parameters for server
+            const filterParams: any = {};
+            if (filterModel.items && filterModel.items.length > 0) {
+                filterModel.items.forEach((item: any, index: number) => {
+                    if (item.value !== undefined && item.value !== null) {
+                        const suffix = index > 0 ? `${index}` : '';
+                        filterParams[`filterField${suffix}`] = item.field;
+                        filterParams[`filterOperator${suffix}`] = item.operator;
+                        filterParams[`filterValue${suffix}`] = item.value;
+                    }
+                });
+            }
+            
             if (entityType === 'weapons' && selectedCategoryId) {
                 result = await apiService.getWeaponsByCategory(
                     selectedCategoryId,
-                    { page: currentPage, limit: pageSize }
+                    { page: currentPage, limit: pageSize, sortBy, sortOrder, ...filterParams }
                 );
             } else {
                 result = await apiService.getEntityData(
                     entityType,
-                    { page: currentPage, limit: pageSize }
+                    { page: currentPage, limit: pageSize, sortBy, sortOrder, ...filterParams }
                 );
             }
 
@@ -240,7 +262,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         } finally {
             setLoading(prev => ({ ...prev, loading: false }));
         }
-    }, [entityType, pagination.page, pagination.pageSize, selectedCategoryId]);
+    }, [entityType, pagination.page, pagination.pageSize, selectedCategoryId, filterModel]);
 
     // Функція для завантаження категорій (тільки для weapons)
     const fetchCategories = useCallback(async () => {
@@ -935,8 +957,8 @@ renderCell: (params: any) => {
                     pageSizeOptions={[20, 25, 35, 50, 75, 100]}
                     rowCount={pagination.total}
                     paginationMode="server"
-                    filterMode="client"
-                    sortingMode="client"
+                    filterMode="server"
+                    sortingMode="server"
                     columnVisibilityModel={columnVisibilityModel}
                     onColumnVisibilityModelChange={setColumnVisibilityModel}
                     onPaginationModelChange={(model) => {
@@ -948,7 +970,13 @@ renderCell: (params: any) => {
                         }
                     }}
                     filterModel={filterModel}
-                    onFilterModelChange={(model) => setFilterModel(model as any)}
+                    onFilterModelChange={(model) => {
+                        setFilterModel(model as any);
+                        // Reset to first page and fetch with new filters
+                        setPagination(prev => ({ ...prev, page: 0 }));
+                    }}
+                    sortModel={sortModel}
+                    onSortModelChange={(model) => setSortModel(model)}
                     onRowClick={onRowSelect ? (params: GridRowParams) => onRowSelect(params.row) : undefined}
                     processRowUpdate={async (newRow, oldRow) => {
                         console.log('🔄 processRowUpdate:', { newRow, oldRow });

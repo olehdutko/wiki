@@ -146,8 +146,19 @@ export class WeaponItemController {
                 sortBy: req.query.sortBy as string || 'id',
                 sortOrder: (req.query.sortOrder as 'ASC' | 'DESC') || 'DESC'
             };
+            
+            // Extract filter parameters
+            const filterParams: any = {};
+            let filterIndex = 0;
+            while (req.query[`filterField${filterIndex > 0 ? filterIndex : ''}`]) {
+                const suffix = filterIndex > 0 ? `${filterIndex}` : '';
+                filterParams[`filterField${suffix}`] = req.query[`filterField${suffix}`];
+                filterParams[`filterOperator${suffix}`] = req.query[`filterOperator${suffix}`];
+                filterParams[`filterValue${suffix}`] = req.query[`filterValue${suffix}`];
+                filterIndex++;
+            }
 
-            const result = await this.weaponService.findAllWithCategories(params);
+            const result = await this.weaponService.findAllWithCategories(params, filterParams);
 
             res.status(200).json({
                 success: true,
@@ -218,7 +229,18 @@ export class WeaponItemController {
                 sortOrder: (req.query.sortOrder as 'ASC' | 'DESC') || 'DESC'
             };
 
-            const result = await this.weaponService.findByCategory(categoryId, params);
+            // Extract filter parameters
+            const filterParams: any = {};
+            let filterIndex = 0;
+            while (req.query[`filterField${filterIndex > 0 ? filterIndex : ''}`]) {
+                const suffix = filterIndex > 0 ? `${filterIndex}` : '';
+                filterParams[`filterField${suffix}`] = req.query[`filterField${suffix}`];
+                filterParams[`filterOperator${suffix}`] = req.query[`filterOperator${suffix}`];
+                filterParams[`filterValue${suffix}`] = req.query[`filterValue${suffix}`];
+                filterIndex++;
+            }
+
+            const result = await this.weaponService.findByCategory(categoryId, params, filterParams);
 
             res.status(200).json({
                 success: true,
