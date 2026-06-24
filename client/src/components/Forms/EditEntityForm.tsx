@@ -692,6 +692,7 @@ export function EditEntityForm<T extends BaseEntity>({
       { name: 'total_len_in', label: 'Заг. довжина (in)' },
       { name: 'blade_len_in', label: 'Довж. клинка (in)' },
       { name: 'handle_len_in', label: 'Довж. руківя (in)' },
+      { name: 'handle_len_w_in', label: 'Ширина руківя (in)' },
       { name: 'width_in', label: 'Ширина (in)' },
       { name: 'guard_width_in', label: 'Шир. гарди (in)' },
       { name: 'thikness_in', label: 'Товщина (in)' },
@@ -823,10 +824,23 @@ export function EditEntityForm<T extends BaseEntity>({
                       disabled
                       size="small"
                       fullWidth
+                      InputProps={{
+                        sx: {
+                          fontSize: '0.875rem'
+                        }
+                      }}
+                      InputLabelProps={{
+                        sx: {
+                          fontSize: '0.75rem',
+                          fontWeight: 500,
+                          color: '#64748b'
+                        }
+                      }}
                       sx={{
                         '& .MuiInputBase-input.Mui-disabled': {
                           WebkitTextFillColor: '#1976d2',
-                          fontWeight: 500
+                          fontWeight: 500,
+                          fontSize: '0.875rem'
                         }
                       }}
                     />
