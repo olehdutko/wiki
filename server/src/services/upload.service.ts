@@ -3,7 +3,7 @@
  */
 
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { pool } from '../config/database.config';
 import dotenv from 'dotenv';
 
@@ -28,12 +28,12 @@ export class UploadService {
     async uploadEntityImage(
         entityType: string,
         entityId: number,
-        file: Express.Multer.File
+        file: any
     ): Promise<{ imageUrl: string }> {
         try {
             // Генеруємо унікальне ім'я файлу
             const fileExtension = file.originalname.split('.').pop() || 'jpg';
-            const fileName = `${entityType}_${entityId}_${uuidv4()}.${fileExtension}`;
+            const fileName = `${entityType}_${entityId}_${randomUUID()}.${fileExtension}`;
             const s3Key = `${WIKI_FOLDER}/${entityType}/${fileName}`;
 
             // Завантажуємо в S3

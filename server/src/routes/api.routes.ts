@@ -11,6 +11,8 @@ import {
 } from '../controllers/entities.controllers';
 import { LinksController } from '../controllers/links.controller';
 import { exportDatabaseDump } from '../controllers/database.controller';
+import multer from 'multer';
+import { UploadController } from '../controllers/upload.controller';
 
 const router = Router();
 
@@ -314,9 +316,6 @@ router.get('/info', (_req, res) => {
 
 // ================= UPLOAD РОУТИ ДЛЯ ЗОБРАЖЕНЬ =================
 
-import multer from 'multer';
-import { UploadController } from '../controllers/upload.controller';
-
 const uploadController = new UploadController();
 
 // Налаштування multer для зберігання в пам'яті
@@ -325,7 +324,7 @@ const upload = multer({
     limits: {
         fileSize: 5 * 1024 * 1024 // 5MB max
     },
-    fileFilter: (req, file, cb) => {
+    fileFilter: (_req: any, file: any, cb: any) => {
         // Дозволяємо тільки зображення
         if (file.mimetype.startsWith('image/')) {
             cb(null, true);

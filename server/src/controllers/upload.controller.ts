@@ -19,7 +19,7 @@ export class UploadController {
         try {
             const { entityType, entityId } = req.params;
             
-            if (!req.file) {
+            if (!(req as any).file) {
                 res.status(400).json({
                     success: false,
                     message: 'No file uploaded'
@@ -30,7 +30,7 @@ export class UploadController {
             const result = await this.uploadService.uploadEntityImage(
                 entityType,
                 parseInt(entityId),
-                req.file
+                (req as any).file
             );
 
             res.status(200).json({
