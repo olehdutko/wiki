@@ -37,21 +37,21 @@ export interface EntityConfig {
 // ================= КОЛОНКИ ДЛЯ ГРІДІВ =================
 
 const namedEntityColumns: GridColumn[] = [
-    { field: 'id', headerName: 'ID', width: 80 },
+    { field: 'id', headerName: 'ID', width: 80, type: 'number', valueFormatter: (params) => String(params.value) },
     { field: 'ukr', headerName: 'Українська', width: 200, editable: true, type: 'string' },
     { field: 'eng', headerName: 'English', width: 200, editable: true, type: 'string' },
     { field: 'rus', headerName: 'Москальська', width: 200, editable: true, type: 'string' }
 ];
 
 const categoryColumns: GridColumn[] = [
-    { field: 'id', headerName: 'ID', width: 80 },
+    { field: 'id', headerName: 'ID', width: 80, type: 'number', valueFormatter: (params) => String(params.value) },
     { field: 'ukr_name', headerName: 'Українська назва', width: 250, editable: true, type: 'string' },
     { field: 'eng_name', headerName: 'English name', width: 250, editable: true, type: 'string' },
     { field: 'comments', headerName: 'Коментарі', width: 300, editable: true, type: 'string' }
 ];
 
 const weaponColumns: GridColumn[] = [
-    { field: 'id', headerName: 'ID', width: 58 },
+    { field: 'id', headerName: 'ID', width: 58, type: 'number', valueFormatter: (params) => String(params.value) },
     { field: 'ready', headerName: 'Готовність', width: 100, type: 'boolean', editable: false },
     { field: 'ukr_name', headerName: 'Українська назва', width: 200, editable: false },
     { field: 'eng_name', headerName: 'English name', width: 200, editable: false },

@@ -5,7 +5,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
     DataGrid,
-    GridFilterInputValue,
     GridToolbar
 } from '@mui/x-data-grid';
 import type {
@@ -350,27 +349,46 @@ export function EntityDataGrid<T extends BaseEntity>({
         setLoading({ loading: true, error: null });
 
         try {
-            // Глобальний пошук через API endpoint /weapons/search
-            const searchResults = await apiService.search(
-                '/weapons',
-                searchQuery.trim()
+            // Глобальний пошук - завантажуємо ВСІ айтеми (без фільтрації по категорії)
+            const result = await apiService.getEntityData(
+                'weapons',
+                { page: 1, limit: 10000 } // Всі айтеми
             );
 
-            // Результати вже відфільтровані на сервері
+            const searchLower = searchQuery.trim().toLowerCase();
+            
+            // Шукаємо по всіх полях, включаючи ID
+            const filteredResults = result.items.filter((item: any) => {
+                // Перевіряємо ID (число перетворюємо в строку)
+                if (String(item.id).toLowerCase().includes(searchLower)) return true;
+                
+                // Перевіряємо всі інші поля
+                for (const key of Object.keys(item)) {
+                    const value = item[key];
+                    if (value !== null && value !== undefined) {
+                        const stringValue = String(value).toLowerCase();
+                        if (stringValue.includes(searchLower)) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            });
+
             // Оновлюємо дані
-            setAllCategoryData(searchResults as T[]);
-            setData(searchResults as T[]);
+            setAllCategoryData(filteredResults as T[]);
+            setData(filteredResults as T[]);
             setPagination(prev => ({ 
                 ...prev, 
-                total: searchResults.length, 
+                total: filteredResults.length, 
                 page: 0,
-                totalPages: Math.ceil(searchResults.length / prev.pageSize)
+                totalPages: Math.ceil(filteredResults.length / prev.pageSize)
             }));
             setFilterModel({ items: [] }); // Скидаємо фільтри колонок
             setLoading({ loading: false, error: null });
             setSearchDialog(false);
             
-            console.log(`✅ Знайдено ${searchResults.length} результатів для "${searchQuery}"`);
+            console.log(`✅ Знайдено ${filteredResults.length} результатів для "${searchQuery}"`);
         } catch (error: any) {
             console.error('Помилка пошуку:', error);
             setLoading({
@@ -776,7 +794,7 @@ export function EntityDataGrid<T extends BaseEntity>({
                 editable: isEditable,
                 type: col.type,
                 valueGetter: col.valueGetter,
-renderCell: (params: any) => {
+                renderCell: (params: any) => {
                     // Спеціальний рендеринг для нового рядка
                     if (params.row.isNew && getNewRowFields(entityType).includes(col.field)) {
                         return renderNewRowTextField(params, col.field);
@@ -923,7 +941,17 @@ renderCell: (params: any) => {
                 <DataGrid
                     rows={newRow ? [newRow, ...allCategoryData] : allCategoryData}
                     getRowId={(row) => row.isNew ? (newRow?.id ?? -1) : row.id}
-                    columns={columns}
+                    columns={columns.map(col => ({
+                        ...col,
+                        editable: getNewRowFields(entityType).includes(col.field),
+                        renderCell: (params: any) => {
+                            // Спеціальний рендеринг для нового рядка
+                            if (params.row.isNew && getNewRowFields(entityType).includes(col.field)) {
+                                return renderNewRowTextField(params, col.field);
+                            }
+                            return col.type === 'boolean' ? renderBooleanCell(params) : (col.renderCell ? col.renderCell(params) : params.value);
+                        }
+                    }))}
                     loading={loading.loading}
                     pagination
                     paginationModel={{
