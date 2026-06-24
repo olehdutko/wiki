@@ -37,7 +37,8 @@ import {
     Search as SearchIcon,
     Refresh as RefreshIcon,
     Check as CheckIcon,
-    Close as CloseIcon
+    Close as CloseIcon,
+    Image as ImageIcon
 } from '@mui/icons-material';
 
 import type {
@@ -48,6 +49,7 @@ import { apiService } from '../../services/api.service';
 import { getEntityConfig, type EntityConfig } from '../../config/entities.config';
 import { EditEntityForm } from '../Forms/EditEntityForm';
 import { CreateEntityForm } from '../Forms/CreateEntityForm';
+import { ImageUploadField } from '../Fields/ImageUploadField';
 
 // ================= ТИПИ =================
 
@@ -113,6 +115,8 @@ export function EntityDataGrid<T extends BaseEntity>({
     const [searchDialog, setSearchDialog] = useState(false);
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [imageUploadRow, setImageUploadRow] = useState<any>(null);
+    const [imageUploadOpen, setImageUploadOpen] = useState(false);
     const [editDialog, setEditDialog] = useState<{ open: boolean; row: T | null }>({
         open: false,
         row: null
@@ -694,6 +698,21 @@ export function EntityDataGrid<T extends BaseEntity>({
 
         return (
             <Box>
+                {/* Кнопка завантаження зображення для довідкових сутностей */}
+                {(entityType === 'guard-type' || entityType === 'apple' || entityType === 'sharpening') && (
+                    <Tooltip title="Завантажити зображення">
+                        <IconButton
+                            size="small"
+                            onClick={() => {
+                                setImageUploadRow(params.row);
+                                setImageUploadOpen(true);
+                            }}
+                            color="secondary"
+                        >
+                            <ImageIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
+                )}
                 {enableEdit && !supportsInlineEditing(entityType) && (
                     <Tooltip title="Редагувати">
                         <IconButton
@@ -731,6 +750,38 @@ export function EntityDataGrid<T extends BaseEntity>({
             filterable: false,
             disableColumnMenu: true,
             renderCell: renderActionButtons
+        }] : []),
+        // Колонка зображення для довідкових сутностей
+        ...(entityType === 'guard-type' || entityType === 'apple' || entityType === 'sharpening' ? [{
+            field: 'image_url',
+            headerName: 'Зображення',
+            width: 120,
+            sortable: false,
+            filterable: false,
+            disableColumnMenu: true,
+            renderCell: (params: any) => {
+                return (
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                        {params.value ? (
+                            <Box sx={{ position: 'relative', display: 'inline-block' }}>
+                                <img
+                                    src={params.value}
+                                    alt=""
+                                    style={{
+                                        width: 40,
+                                        height: 40,
+                                        objectFit: 'contain',
+                                        borderRadius: 4,
+                                        border: '1px solid #e0e0e0'
+                                    }}
+                                />
+                            </Box>
+                        ) : (
+                            <Typography variant="caption" color="text.secondary">-</Typography>
+                        )}
+                    </Box>
+                );
+            }
         }] : []),
         // Інші колонки
         ...config.columns.map(col => {
@@ -1059,6 +1110,43 @@ export function EntityDataGrid<T extends BaseEntity>({
                 onClose={() => setEditDialog({ open: false, row: null })}
                 onSave={handleEditSave}
             />
+
+            {/* Діалог завантаження зображення */}
+            <Dialog
+                open={imageUploadOpen}
+                onClose={() => setImageUploadOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>Завантажити зображення</DialogTitle>
+                <DialogContent>
+                    {imageUploadRow && (
+                        <ImageUploadField
+                            entityType={entityType}
+                            entityId={imageUploadRow.id}
+                            currentImageUrl={imageUploadRow.image_url}
+                            onImageUpload={(imageUrl) => {
+                                // Оновлюємо дані в таблиці
+                                const updatedData = data.map(item =>
+                                    item.id === imageUploadRow.id ? { ...item, image_url: imageUrl } : item
+                                );
+                                setData(updatedData);
+                                setImageUploadOpen(false);
+                                setImageUploadRow(null);
+                            }}
+                            onImageDelete={() => {
+                                // Оновлюємо дані в таблиці
+                                const updatedData = data.map(item =>
+                                    item.id === imageUploadRow.id ? { ...item, image_url: null } : item
+                                );
+                                setData(updatedData);
+                                setImageUploadOpen(false);
+                                setImageUploadRow(null);
+                            }}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
 
         </Box>
     );
