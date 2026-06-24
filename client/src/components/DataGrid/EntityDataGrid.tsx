@@ -179,16 +179,19 @@ export function EntityDataGrid<T extends BaseEntity>({
 
             let result;
 
-            // Завантажуємо ВСІ дані категорії для фільтрації (без пейджінейшну)
+            // Server-side пейджинація - запитуємо тільки потрібну сторінку
+            const currentPage = pagination.page + 1; // API uses 1-based indexing
+            const pageSize = pagination.pageSize;
+            
             if (entityType === 'weapons' && selectedCategoryId) {
                 result = await apiService.getWeaponsByCategory(
                     selectedCategoryId,
-                    { page: 1, limit: 10000 } // Завантажуємо всі дані
+                    { page: currentPage, limit: pageSize }
                 );
             } else {
                 result = await apiService.getEntityData(
                     entityType,
-                    { page: 1, limit: 10000 } // Завантажуємо всі дані
+                    { page: currentPage, limit: pageSize }
                 );
             }
 
@@ -227,9 +230,8 @@ export function EntityDataGrid<T extends BaseEntity>({
             setData(processedItems as any);
             setPagination(prev => ({
                 ...prev,
-                page: 0,
-                total: processedItems.length,
-                totalPages: Math.ceil(processedItems.length / prev.pageSize)
+                total: result.total || processedItems.length,
+                totalPages: result.totalPages || Math.ceil((result.total || processedItems.length) / prev.pageSize)
             }));
 
         } catch (error: any) {
@@ -931,8 +933,8 @@ renderCell: (params: any) => {
                         pageSize: pagination.pageSize
                     }}
                     pageSizeOptions={[20, 25, 35, 50, 75, 100]}
-                    rowCount={filteredData.length}
-                    paginationMode="client"
+                    rowCount={pagination.total}
+                    paginationMode="server"
                     filterMode="client"
                     sortingMode="client"
                     columnVisibilityModel={columnVisibilityModel}
