@@ -286,7 +286,7 @@ export class WeaponItemService extends BaseService<WeaponItem> {
         }
     }
 
-    async findAllWithCategories(params: PaginationParams): Promise<PaginatedResponse<WeaponItemResponse>> {
+    async findAllWithCategories(params: PaginationParams, filterParams?: any): Promise<PaginatedResponse<WeaponItemResponse>> {
         const {
             page = 1,
             limit = 20,
@@ -297,16 +297,87 @@ export class WeaponItemService extends BaseService<WeaponItem> {
         const offset = (page - 1) * limit;
 
         try {
-            // Get total count
-            const [countResult] = await pool.execute(
-                'SELECT COUNT(*) as total FROM items'
-            ) as [RowDataPacket[], any];
+            // Build WHERE clause from filter params
+            let whereConditions: string[] = [];
+            let queryParams: any[] = [];
+            
+            if (filterParams) {
+                let filterIndex = 0;
+                while (filterParams[`filterField${filterIndex > 0 ? filterIndex : ''}`]) {
+                    const suffix = filterIndex > 0 ? `${filterIndex}` : '';
+                    const field = filterParams[`filterField${suffix}`];
+                    const operator = filterParams[`filterOperator${suffix}`];
+                    const value = filterParams[`filterValue${suffix}`];
+                    
+                    if (field && operator && value !== undefined) {
+                        // Special handling for ID field (numeric)
+                        if (field === 'id') {
+                            const numValue = parseInt(value);
+                            if (!isNaN(numValue)) {
+                                // MUI DataGrid operators: =, !=, >, >=, <, <=
+                                switch (operator) {
+                                    case '=':
+                                    case 'eq':
+                                    case 'equals':
+                                        whereConditions.push(`i.id = ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '!=':
+                                    case 'notEq':
+                                    case 'notEquals':
+                                        whereConditions.push(`i.id != ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '>':
+                                    case 'gt':
+                                        whereConditions.push(`i.id > ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '>=':
+                                    case 'gte':
+                                        whereConditions.push(`i.id >= ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '<':
+                                    case 'lt':
+                                        whereConditions.push(`i.id < ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '<=':
+                                    case 'lte':
+                                        whereConditions.push(`i.id <= ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                }
+                            }
+                        } else {
+                            // String fields
+                            const strValue = `%${value}%`;
+                            whereConditions.push(`i.${field} LIKE ?`);
+                            queryParams.push(strValue);
+                        }
+                    }
+                    filterIndex++;
+                }
+            }
+            
+            const whereClause = whereConditions.length > 0 
+                ? whereConditions.join(' AND ') 
+                : '';
+
+            // Get total count with filters
+            let countQuery = 'SELECT COUNT(*) as total FROM items i';
+            if (whereClause) {
+                countQuery += ` WHERE ${whereClause}`;
+            }
+            const [countResult] = await pool.execute(countQuery, queryParams) as [RowDataPacket[], any];
 
             const total = countResult[0].total;
 
-            // Get items with categories
+            // Get items with categories (with filters)
             const [rows] = await pool.query(
-                this.buildItemWithCategoriesQuery('', `i.${sortBy} ${sortOrder}`, limit, offset)
+                this.buildItemWithCategoriesQuery(whereClause, `i.${sortBy} ${sortOrder}`, limit, offset),
+                queryParams
             );
 
             const items = (rows as any[]).map(row => {
@@ -514,7 +585,7 @@ export class WeaponItemService extends BaseService<WeaponItem> {
         }
     }
 
-    async findByCategory(categoryId: number, params: PaginationParams): Promise<PaginatedResponse<WeaponItemResponse>> {
+    async findByCategory(categoryId: number, params: PaginationParams, filterParams?: any): Promise<PaginatedResponse<WeaponItemResponse>> {
         const {
             page = 1,
             limit = 20,
@@ -525,10 +596,83 @@ export class WeaponItemService extends BaseService<WeaponItem> {
         const offset = (page - 1) * limit;
 
         try {
-            // Get total count for category (use item_categories table)
+            // Build WHERE clause from filter params
+            let whereConditions: string[] = [];
+            let queryParams: any[] = [];
+            
+            // Base condition for category
+            whereConditions.push('i.id IN (SELECT item_id FROM item_categories WHERE category_id = ?)');
+            queryParams.push(categoryId);
+            
+            // Add filter conditions
+            if (filterParams) {
+                let filterIndex = 0;
+                while (filterParams[`filterField${filterIndex > 0 ? filterIndex : ''}`]) {
+                    const suffix = filterIndex > 0 ? `${filterIndex}` : '';
+                    const field = filterParams[`filterField${suffix}`];
+                    const operator = filterParams[`filterOperator${suffix}`];
+                    const value = filterParams[`filterValue${suffix}`];
+                    
+                    if (field && operator && value !== undefined) {
+                        // Special handling for ID field (numeric)
+                        if (field === 'id') {
+                            const numValue = parseInt(value);
+                            if (!isNaN(numValue)) {
+                                // MUI DataGrid operators: =, !=, >, >=, <, <=
+                                switch (operator) {
+                                    case '=':
+                                    case 'eq':
+                                    case 'equals':
+                                        whereConditions.push(`i.id = ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '!=':
+                                    case 'notEq':
+                                    case 'notEquals':
+                                        whereConditions.push(`i.id != ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '>':
+                                    case 'gt':
+                                        whereConditions.push(`i.id > ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '>=':
+                                    case 'gte':
+                                        whereConditions.push(`i.id >= ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '<':
+                                    case 'lt':
+                                        whereConditions.push(`i.id < ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '<=':
+                                    case 'lte':
+                                        whereConditions.push(`i.id <= ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                }
+                            }
+                        } else {
+                            // String fields
+                            const strValue = `%${value}%`;
+                            whereConditions.push(`i.${field} LIKE ?`);
+                            queryParams.push(strValue);
+                        }
+                    }
+                    filterIndex++;
+                }
+            }
+            
+            const whereClause = whereConditions.join(' AND ');
+
+            // Get total count for category with filters
             const [countResult] = await pool.execute(
-                'SELECT COUNT(DISTINCT item_id) as total FROM item_categories WHERE category_id = ?',
-                [categoryId]
+                `SELECT COUNT(DISTINCT item_id) as total FROM item_categories ic 
+                 JOIN items i ON i.id = ic.item_id 
+                 WHERE ${whereClause}`,
+                queryParams
             ) as [RowDataPacket[], any];
 
             const total = countResult[0].total;
@@ -536,12 +680,12 @@ export class WeaponItemService extends BaseService<WeaponItem> {
             // Get items for category via subselect to keep all item categories
             const [rows] = await pool.query(
                 this.buildItemWithCategoriesQuery(
-                    `i.id IN (SELECT item_id FROM item_categories WHERE category_id = ?)`,
+                    whereClause,
                     `i.${sortBy} ${sortOrder}`,
                     limit,
                     offset
                 ),
-                [categoryId]
+                queryParams
             );
 
             const items = (rows as any[]).map(row => {
