@@ -1,25 +1,24 @@
 /**
- * Сервіс для завантаження зображень в AWS S3
+ * Сервіс для завантаження зображень (локальне зберігання)
  */
 
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import { pool } from '../config/database.config';
+import fs from 'fs';
+import path from 'path';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// AWS S3 конфігурація
-const s3Client = new S3Client({
-    region: process.env.AWS_REGION || 'eu-central-1',
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''
-    }
-});
-
-const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'weaponry-images';
+// Локальна папка для зберігання зображень
+const UPLOAD_DIR = process.env.UPLOAD_DIR || './public/uploads';
 const WIKI_FOLDER = 'wiki';
+
+// Переконуємось, що папка існує
+const fullUploadDir = path.join(UPLOAD_DIR, WIKI_FOLDER);
+if (!fs.existsSync(fullUploadDir)) {
+    fs.mkdirSync(fullUploadDir, { recursive: true });
+}
 
 export class UploadService {
     /**
@@ -34,34 +33,33 @@ export class UploadService {
             // Генеруємо унікальне ім'я файлу
             const fileExtension = file.originalname.split('.').pop() || 'jpg';
             const fileName = `${entityType}_${entityId}_${randomUUID()}.${fileExtension}`;
-            const s3Key = `${WIKI_FOLDER}/${entityType}/${fileName}`;
-
-            // Завантажуємо в S3
-            const uploadParams = {
-                Bucket: BUCKET_NAME,
-                Key: s3Key,
-                Body: file.buffer,
-                ContentType: file.mimetype,
-                ACL: 'public-read' as const
-            };
-
-            await s3Client.send(new PutObjectCommand(uploadParams));
-
-            // Формуємо URL
-            const imageUrl = `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION || 'eu-central-1'}.amazonaws.com/${s3Key}`;
-
+            
+            // Папка для конкретного типу сутності
+            const entityDir = path.join(fullUploadDir, entityType);
+            if (!fs.existsSync(entityDir)) {
+                fs.mkdirSync(entityDir, { recursive: true });
+            }
+            
+            const filePath = path.join(entityDir, fileName);
+            
+            // Зберігаємо файл
+            fs.writeFileSync(filePath, file.buffer);
+            
+            // Формуємо URL (відносний шлях)
+            const imageUrl = `/uploads/${WIKI_FOLDER}/${entityType}/${fileName}`;
+            
             // Оновлюємо запис в БД
             await this.updateEntityImageUrl(entityType, entityId, imageUrl);
-
+            
             return { imageUrl };
         } catch (error) {
-            console.error('❌ Error uploading to S3:', error);
+            console.error('❌ Error uploading image:', error);
             throw new Error('Failed to upload image');
         }
     }
-
+    
     /**
-     * Видалити зображення з S3
+     * Видалити зображення
      */
     async deleteEntityImage(
         entityType: string,
@@ -72,24 +70,21 @@ export class UploadService {
             const currentUrl = await this.getEntityImageUrl(entityType, entityId);
             
             if (currentUrl) {
-                // Видаляємо з S3
-                const s3Key = currentUrl.split('.amazonaws.com/')[1];
-                if (s3Key) {
-                    await s3Client.send(new DeleteObjectCommand({
-                        Bucket: BUCKET_NAME,
-                        Key: s3Key
-                    }));
+                // Видаляємо файл
+                const filePath = path.join(UPLOAD_DIR, '..', currentUrl);
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
                 }
-
+                
                 // Очищаємо URL в БД
                 await this.updateEntityImageUrl(entityType, entityId, null);
             }
         } catch (error) {
-            console.error('❌ Error deleting from S3:', error);
+            console.error('❌ Error deleting image:', error);
             throw new Error('Failed to delete image');
         }
     }
-
+    
     /**
      * Оновити image_url в базі даних
      */
@@ -105,7 +100,7 @@ export class UploadService {
             [imageUrl, entityId]
         );
     }
-
+    
     /**
      * Отримати image_url з бази даних
      */
@@ -119,20 +114,20 @@ export class UploadService {
             `SELECT image_url FROM \`${tableName}\` WHERE id = ?`,
             [entityId]
         ) as any;
-
+        
         return rows[0]?.image_url || null;
     }
-
+    
     /**
      * Отримати назву таблиці за типом сутності
      */
     private getTableName(entityType: string): string {
         const tableMap: Record<string, string> = {
-            'guard_type': 'guard_type',
+            'guard-type': 'guard_type',
             'apple': 'apple',
             'sharpening': 'sharpening'
         };
-
+        
         return tableMap[entityType] || entityType;
     }
 }
