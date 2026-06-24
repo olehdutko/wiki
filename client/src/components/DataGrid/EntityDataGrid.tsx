@@ -337,22 +337,54 @@ export function EntityDataGrid<T extends BaseEntity>({
     const handleSearch = async () => {
         if (!searchQuery.trim() || searchQuery.length < 2) {
             setSearchDialog(false);
-            fetchData(); // Повертаємо всі дані
+            // Скидаємо до даних поточної категорії
+            fetchData();
             return;
         }
 
         setLoading({ loading: true, error: null });
 
         try {
-            const results = await apiService.search(
-                config.apiEndpoint,
-                searchQuery.trim()
+            // Глобальний пошук - завантажуємо ВСІ айтеми (без фільтрації по категорії)
+            const result = await apiService.getEntityData(
+                'weapons',
+                { page: 1, limit: 10000 } // Всі айтеми
             );
 
-            setData(results as any[]);
-            setPagination(prev => ({ ...prev, total: results.length, page: 0 }));
+            const searchLower = searchQuery.trim().toLowerCase();
+            
+            // Шукаємо по всіх полях, включаючи ID
+            const filteredResults = result.items.filter((item: any) => {
+                // Перевіряємо ID (число перетворюємо в строку)
+                if (String(item.id).toLowerCase().includes(searchLower)) return true;
+                
+                // Перевіряємо всі інші поля
+                for (const key of Object.keys(item)) {
+                    const value = item[key];
+                    if (value !== null && value !== undefined) {
+                        const stringValue = String(value).toLowerCase();
+                        if (stringValue.includes(searchLower)) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            });
+
+            // Оновлюємо дані
+            setAllCategoryData(filteredResults as T[]);
+            setData(filteredResults as T[]);
+            setPagination(prev => ({ 
+                ...prev, 
+                total: filteredResults.length, 
+                page: 0,
+                totalPages: Math.ceil(filteredResults.length / prev.pageSize)
+            }));
+            setFilterModel({ items: [] }); // Скидаємо фільтри колонок
             setLoading({ loading: false, error: null });
             setSearchDialog(false);
+            
+            console.log(`✅ Знайдено ${filteredResults.length} результатів для "${searchQuery}"`);
         } catch (error: any) {
             console.error('Помилка пошуку:', error);
             setLoading({
