@@ -11,6 +11,8 @@ import {
 } from '../controllers/entities.controllers';
 import { LinksController } from '../controllers/links.controller';
 import { exportDatabaseDump } from '../controllers/database.controller';
+import multer from 'multer';
+import { UploadController } from '../controllers/upload.controller';
 
 const router = Router();
 
@@ -311,5 +313,29 @@ router.get('/info', (_req, res) => {
         }
     });
 });
+
+// ================= UPLOAD РОУТИ ДЛЯ ЗОБРАЖЕНЬ =================
+
+const uploadController = new UploadController();
+
+// Налаштування multer для зберігання в пам'яті
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB max
+    },
+    fileFilter: (_req: any, file: any, cb: any) => {
+        // Дозволяємо тільки зображення
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed'));
+        }
+    }
+});
+
+// Роути для завантаження зображень
+router.post('/upload/:entityType/:entityId', upload.single('image'), uploadController.uploadEntityImage.bind(uploadController));
+router.delete('/upload/:entityType/:entityId', uploadController.deleteEntityImage.bind(uploadController));
 
 export default router; 

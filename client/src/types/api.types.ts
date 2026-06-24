@@ -12,6 +12,7 @@ export interface NamedEntity extends BaseEntity {
     ukr?: string | null;
     eng?: string | null;
     rus?: string | null;
+    image_url?: string | null;
 }
 
 export interface ApiResponse<T = any> {
@@ -40,7 +41,9 @@ export type SortOrder = 'ASC' | 'DESC';
 
 // ================= СУТНОСТІ =================
 
-export interface Apple extends NamedEntity { }
+export interface Apple extends NamedEntity { 
+    image_url?: string | null;
+}
 
 export interface BladeType extends NamedEntity { }
 
@@ -50,9 +53,13 @@ export interface Epoha extends NamedEntity { }
 
 export interface GlobalType extends NamedEntity { }
 
-export interface GuardType extends NamedEntity { }
+export interface GuardType extends NamedEntity { 
+    image_url?: string | null;
+}
 
-export interface Sharpening extends NamedEntity { }
+export interface Sharpening extends NamedEntity { 
+    image_url?: string | null;
+}
 
 export interface Usage extends NamedEntity { }
 
