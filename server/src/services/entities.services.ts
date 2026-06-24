@@ -464,24 +464,24 @@ export class WeaponItemService extends BaseService<WeaponItem> {
         const searchPattern = `%${searchTerm}%`;
 
         try {
-            // Get total count for search
+            // Get total count for search (including ID)
             const [countResult] = await pool.execute(
                 `SELECT COUNT(*) as total FROM items 
-                WHERE ukr_name LIKE ? OR eng_name LIKE ? OR rus_name LIKE ?`,
-                [searchPattern, searchPattern, searchPattern]
+                WHERE ukr_name LIKE ? OR eng_name LIKE ? OR rus_name LIKE ? OR CAST(id AS CHAR) LIKE ?`,
+                [searchPattern, searchPattern, searchPattern, searchPattern]
             ) as [RowDataPacket[], any];
 
             const total = countResult[0].total;
 
-            // Get search results
+            // Get search results (including ID)
             const [rows] = await pool.query(
                 this.buildItemWithCategoriesQuery(
-                    'i.ukr_name LIKE ? OR i.eng_name LIKE ? OR i.rus_name LIKE ?',
+                    'i.ukr_name LIKE ? OR i.eng_name LIKE ? OR i.rus_name LIKE ? OR CAST(i.id AS CHAR) LIKE ?',
                     `i.${sortBy} ${sortOrder}`,
                     limit,
                     offset
                 ),
-                [searchPattern, searchPattern, searchPattern]
+                [searchPattern, searchPattern, searchPattern, searchPattern]
             );
 
             const items = (rows as any[]).map(row => {
