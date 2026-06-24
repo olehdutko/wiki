@@ -92,11 +92,17 @@ export function EntityDataGrid<T extends BaseEntity>({
 
     // Стан
     const [data, setData] = useState<T[]>([]);
+    const [allCategoryData, setAllCategoryData] = useState<T[]>([]); // Всі дані вибраної категорії
+    const [filteredData, setFilteredData] = useState<T[]>([]); // Відфільтровані дані
     const [loading, setLoading] = useState<LoadingState>({ loading: true, error: null });
     const [pagination, setPagination] = useState({
         page: 0,
         pageSize: 25,
         total: 0
+    });
+    // Фільтрація для DataGrid - використовуємо вбудований механізм
+    const [filterModel, setFilterModel] = useState({
+        items: []
     });
 
     // Діалоги
@@ -168,16 +174,16 @@ export function EntityDataGrid<T extends BaseEntity>({
 
             let result;
 
-            // Якщо це weapons і вибрана категорія, використовуємо фільтрування
+            // Завантажуємо ВСІ дані категорії для фільтрації (без пейджінейшну)
             if (entityType === 'weapons' && selectedCategoryId) {
                 result = await apiService.getWeaponsByCategory(
                     selectedCategoryId,
-                    { page: pagination.page, limit: pagination.pageSize }
+                    { page: 1, limit: 10000 } // Завантажуємо всі дані
                 );
             } else {
                 result = await apiService.getEntityData(
                     entityType,
-                    { page: pagination.page, limit: pagination.pageSize }
+                    { page: 1, limit: 10000 } // Завантажуємо всі дані
                 );
             }
 
@@ -211,11 +217,14 @@ export function EntityDataGrid<T extends BaseEntity>({
                 }));
             }
 
+            setAllCategoryData(processedItems as any);
+            setFilteredData(processedItems as any);
             setData(processedItems as any);
             setPagination(prev => ({
                 ...prev,
-                total: result.total,
-                totalPages: Math.ceil(result.total / prev.pageSize)
+                page: 0,
+                total: processedItems.length,
+                totalPages: Math.ceil(processedItems.length / prev.pageSize)
             }));
 
         } catch (error: any) {
@@ -264,7 +273,12 @@ export function EntityDataGrid<T extends BaseEntity>({
     const handleCategoryChange = (categoryId: number | null) => {
         setSelectedCategoryId(categoryId);
         setPagination(prev => ({ ...prev, page: 0 })); // Скидаємо на першу сторінку
+        setFilterModel({ items: [] }); // Скидаємо фільтри колонок
+         // Скидаємо швидкий фільтр
     };
+
+
+
 
     const handleDeleteClick = (row: T) => {
         setDeleteDialog({ open: true, row });
@@ -347,6 +361,7 @@ export function EntityDataGrid<T extends BaseEntity>({
             });
         }
     };
+
 
     // ================= INLINE EDITING =================
 
@@ -841,7 +856,7 @@ export function EntityDataGrid<T extends BaseEntity>({
             {/* DataGrid */}
             <Box sx={{ flexGrow: 1, height: '95%' }}>
                 <DataGrid
-                    rows={newRow ? [newRow, ...data] : data}
+                    rows={newRow ? [newRow, ...allCategoryData] : allCategoryData}
                     getRowId={(row) => row.isNew ? (newRow?.id ?? -1) : row.id}
                     columns={columns.map(col => ({
                         ...col,
@@ -861,8 +876,10 @@ export function EntityDataGrid<T extends BaseEntity>({
                         pageSize: pagination.pageSize
                     }}
                     pageSizeOptions={[20, 25, 35, 50, 75, 100]}
-                    rowCount={pagination.total}
-                    paginationMode="server"
+                    rowCount={filteredData.length}
+                    paginationMode="client"
+                    filterMode="client"
+                    sortingMode="client"
                     columnVisibilityModel={columnVisibilityModel}
                     onColumnVisibilityModelChange={setColumnVisibilityModel}
                     onPaginationModelChange={(model) => {
@@ -873,6 +890,8 @@ export function EntityDataGrid<T extends BaseEntity>({
                             handlePageSizeChange(model.pageSize);
                         }
                     }}
+                    filterModel={filterModel}
+                    onFilterModelChange={(model) => setFilterModel(model as any)}
                     onRowClick={onRowSelect ? (params: GridRowParams) => onRowSelect(params.row) : undefined}
                     processRowUpdate={async (newRow, oldRow) => {
                         console.log('🔄 processRowUpdate:', { newRow, oldRow });
@@ -909,6 +928,7 @@ export function EntityDataGrid<T extends BaseEntity>({
                             </Box>
                         )
                     }}
+                    disableColumnFilter={false}
                     slotProps={{
                         toolbar: {
                             showQuickFilter: true,
