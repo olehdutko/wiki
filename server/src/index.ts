@@ -9,6 +9,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { testConnection } from './config/database.config';
 import apiRoutes from './routes/api.routes';
+import path from 'path';
 
 // Завантаження змінних середовища
 dotenv.config();
@@ -20,7 +21,16 @@ const PORT = process.env.PORT || 3001;
 
 // Безпека
 app.use(helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" }
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "blob:", "http:", "https:"],
+            scriptSrc: ["'self'"],
+            connectSrc: ["'self'"]
+        }
+    }
 }));
 
 // CORS - дозволяємо запити з фронтенду
@@ -49,6 +59,15 @@ app.use((req, _res, next) => {
 
 // API роути
 app.use('/api', apiRoutes);
+
+// Static files для завантажених зображень
+const uploadsPath = path.join(__dirname, '..', '..', 'public', 'uploads');
+app.use('/uploads', express.static(uploadsPath, {
+    maxAge: '1d', // Кешування на 1 день
+    setHeaders: (res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+}));
 
 // Головна сторінка
 app.get('/', (_req, res) => {
