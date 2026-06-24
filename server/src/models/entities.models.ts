@@ -28,6 +28,11 @@ export class Apple implements NamedEntity {
     @IsString()
     @MaxLength(100)
     rus?: string | null;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(500)
+    image_url?: string | null;
 }
 
 export class BladeType implements NamedEntity {
@@ -143,6 +148,11 @@ export class GuardType implements NamedEntity {
     @IsString()
     @MaxLength(100)
     rus?: string | null;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(500)
+    image_url?: string | null;
 }
 
 export class Sharpening implements NamedEntity {
@@ -166,6 +176,11 @@ export class Sharpening implements NamedEntity {
     @IsString()
     @MaxLength(100)
     rus?: string | null;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(500)
+    image_url?: string | null;
 }
 
 export class Usage implements NamedEntity {

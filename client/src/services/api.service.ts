@@ -482,6 +482,37 @@ class ApiService {
         a.remove();
         URL.revokeObjectURL(url);
     }
+
+    // ================= UPLOAD ЗОБРАЖЕНЬ =================
+
+    /**
+     * Завантажити зображення для довідкової сутності
+     */
+    async uploadEntityImage(entityType: string, entityId: number, file: File): Promise<{ imageUrl: string }> {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const response = await fetch(`/api/upload/${entityType}/${entityId}`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to upload image');
+        }
+
+        const result = await response.json();
+        return result.data;
+    }
+
+    /**
+     * Видалити зображення довідкової сутності
+     */
+    async deleteEntityImage(entityType: string, entityId: number): Promise<void> {
+        const response = await this.api.delete(`/upload/${entityType}/${entityId}`);
+        return response.data;
+    }
 }
 
 // Експорт singleton instance

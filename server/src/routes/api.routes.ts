@@ -312,4 +312,31 @@ router.get('/info', (_req, res) => {
     });
 });
 
+// ================= UPLOAD РОУТИ ДЛЯ ЗОБРАЖЕНЬ =================
+
+import multer from 'multer';
+import { UploadController } from '../controllers/upload.controller';
+
+const uploadController = new UploadController();
+
+// Налаштування multer для зберігання в пам'яті
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB max
+    },
+    fileFilter: (req, file, cb) => {
+        // Дозволяємо тільки зображення
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed'));
+        }
+    }
+});
+
+// Роути для завантаження зображень
+router.post('/upload/:entityType/:entityId', upload.single('image'), uploadController.uploadEntityImage.bind(uploadController));
+router.delete('/upload/:entityType/:entityId', uploadController.deleteEntityImage.bind(uploadController));
+
 export default router; 

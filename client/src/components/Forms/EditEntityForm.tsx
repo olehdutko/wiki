@@ -32,6 +32,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import { getEntityDisplayName } from '../../config/entities.config';
 import { SourceLinksField } from '../Fields/SourceLinksField';
 import { NotesField } from '../Fields/NotesField';
+import { ImageUploadField } from '../Fields/ImageUploadField';
 
 // Типи
 interface BaseEntity {
@@ -724,7 +725,16 @@ export function EditEntityForm<T extends BaseEntity>({
             Основна інформація
           </Typography>
 
-
+          {/* Зображення для довідкових сутностей */}
+          {['guard-type', 'apple', 'sharpening'].includes(entityType) && entity && (
+            <ImageUploadField
+              entityType={entityType}
+              entityId={entity.id}
+              currentImageUrl={formData.image_url}
+              onImageUpload={(imageUrl) => handleInputChange('image_url', imageUrl)}
+              onImageDelete={() => handleInputChange('image_url', null)}
+            />
+          )}
 
           {/* Поле категорії окремим рядком */}
           {(() => {
@@ -1126,7 +1136,7 @@ export function EditEntityForm<T extends BaseEntity>({
 
       case 'select':
         // Обробка select полів
-        let options: Array<{ id: number, ukr: string }> = [];
+        let options: Array<{ id: number, ukr: string, image_url?: string }> = [];
         switch (field.name) {
           case 'epoha':
             options = epohaList;
@@ -1265,7 +1275,21 @@ export function EditEntityForm<T extends BaseEntity>({
               <MenuItem value="">Виберіть...</MenuItem>
               {options?.map((option) => (
                 <MenuItem key={option.id} value={option.id}>
-                  {option.ukr}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {(field.name === 'guard_type' || field.name === 'apple' || field.name === 'sharpening') && option.image_url && (
+                      <img
+                        src={option.image_url}
+                        alt=""
+                        style={{
+                          width: 24,
+                          height: 24,
+                          objectFit: 'contain',
+                          borderRadius: 2
+                        }}
+                      />
+                    )}
+                    <span>{option.ukr}</span>
+                  </Box>
                 </MenuItem>
               )) || []}
             </Select>
