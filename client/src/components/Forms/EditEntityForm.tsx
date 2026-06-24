@@ -358,6 +358,19 @@ export function EditEntityForm<T extends BaseEntity>({
         initialData[field.name] = value;
       });
 
+      // Додаємо імперські поля з entity (якщо вони є)
+      if (entity) {
+        const entityWithImperial = entity as any;
+        initialData.total_len_in = entityWithImperial.total_len_in || '';
+        initialData.blade_len_in = entityWithImperial.blade_len_in || '';
+        initialData.handle_len_in = entityWithImperial.handle_len_in || '';
+        initialData.handle_len_w_in = entityWithImperial.handle_len_w_in || '';
+        initialData.width_in = entityWithImperial.width_in || '';
+        initialData.guard_width_in = entityWithImperial.guard_width_in || '';
+        initialData.thikness_in = entityWithImperial.thikness_in || '';
+        initialData.weight_lb = entityWithImperial.weight_lb || '';
+      }
+
       console.log('📝 Ініціалізація форми:', initialData);
       setFormData(initialData);
       setError(null);

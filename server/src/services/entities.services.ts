@@ -431,6 +431,10 @@ export class WeaponItemService extends BaseService<WeaponItem> {
             itemData.total_len_in = mmToInches(itemData.total_len);
             itemData.blade_len_in = mmToInches(itemData.blade_len);
             itemData.handle_len_in = mmToInches(itemData.handle_len);
+            // handle_len_w_in - опціонально, може не бути в БД
+            if (itemData.handle_len_w) {
+                itemData.handle_len_w_in = mmToInches(itemData.handle_len_w);
+            }
             itemData.width_in = mmToInches(itemData.width);
             itemData.guard_width_in = mmToInches(itemData.guard_width);
             itemData.thikness_in = mmToInches(itemData.thikness);
@@ -476,6 +480,10 @@ export class WeaponItemService extends BaseService<WeaponItem> {
             itemData.total_len_in = mmToInches(itemData.total_len);
             itemData.blade_len_in = mmToInches(itemData.blade_len);
             itemData.handle_len_in = mmToInches(itemData.handle_len);
+            // handle_len_w_in - опціонально, може не бути в БД
+            if (itemData.handle_len_w) {
+                itemData.handle_len_w_in = mmToInches(itemData.handle_len_w);
+            }
             itemData.width_in = mmToInches(itemData.width);
             itemData.guard_width_in = mmToInches(itemData.guard_width);
             itemData.thikness_in = mmToInches(itemData.thikness);
@@ -485,6 +493,10 @@ export class WeaponItemService extends BaseService<WeaponItem> {
             itemData.total_len_in = mmToInches(itemData.total_len);
             itemData.blade_len_in = mmToInches(itemData.blade_len);
             itemData.handle_len_in = mmToInches(itemData.handle_len);
+            // handle_len_w_in - опціонально, може не бути в БД
+            if (itemData.handle_len_w) {
+                itemData.handle_len_w_in = mmToInches(itemData.handle_len_w);
+            }
             itemData.width_in = mmToInches(itemData.width);
             itemData.guard_width_in = mmToInches(itemData.guard_width);
             itemData.thikness_in = mmToInches(itemData.thikness);

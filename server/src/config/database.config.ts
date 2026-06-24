@@ -30,8 +30,6 @@ export const createConnectionPool = () => {
         keepAliveInitialDelay: 10000,
         // Таймаути
         connectTimeout: 60000,
-        // Перепідключення
-        reconnect: true
     });
 };
 
