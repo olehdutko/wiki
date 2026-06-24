@@ -85,6 +85,14 @@ export interface WeaponItem extends BaseEntity {
     guard_width?: string | null;
     thikness?: string | null;
     weight?: string | null;
+    // Imperial units (auto-calculated)
+    total_len_in?: string | null;
+    blade_len_in?: string | null;
+    handle_len_in?: string | null;
+    width_in?: string | null;
+    guard_width_in?: string | null;
+    thikness_in?: string | null;
+    weight_lb?: string | null;
     theritory?: string | null;
     century?: string | null;
     arch_period?: string | null;

@@ -675,6 +675,15 @@ export function EditEntityForm<T extends BaseEntity>({
     // Групуємо поля по категоріях
     const basicInfoFields = ['ukr_name', 'eng_name', 'rus_name'];
     const sizeFields = ['total_len', 'blade_len', 'handle_len', 'handle_len_w', 'width', 'guard_width', 'thikness', 'weight'];
+    const imperialSizeFields = [
+      { name: 'total_len_in', label: 'Заг. довжина (in)' },
+      { name: 'blade_len_in', label: 'Довж. клинка (in)' },
+      { name: 'handle_len_in', label: 'Довж. руківя (in)' },
+      { name: 'width_in', label: 'Ширина (in)' },
+      { name: 'guard_width_in', label: 'Шир. гарди (in)' },
+      { name: 'thikness_in', label: 'Товщина (in)' },
+      { name: 'weight_lb', label: 'Вага (lb)' }
+    ];
     const bottomFields = ['source', 'links', 'comments'];
     const otherFields = mainFields.filter(field =>
       !basicInfoFields.includes(field.name) &&
@@ -774,13 +783,45 @@ export function EditEntityForm<T extends BaseEntity>({
           }}>
             Розміри
           </Typography>
-          <Grid container spacing={2} sx={{ mb: 1 }}>
+          {/* Метричні одиниці (mm, g) */}
+          <Typography variant="caption" sx={{ color: '#666', mb: 1, display: 'block' }}>
+            Міліметри / Грами
+          </Typography>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
             {sizeFieldsList.map((field) => (
               <Grid key={field.name} sx={{ flex: 1 }} size={{ xs: 12, sm: 6, md: 3, lg: 1.5 }}>
                 {renderField(field)}
               </Grid>
             ))}
           </Grid>
+          
+          {/* Імперські одиниці (inches, pounds) - read only */}
+          {entityType === 'weapons' && (
+            <>
+              <Typography variant="caption" sx={{ color: '#666', mb: 1, display: 'block' }}>
+                Дюйми / Фунти (авто-розрахунок)
+              </Typography>
+              <Grid container spacing={2}>
+                {imperialSizeFields.map((field) => (
+                  <Grid key={field.name} sx={{ flex: 1 }} size={{ xs: 12, sm: 6, md: 3, lg: 1.5 }}>
+                    <TextField
+                      label={field.label}
+                      value={formData[field.name] || '-'}
+                      disabled
+                      size="small"
+                      fullWidth
+                      sx={{
+                        '& .MuiInputBase-input.Mui-disabled': {
+                          WebkitTextFillColor: '#1976d2',
+                          fontWeight: 500
+                        }
+                      }}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            </>
+          )}
         </Box>
 
         {/* Інше */}
