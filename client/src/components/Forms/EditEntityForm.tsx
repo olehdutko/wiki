@@ -808,16 +808,16 @@ export function EditEntityForm<T extends BaseEntity>({
           </Typography>
           <Grid container spacing={2} justifyContent="center" sx={{ mb: 2 }}>
             <Grid size={{ xs: 12, md: 9 }} key="comments">
-              {renderField(bottomFieldsList.find(f => f.name === 'comments'))}
+              {renderField(bottomFieldsList.find(f => f.name === 'comments')!)}
             </Grid>
           </Grid>
           
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, sm: 6 }} key="links">
-              {renderField(bottomFieldsList.find(f => f.name === 'links'))}
+              {renderField(bottomFieldsList.find(f => f.name === 'links')!)}
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }} key="source">
-              {renderField(bottomFieldsList.find(f => f.name === 'source'))}
+              {renderField(bottomFieldsList.find(f => f.name === 'source')!)}
             </Grid>
           </Grid>
         </Box>
@@ -868,12 +868,17 @@ export function EditEntityForm<T extends BaseEntity>({
   };
 
   const renderField = (field: FormField) => {
-    const value = formData[field.name];
+    // Захист від undefined field
+    if (!field || !field.name) {
+      console.warn('❌ renderField: field is undefined or has no name');
+      return null;
+    }
+    const value = formData[field.name] ?? '';
     const isReadOnly = field.name === 'id';
     const isRequired = field.required;
     const fieldError = getFieldError(field, value);
 
-    console.log(`🎯 Рендеринг поля ${field.name}:`, { value, type: typeof value, formData: formData[field.name] });
+    console.log(`🎯 Рендеринг поля ${field.name}:`, { value, type: typeof value, formDataValue: formData[field.name] });
 
     // Функція для додавання зірочки до лейбла
     const getLabel = () => {
