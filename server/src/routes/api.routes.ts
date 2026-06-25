@@ -269,8 +269,13 @@ router.delete('/weapons/:id', weaponItemController.delete.bind(weaponItemControl
 // ================= РОУТИ ДЛЯ ЗВ'ЯЗКІВ =================
 
 // Роути для лінків
+// Links (звязки між айтемами)
 router.get('/links/:id', linksController.getLinkedObjects.bind(linksController));
+router.post('/links', linksController.createLink.bind(linksController));
 router.delete('/links/:id', linksController.deleteLink.bind(linksController));
+
+// Пошук айтемів для додавання звязків
+router.get('/items/search', linksController.searchItems.bind(linksController));
 
 // ================= ЕКСПОРТ БД (mysqldump) =================
 

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { pool } from '../config/database.config';
-import type { RowDataPacket } from 'mysql2';
+import type { RowDataPacket, ResultSetHeader } from 'mysql2';
 
 interface LinkedObject extends RowDataPacket {
     id: number;
@@ -8,6 +8,17 @@ interface LinkedObject extends RowDataPacket {
     ukr_name: string;
     eng_name: string;
     rus_name: string;
+}
+
+interface SearchItem extends RowDataPacket {
+    id: number;
+    ukr_name: string;
+    eng_name: string;
+    rus_name: string;
+}
+
+interface ExistingLink extends RowDataPacket {
+    count: number;
 }
 
 export class LinksController {
@@ -22,7 +33,7 @@ export class LinksController {
                 return;
             }
 
-            // Отримуємо всі пов'язані об'єкти через таблицю links
+            // Оновлено: таблиця links -> item_links
             const [rows] = await pool.query<LinkedObject[]>(`
                 SELECT 
                     l.id,
@@ -31,7 +42,7 @@ export class LinksController {
                     i.eng_name,
                     i.rus_name
                 FROM 
-                    links l
+                    item_links l
                 JOIN 
                     items i ON i.id = (
                         CASE 
@@ -60,6 +71,92 @@ export class LinksController {
         }
     }
 
+    async createLink(req: Request, res: Response): Promise<void> {
+        try {
+            const { item_id, other_item } = req.body;
+
+            // Валідація
+            if (!item_id || !other_item) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Необхідно вказати item_id та other_item'
+                });
+                return;
+            }
+
+            const fromId = parseInt(item_id);
+            const toId = parseInt(other_item);
+
+            if (isNaN(fromId) || isNaN(toId)) {
+                res.status(400).json({
+                    success: false,
+                    message: 'ID мають бути числами'
+                });
+                return;
+            }
+
+            if (fromId === toId) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Не можна зв\'язати айтем з самим собою'
+                });
+                return;
+            }
+
+            // Перевіряємо чи існують обидва айтеми
+            const [items] = await pool.query<RowDataPacket[]>(
+                'SELECT id FROM items WHERE id IN (?, ?)',
+                [fromId, toId]
+            );
+
+            if (items.length !== 2) {
+                res.status(404).json({
+                    success: false,
+                    message: 'Один або обидва айтеми не знайдені'
+                });
+                return;
+            }
+
+            // Перевіряємо чи зв'язок вже існує
+            const [existing] = await pool.query<ExistingLink[]>(
+                `SELECT COUNT(*) as count FROM item_links 
+                 WHERE (item_id = ? AND other_item = ?) 
+                    OR (item_id = ? AND other_item = ?)`,
+                [fromId, toId, toId, fromId]
+            );
+
+            if (existing[0].count > 0) {
+                res.status(409).json({
+                    success: false,
+                    message: 'Зв\'язок між цими айтемами вже існує'
+                });
+                return;
+            }
+
+            // Створюємо зв'язок
+            const [result] = await pool.execute<ResultSetHeader>(
+                'INSERT INTO item_links (item_id, other_item) VALUES (?, ?)',
+                [fromId, toId]
+            );
+
+            res.status(201).json({
+                success: true,
+                message: 'Зв\'язок успішно створено',
+                data: {
+                    id: result.insertId,
+                    item_id: fromId,
+                    other_item: toId
+                }
+            });
+        } catch (error) {
+            console.error('Помилка при створенні зв\'язку:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Помилка при створенні зв\'язку'
+            });
+        }
+    }
+
     async deleteLink(req: Request, res: Response): Promise<void> {
         try {
             const linkId = parseInt(req.params.id);
@@ -71,8 +168,9 @@ export class LinksController {
                 return;
             }
 
+            // Оновлено: таблиця links -> item_links
             const [result] = await pool.execute(
-                'DELETE FROM links WHERE id = ?',
+                'DELETE FROM item_links WHERE id = ?',
                 [linkId]
             );
 
@@ -98,4 +196,53 @@ export class LinksController {
             });
         }
     }
-} 
+
+    async searchItems(req: Request, res: Response): Promise<void> {
+        try {
+            const { q } = req.query;
+
+            if (!q || typeof q !== 'string' || q.length < 2) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Пошуковий запит має бути не менше 2 символів'
+                });
+                return;
+            }
+
+            const searchTerm = `%${q}%`;
+
+            const [rows] = await pool.query<SearchItem[]>(`
+                SELECT 
+                    id,
+                    ukr_name,
+                    eng_name,
+                    rus_name
+                FROM 
+                    items
+                WHERE 
+                    ukr_name LIKE ? 
+                    OR eng_name LIKE ? 
+                    OR rus_name LIKE ?
+                ORDER BY 
+                    CASE 
+                        WHEN ukr_name LIKE ? THEN 1
+                        WHEN eng_name LIKE ? THEN 2
+                        ELSE 3
+                    END,
+                    ukr_name ASC
+                LIMIT 20
+            `, [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]);
+
+            res.json({
+                success: true,
+                data: rows
+            });
+        } catch (error) {
+            console.error('Помилка при пошуку айтемів:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Помилка при пошуку айтемів'
+            });
+        }
+    }
+}

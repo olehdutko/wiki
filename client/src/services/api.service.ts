@@ -510,7 +510,57 @@ class ApiService {
      * Видалити зображення довідкової сутності
      */
     async deleteEntityImage(entityType: string, entityId: number): Promise<void> {
-        const response = await this.api.delete(`/upload/${entityType}/${entityId}`);
+        const response = await this.api.delete(`/upload/${entityType}/${entityId}
+
+    // ================= LINKS (ЗВ'ЯЗКИ МІЖ АЙТЕМАМИ) =================
+
+    /**
+     * Створити зв'язок між айтемами
+     */
+    async createLink(itemId: number, otherItemId: number): Promise<{ id: number; item_id: number; other_item: number }> {
+        try {
+            const response = await this.api.post<ApiResponse<{ id: number; item_id: number; other_item: number }>>('/links', {
+                item_id: itemId,
+                other_item: otherItemId
+            });
+
+            if (!response.data.success) {
+                throw new Error(response.data.message || 'Failed to create link');
+            }
+
+            return response.data.data;
+        } catch (error: any) {
+            console.error('❌ Помилка створення зв'язку:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Пошук айтемів для додавання зв'язку
+     */
+    async searchItems(query: string): Promise<Array<{
+        id: number;
+        ukr_name: string;
+        eng_name: string;
+        rus_name: string;
+    }>> {
+        try {
+            const response = await this.api.get<ApiResponse<Array<{
+                id: number;
+                ukr_name: string;
+                eng_name: string;
+                rus_name: string;
+            }>>>('/items/search', {
+                params: { q: query }
+            });
+
+            return response.data.data || [];
+        } catch (error) {
+            console.error('❌ Помилка пошуку айтемів:', error);
+            return [];
+        }
+    }
+`);
         return response.data;
     }
 }
