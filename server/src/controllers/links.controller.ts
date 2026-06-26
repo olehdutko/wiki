@@ -201,7 +201,18 @@ export class LinksController {
         try {
             const { q } = req.query;
 
-            if (!q || typeof q !== 'string' || q.length < 2) {
+            if (!q || typeof q !== 'string' || q.trim().length === 0) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Пошуковий запит не може бути порожнім'
+                });
+                return;
+            }
+
+            const trimmedQuery = q.trim();
+            const numericId = /^\d+$/.test(trimmedQuery) ? parseInt(trimmedQuery, 10) : null;
+
+            if (numericId === null && trimmedQuery.length < 2) {
                 res.status(400).json({
                     success: false,
                     message: 'Пошуковий запит має бути не менше 2 символів'
@@ -209,7 +220,19 @@ export class LinksController {
                 return;
             }
 
-            const searchTerm = `%${q}%`;
+            const searchTerm = `%${trimmedQuery}%`;
+            const params: any[] = [searchTerm, searchTerm, searchTerm];
+
+            let idCondition = '';
+            if (numericId !== null) {
+                idCondition = 'OR id = ?';
+                params.push(numericId);
+            } else {
+                idCondition = 'OR CAST(id AS CHAR) LIKE ?';
+                params.push(searchTerm);
+            }
+
+            params.push(searchTerm, searchTerm, searchTerm);
 
             const [rows] = await pool.query<SearchItem[]>(`
                 SELECT 
@@ -223,15 +246,17 @@ export class LinksController {
                     ukr_name LIKE ? 
                     OR eng_name LIKE ? 
                     OR rus_name LIKE ?
+                    ${idCondition}
                 ORDER BY 
                     CASE 
-                        WHEN ukr_name LIKE ? THEN 1
-                        WHEN eng_name LIKE ? THEN 2
-                        ELSE 3
+                        WHEN id = ? THEN 1
+                        WHEN ukr_name LIKE ? THEN 2
+                        WHEN eng_name LIKE ? THEN 3
+                        ELSE 4
                     END,
                     ukr_name ASC
                 LIMIT 20
-            `, [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]);
+            `, params);
 
             res.json({
                 success: true,
