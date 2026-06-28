@@ -829,6 +829,36 @@ export function EntityDataGrid<T extends BaseEntity>({
                 );
             }
         }] : []),
+        // Колонка primary зображення для зброї
+        ...(entityType === 'weapons' ? [{
+            field: 'primary_image_url',
+            headerName: 'Зображення',
+            width: 80,
+            sortable: false,
+            filterable: false,
+            disableColumnMenu: true,
+            renderCell: (params: any) => {
+                return (
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                        {params.value ? (
+                            <img
+                                src={params.value}
+                                alt=""
+                                style={{
+                                    width: 40,
+                                    height: 40,
+                                    objectFit: 'cover',
+                                    borderRadius: 4,
+                                    border: '1px solid #e0e0e0'
+                                }}
+                            />
+                        ) : (
+                            <Typography variant="caption" color="text.secondary">-</Typography>
+                        )}
+                    </Box>
+                );
+            }
+        }] : []),
         // Інші колонки
         ...config.columns.map(col => {
             const isEditable = col.editable && enableEdit && supportsInlineEditing(entityType) && !col.field.startsWith('id');

@@ -25,6 +25,16 @@ import type {
 
 const API_BASE_URL = '/api';
 
+
+export interface ItemImage {
+    id: number;
+    item_id: number;
+    file_name: string;
+    is_primary: boolean;
+    created_at: string;
+    url?: string;
+}
+
 class ApiService {
     private api: AxiosInstance;
 
@@ -563,6 +573,67 @@ class ApiService {
         } catch (error) {
             console.error('❌ Помилка пошуку айтемів:', error);
             return [];
+        }
+    }
+    // ================= ITEM IMAGES (ГАЛЕРЕЯ ЗОБРАЖЕНЬ АЙТЕМІВ) =================
+
+    /**
+     * Отримати список зображень айтема
+     */
+    async getItemImages(itemId: number): Promise<{ id: number; item_id: number; file_name: string; is_primary: boolean; created_at: string; url?: string }[]> {
+        try {
+            const response = await this.api.get<ApiResponse<{ id: number; item_id: number; file_name: string; is_primary: boolean; created_at: string; url?: string }[]>>(`/items/${itemId}/images`);
+            return response.data.data || [];
+        } catch (error) {
+            console.error('❌ Помилка отримання зображень айтема:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Завантажити зображення для айтема
+     */
+    async uploadItemImages(itemId: number, files: File[]): Promise<{ id: number; item_id: number; file_name: string; is_primary: boolean; created_at: string; url?: string }[]> {
+        try {
+            const formData = new FormData();
+            files.forEach(file => {
+                formData.append('images', file);
+            });
+
+            const response = await this.api.post<ApiResponse<{ id: number; item_id: number; file_name: string; is_primary: boolean; created_at: string; url?: string }[]>>(`/items/${itemId}/images`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            return response.data.data || [];
+        } catch (error: any) {
+            console.error('❌ Помилка завантаження зображень:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Встановити primary зображення
+     */
+    async setPrimaryItemImage(itemId: number, imageId: number): Promise<void> {
+        try {
+            await this.api.patch<ApiResponse<void>>(`/items/${itemId}/images/${imageId}/primary`);
+        } catch (error: any) {
+            console.error('❌ Помилка встановлення primary зображення:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Видалити зображення айтема
+     */
+    async deleteItemImage(itemId: number, imageId: number): Promise<void> {
+        try {
+            await this.api.delete<ApiResponse<void>>(`/items/${itemId}/images/${imageId}`);
+        } catch (error: any) {
+            console.error('❌ Помилка видалення зображення:', error);
+            throw error;
         }
     }
 }

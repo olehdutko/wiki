@@ -5,6 +5,7 @@
 import type { RowDataPacket } from 'mysql2';
 import { BaseService } from './base.service';
 import { pool } from '../config/database.config';
+import { getItemImageUrl, ItemImagesService } from './itemImages.service';
 
 // ================= UTILITY FUNCTIONS FOR UNIT CONVERSION =================
 
@@ -221,6 +222,18 @@ export class WeaponItemService extends BaseService<WeaponItem> {
 
         return result;
     }
+    /**
+     * Load primary image URLs for a list of items
+     */
+    private async loadPrimaryImagesForItems(itemIds: number[]): Promise<Map<number, string>> {
+        if (itemIds.length === 0) {
+            return new Map();
+        }
+
+        const imageService = new ItemImagesService();
+        return await imageService.getPrimaryImagesForItems(itemIds);
+    }
+
 
     /**
      * Зберегти зв'язки категорій для айтема
@@ -438,12 +451,17 @@ export class WeaponItemService extends BaseService<WeaponItem> {
             // Явно завантажуємо категорії, щоб у відповіді були повні об'єкти
             const itemIds = items.map(item => item.id);
             const categoriesMap = await this.loadCategoriesForItems(itemIds);
+            const primaryImagesMap = await this.loadPrimaryImagesForItems(itemIds);
             for (const item of items) {
                 item.categories_data = categoriesMap.get(item.id) || [];
                 item.category_ids = (item.categories_data as any[]).map((c: any) => c.id);
                 (item as any).category_names = (item.categories_data as any[]).map((c: any) => c.ukr_name).join(', ');
                 if (item.categories_data.length > 0 && !item.category_name) {
                     item.category_name = item.categories_data[0].ukr_name;
+                }
+                const primaryFileName = primaryImagesMap.get(item.id);
+                if (primaryFileName) {
+                    (item as any).primary_image_url = getItemImageUrl(item, primaryFileName);
                 }
             }
 
@@ -472,12 +490,18 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                 return null;
             }
 
-            const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
+const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
             converted.categories_data = await this.getItemCategories(id);
             converted.category_ids = (converted.categories_data as any[]).map((c: any) => c.id);
             (converted as any).category_names = (converted.categories_data as any[]).map((c: any) => c.ukr_name).join(', ');
             if (converted.categories_data.length > 0 && !converted.category_name) {
                 converted.category_name = converted.categories_data[0].ukr_name;
+            }
+
+            const imageService = new ItemImagesService();
+            const primaryFileName = await imageService.getPrimaryImageForItem(id);
+            if (primaryFileName) {
+                (converted as any).primary_image_url = getItemImageUrl(converted, primaryFileName);
             }
 
             return converted;
@@ -650,12 +674,17 @@ export class WeaponItemService extends BaseService<WeaponItem> {
 
             const itemIds = items.map(item => item.id);
             const categoriesMap = await this.loadCategoriesForItems(itemIds);
+            const primaryImagesMap = await this.loadPrimaryImagesForItems(itemIds);
             for (const item of items) {
                 item.categories_data = categoriesMap.get(item.id) || [];
                 item.category_ids = (item.categories_data as any[]).map((c: any) => c.id);
                 (item as any).category_names = (item.categories_data as any[]).map((c: any) => c.ukr_name).join(', ');
                 if (item.categories_data.length > 0 && !item.category_name) {
                     item.category_name = item.categories_data[0].ukr_name;
+                }
+                const primaryFileName = primaryImagesMap.get(item.id);
+                if (primaryFileName) {
+                    (item as any).primary_image_url = getItemImageUrl(item, primaryFileName);
                 }
             }
 
@@ -783,12 +812,17 @@ export class WeaponItemService extends BaseService<WeaponItem> {
 
             const itemIds = items.map(item => item.id);
             const categoriesMap = await this.loadCategoriesForItems(itemIds);
+            const primaryImagesMap = await this.loadPrimaryImagesForItems(itemIds);
             for (const item of items) {
                 item.categories_data = categoriesMap.get(item.id) || [];
                 item.category_ids = (item.categories_data as any[]).map((c: any) => c.id);
                 (item as any).category_names = (item.categories_data as any[]).map((c: any) => c.ukr_name).join(', ');
                 if (item.categories_data.length > 0 && !item.category_name) {
                     item.category_name = item.categories_data[0].ukr_name;
+                }
+                const primaryFileName = primaryImagesMap.get(item.id);
+                if (primaryFileName) {
+                    (item as any).primary_image_url = getItemImageUrl(item, primaryFileName);
                 }
             }
 
