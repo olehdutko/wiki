@@ -1,3 +1,4 @@
+import InputAdornment from '@mui/material/InputAdornment';
 import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
@@ -407,6 +408,19 @@ export function EditEntityForm<T extends BaseEntity>({
         initialData[field.name] = value;
       });
 
+      // Додаємо імперські поля з entity (якщо вони є)
+      if (entity) {
+        const entityWithImperial = entity as any;
+        initialData.total_len_in = entityWithImperial.total_len_in || '';
+        initialData.blade_len_in = entityWithImperial.blade_len_in || '';
+        initialData.handle_len_in = entityWithImperial.handle_len_in || '';
+        initialData.handle_len_w_in = entityWithImperial.handle_len_w_in || '';
+        initialData.width_in = entityWithImperial.width_in || '';
+        initialData.guard_width_in = entityWithImperial.guard_width_in || '';
+        initialData.thikness_in = entityWithImperial.thikness_in || '';
+        initialData.weight_lb = entityWithImperial.weight_lb || '';
+      }
+
       console.log('📝 Ініціалізація форми:', initialData);
       setFormData(initialData);
       setError(null);
@@ -679,6 +693,16 @@ export function EditEntityForm<T extends BaseEntity>({
     // Групуємо поля по категоріях
     const basicInfoFields = ['ukr_name', 'eng_name', 'rus_name'];
     const sizeFields = ['total_len', 'blade_len', 'handle_len', 'handle_len_w', 'width', 'guard_width', 'thikness', 'weight'];
+    const imperialSizeFields = [
+      { name: 'total_len_in', label: 'Загальна довжина (in)' },
+      { name: 'blade_len_in', label: 'Довжина клинка (in)' },
+      { name: 'handle_len_in', label: "Довжина руків'я (in)" },
+      { name: 'handle_len_w_in', label: "Ширина руків'я (in)" },
+      { name: 'width_in', label: 'Ширина клинка (in)' },
+      { name: 'guard_width_in', label: 'Ширина гарди (in)' },
+      { name: 'thikness_in', label: 'Товщина клинка (in)' },
+      { name: 'weight_lb', label: 'Вага (lb)' }
+    ];
     const bottomFields = ['source', 'links', 'comments'];
     const otherFields = mainFields.filter(field =>
       !basicInfoFields.includes(field.name) &&
@@ -778,13 +802,68 @@ export function EditEntityForm<T extends BaseEntity>({
           }}>
             Розміри
           </Typography>
-          <Grid container spacing={2} sx={{ mb: 1 }}>
+          {/* Метричні одиниці (mm, g) */}
+          <Typography variant="caption" sx={{ color: '#666', mb: 1, display: 'block' }}>
+            Міліметри / Грами
+          </Typography>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
             {sizeFieldsList.map((field) => (
               <Grid key={field.name} sx={{ flex: 1 }} size={{ xs: 12, sm: 6, md: 3, lg: 1.5 }}>
-                {renderField(field)}
+                {renderMetricField(field)}
               </Grid>
             ))}
           </Grid>
+          
+          {/* Імперські одиниці (inches, pounds) - read only */}
+          {entityType === 'weapons' && (
+            <>
+              <Typography variant="caption" sx={{ color: '#666', mb: 1, display: 'block' }}>
+                Дюйми / Фунти (авто-розрахунок)
+              </Typography>
+              <Grid container spacing={2}>
+                {imperialSizeFields.map((field) => (
+                  <Grid key={field.name} sx={{ flex: 1 }} size={{ xs: 12, sm: 6, md: 3, lg: 1.5 }}>
+                    <TextField
+                      label={field.label}
+                      value={formatValueWithUnit(formData[field.name], field.name) || '-'}
+                      disabled
+                      size="small"
+                      fullWidth
+                      InputProps={{
+                        sx: {
+                          fontSize: '0.875rem'
+                        }
+                      }}
+                      InputLabelProps={{
+                        sx: {
+                          fontSize: '0.75rem',
+                          fontWeight: 500,
+                          color: '#64748b',
+                          '&.MuiInputLabel-shrink': {
+                            transform: 'translate(14px, -9px) scale(0.75) !important'
+                          }
+                        }
+                      }}
+                      sx={{
+                        '& .MuiInputBase-input.Mui-disabled': {
+                          WebkitTextFillColor: '#1976d2',
+                          fontWeight: 500,
+                          fontSize: '0.875rem'
+                        },
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 1,
+                          background: '#f8fafc'
+                        },
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'rgba(0, 0, 0, 0.23)'
+                        }
+                      }}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            </>
+          )}
         </Box>
 
         {/* Інше */}
@@ -881,6 +960,100 @@ export function EditEntityForm<T extends BaseEntity>({
     );
   };
 
+  
+  // Форматування значення з одиницями виміру
+  
+    // Отримання одиниці виміру для поля
+  const getUnitForField = (fieldName: string): string => {
+    const mmFields = ['total_len', 'blade_len', 'handle_len', 'handle_len_w', 'width', 'guard_width', 'thikness'];
+    if (mmFields.includes(fieldName)) return 'mm';
+    if (fieldName === 'weight') return 'g';
+    return '';
+  };
+
+  const formatValueWithUnit = (value: any, fieldName: string): string => {
+    if (value === null || value === undefined || value === '') return '';
+    
+    const strValue = String(value);
+    
+    // Метрична система (mm, g)
+    const mmFields = ['total_len', 'blade_len', 'handle_len', 'handle_len_w', 'width', 'guard_width', 'thikness'];
+    if (mmFields.includes(fieldName)) {
+      return strValue + ' mm';
+    }
+    if (fieldName === 'weight') {
+      return strValue + ' g';
+    }
+    
+    // Імперська система (in, lb)
+    const inFields = ['total_len_in', 'blade_len_in', 'handle_len_in', 'handle_len_w_in', 'width_in', 'guard_width_in', 'thikness_in'];
+    if (inFields.includes(fieldName)) {
+      return strValue + ' in';
+    }
+    if (fieldName === 'weight_lb') {
+      return strValue + ' lb';
+    }
+    
+    return strValue;
+  };
+
+    // Рендеринг метричних полів з одиницями виміру в значенні
+  const renderMetricField = (field: FormField) => {
+    const unit = getUnitForField(field.name);
+    if (!unit) {
+      // Для полів без одиниць використовуємо стандартний рендеринг
+      return renderField(field);
+    }
+    
+    // Для полів з одиницями - модифікуємо поведінку
+    const originalValue = formData[field.name] ?? '';
+    const displayValue = originalValue ? `${originalValue} ${unit}` : '';
+    
+    // Повертаємо TextField з formatted значенням
+    return (
+      <TextField
+        fullWidth
+        label={field.label}
+        value={displayValue}
+        onChange={(e) => {
+          // При редагуванні прибираємо одиниці
+          const newValue = e.target.value.replace(/\s*${unit}$/, '').trim();
+          handleInputChange(field.name, newValue);
+        }}
+        onFocus={(e) => {
+          // При фокусі показуємо тільки число
+          const numericValue = formData[field.name] ?? '';
+          e.currentTarget.value = String(numericValue);
+        }}
+        onBlur={(e) => {
+          // При втраті фокусу додаємо одиниці
+          const value = formData[field.name];
+          if (value) {
+            e.currentTarget.value = `${value} ${unit}`;
+          }
+        }}
+        size="small"
+        InputLabelProps={{ shrink: true }}
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            borderRadius: 1,
+            background: 'white',
+            height: COMPACT_FIELD_HEIGHT,
+          },
+          '& .MuiInputLabel-root': {
+            fontWeight: 500,
+            color: '#64748b',
+            fontSize: '0.75rem',
+          },
+          '& .MuiInputBase-input': {
+            padding: COMPACT_FIELD_INPUT_PADDING,
+            fontSize: '0.875rem'
+          }
+        }}
+      />
+    );
+  };
+
   const renderField = (field: FormField) => {
     // Захист від undefined field
     if (!field || !field.name) {
@@ -964,6 +1137,16 @@ export function EditEntityForm<T extends BaseEntity>({
             helperText={fieldError || (field.maxLength ? `${(value || '').length}/${field.maxLength}` : undefined)}
             inputProps={{ maxLength: field.maxLength, placeholder: '' }}
             size="small"
+            InputLabelProps={{
+              shrink: true
+            }}
+            InputProps={{
+              endAdornment: getUnitForField(field.name) ? (
+                <InputAdornment position="end" sx={{ color: '#64748b', fontSize: '0.75rem' }}>
+                  {getUnitForField(field.name)}
+                </InputAdornment>
+              ) : undefined
+            }}
             sx={{
               ...(field.name.includes('description_') ? {
                 height: '100%',
@@ -1020,6 +1203,16 @@ export function EditEntityForm<T extends BaseEntity>({
             helperText={fieldError}
             inputProps={{ maxLength: field.maxLength, placeholder: '' }}
             size="small"
+            InputLabelProps={{
+              shrink: true
+            }}
+            InputProps={{
+              endAdornment: getUnitForField(field.name) ? (
+                <InputAdornment position="end" sx={{ color: '#64748b', fontSize: '0.75rem' }}>
+                  {getUnitForField(field.name)}
+                </InputAdornment>
+              ) : undefined
+            }}
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: 1,

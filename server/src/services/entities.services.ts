@@ -5,6 +5,54 @@
 import type { RowDataPacket } from 'mysql2';
 import { BaseService } from './base.service';
 import { pool } from '../config/database.config';
+
+// ================= UTILITY FUNCTIONS FOR UNIT CONVERSION =================
+
+/**
+ * Конвертує міліметри в дюйми
+ * 1 inch = 25.4 mm
+ */
+export function mmToInches(mm: string | number | null | undefined): string | null {
+    if (!mm || mm === '' || mm === '0') return null;
+    const mmValue = typeof mm === 'string' ? parseFloat(mm.replace(',', '.')) : mm;
+    if (isNaN(mmValue) || mmValue === 0) return null;
+    const inches = mmValue / 25.4;
+    // Округляємо до 2 знаків після коми
+    return inches.toFixed(2).replace(/\.00$/, '');
+}
+
+/**
+ * Конвертує грами в фунти
+ * 1 lb = 453.59237 g
+ */
+export function gramsToPounds(grams: string | number | null | undefined): string | null {
+    if (!grams || grams === '' || grams === '0') return null;
+    const gValue = typeof grams === 'string' ? parseFloat(grams.replace(',', '.')) : grams;
+    if (isNaN(gValue) || gValue === 0) return null;
+    const pounds = gValue / 453.59237;
+    // Округляємо до 2 знаків після коми
+    return pounds.toFixed(2).replace(/\.00$/, '');
+}
+
+/**
+ * Додає імперські одиниці до даних сутності
+ */
+export function addImperialUnits(data: any): any {
+    if (!data) return data;
+    
+    // Конвертуємо довжини (mm → inches)
+    if (data.totalLen !== undefined) data.totalLenIn = mmToInches(data.totalLen);
+    if (data.bladeLen !== undefined) data.bladeLenIn = mmToInches(data.bladeLen);
+    if (data.handleLen !== undefined) data.handleLenIn = mmToInches(data.handleLen);
+    if (data.width !== undefined) data.widthIn = mmToInches(data.width);
+    if (data.guardWidth !== undefined) data.guardWidthIn = mmToInches(data.guardWidth);
+    if (data.thikness !== undefined) data.thiknessIn = mmToInches(data.thikness);
+    
+    // Конвертуємо вагу (grams → pounds)
+    if (data.weight !== undefined) data.weightLb = gramsToPounds(data.weight);
+    
+    return data;
+}
 import {
     Apple, BladeType, Category, Dolls, Epoha, GlobalType, GuardType,
     Sharpening, Usage, WeaponItem, WeaponItemResponse, CreateWeaponItemDto, UpdateWeaponItemDto
@@ -449,6 +497,19 @@ export class WeaponItemService extends BaseService<WeaponItem> {
             // Видаляємо масив категорій перед базовим create, бо в таблиці items немає такої колонки
             const itemData = { ...data } as any;
             delete itemData.category_ids;
+            
+            // Автоматично додаємо імперські одиниці
+            itemData.total_len_in = mmToInches(itemData.total_len);
+            itemData.blade_len_in = mmToInches(itemData.blade_len);
+            itemData.handle_len_in = mmToInches(itemData.handle_len);
+            // handle_len_w_in - опціонально, може не бути в БД
+            if (itemData.handle_len_w) {
+                itemData.handle_len_w_in = mmToInches(itemData.handle_len_w);
+            }
+            itemData.width_in = mmToInches(itemData.width);
+            itemData.guard_width_in = mmToInches(itemData.guard_width);
+            itemData.thikness_in = mmToInches(itemData.thikness);
+            itemData.weight_lb = gramsToPounds(itemData.weight);
 
             // Визначаємо primary category_id для резервного поля items.category_id
             if (categoryIds && Array.isArray(categoryIds) && categoryIds.length > 0) {
@@ -485,6 +546,32 @@ export class WeaponItemService extends BaseService<WeaponItem> {
             // Видаляємо масив категорій перед базовим update
             const itemData = { ...data } as any;
             delete itemData.category_ids;
+            
+            // Автоматично додаємо імперські одиниці
+            itemData.total_len_in = mmToInches(itemData.total_len);
+            itemData.blade_len_in = mmToInches(itemData.blade_len);
+            itemData.handle_len_in = mmToInches(itemData.handle_len);
+            // handle_len_w_in - опціонально, може не бути в БД
+            if (itemData.handle_len_w) {
+                itemData.handle_len_w_in = mmToInches(itemData.handle_len_w);
+            }
+            itemData.width_in = mmToInches(itemData.width);
+            itemData.guard_width_in = mmToInches(itemData.guard_width);
+            itemData.thikness_in = mmToInches(itemData.thikness);
+            itemData.weight_lb = gramsToPounds(itemData.weight);
+            
+            // Автоматично додаємо імперські одиниці
+            itemData.total_len_in = mmToInches(itemData.total_len);
+            itemData.blade_len_in = mmToInches(itemData.blade_len);
+            itemData.handle_len_in = mmToInches(itemData.handle_len);
+            // handle_len_w_in - опціонально, може не бути в БД
+            if (itemData.handle_len_w) {
+                itemData.handle_len_w_in = mmToInches(itemData.handle_len_w);
+            }
+            itemData.width_in = mmToInches(itemData.width);
+            itemData.guard_width_in = mmToInches(itemData.guard_width);
+            itemData.thikness_in = mmToInches(itemData.thikness);
+            itemData.weight_lb = gramsToPounds(itemData.weight);
 
             // Якщо прийшов новий масив — синхронізуємо category_id в items
             if (categoryIds && Array.isArray(categoryIds)) {
