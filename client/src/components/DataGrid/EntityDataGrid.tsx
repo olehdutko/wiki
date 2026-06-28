@@ -868,36 +868,43 @@ export function EntityDataGrid<T extends BaseEntity>({
                                     <Box
                                         sx={{
                                             position: 'fixed',
-                                            left: '50%',
-                                            top: '50%',
-                                            transform: 'translate(-50%, -50%)',
-                                            width: 420,
-                                            height: 420,
+                                            inset: 0,
                                             zIndex: 9999,
                                             pointerEvents: 'none',
-                                            backgroundColor: 'rgba(15, 23, 42, 0.92)',
-                                            borderRadius: 3,
-                                            boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
-                                            border: '1px solid rgba(255,255,255,0.12)',
-                                            p: 1.5,
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            animation: 'fadeInScale 150ms ease-out'
+                                            backgroundColor: 'rgba(0, 0, 0, 0.45)',
+                                            backdropFilter: 'blur(2px)'
                                         }}
                                     >
-                                        <img
-                                            src={params.value}
-                                            alt=""
-                                            style={{
-                                                maxWidth: '100%',
-                                                maxHeight: '100%',
-                                                objectFit: 'contain',
-                                                borderRadius: 2,
-                                                display: 'block',
-                                                boxShadow: '0 4px 16px rgba(0,0,0,0.4)'
+                                        <Box
+                                            sx={{
+                                                width: 420,
+                                                height: 420,
+                                                backgroundColor: 'rgba(15, 23, 42, 0.94)',
+                                                borderRadius: 3,
+                                                boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+                                                border: '1px solid rgba(255,255,255,0.12)',
+                                                p: 1.5,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
                                             }}
-                                        />
+                                        >
+                                            <img
+                                                src={params.value}
+                                                alt=""
+                                                style={{
+                                                    maxWidth: '100%',
+                                                    maxHeight: '100%',
+                                                    objectFit: 'contain',
+                                                    borderRadius: 2,
+                                                    display: 'block',
+                                                    boxShadow: '0 4px 16px rgba(0,0,0,0.4)'
+                                                }}
+                                            />
+                                        </Box>
                                     </Box>
                                 )}
                             </>
