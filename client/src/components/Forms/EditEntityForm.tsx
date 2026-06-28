@@ -35,6 +35,7 @@ import { SourceLinksField } from '../Fields/SourceLinksField';
 import { NotesField } from '../Fields/NotesField';
 import { ImageUploadField } from '../Fields/ImageUploadField';
 import { AddLinkModal } from '../Modals/AddLinkModal';
+import { ItemImageGallery } from '../ItemImageGallery/ItemImageGallery';
 
 // Типи
 interface BaseEntity {
@@ -1895,6 +1896,7 @@ export function EditEntityForm<T extends BaseEntity>({
           <Tab label="Опис англійською" />
           <Tab label="Опис москальською" />
           <Tab label="Схожі об'єкти" />
+          <Tab label="Зображення" />
         </Tabs>
       </DialogTitle>
 
@@ -1924,6 +1926,7 @@ export function EditEntityForm<T extends BaseEntity>({
           {activeTab === 2 && renderDescriptionTab('description_eng')}
           {activeTab === 3 && renderDescriptionTab('description_rus')}
           {activeTab === 4 && renderSimilarObjectsTab()}
+          {activeTab === 5 && <ItemImageGallery itemId={entity?.id || 0} />}
         </Box>
       </DialogContent>
 

@@ -13,6 +13,7 @@ import { LinksController } from '../controllers/links.controller';
 import { exportDatabaseDump } from '../controllers/database.controller';
 import multer from 'multer';
 import { UploadController } from '../controllers/upload.controller';
+import itemImagesRoutes from '../routes/itemImages.routes';
 
 const router = Router();
 
@@ -342,5 +343,8 @@ const upload = multer({
 // Роути для завантаження зображень
 router.post('/upload/:entityType/:entityId', upload.single('image'), uploadController.uploadEntityImage.bind(uploadController));
 router.delete('/upload/:entityType/:entityId', uploadController.deleteEntityImage.bind(uploadController));
+
+// ================= РОУТИ ДЛЯ ЗОБРАЖЕНЬ АЙТЕМІВ =================
+router.use('/items', itemImagesRoutes);
 
 export default router; 

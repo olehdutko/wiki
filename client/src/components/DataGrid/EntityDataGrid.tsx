@@ -24,7 +24,6 @@ import {
     IconButton,
     Tooltip,
     Alert,
-
     CircularProgress,
     FormControl,
     InputLabel,
@@ -822,6 +821,93 @@ export function EntityDataGrid<T extends BaseEntity>({
                                     }}
                                 />
                             </Box>
+                        ) : (
+                            <Typography variant="caption" color="text.secondary">-</Typography>
+                        )}
+                    </Box>
+                );
+            }
+        }] : []),
+        ...(entityType === 'weapons' ? [{
+            field: 'primary_image_url',
+            headerName: 'Зображення',
+            width: 80,
+            sortable: false,
+            filterable: false,
+            disableColumnMenu: true,
+            renderCell: (params: any) => {
+                const [hovered, setHovered] = useState(false);
+
+                return (
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '100%',
+                            position: 'relative'
+                        }}
+                        onMouseEnter={() => setHovered(true)}
+                        onMouseLeave={() => setHovered(false)}
+                    >
+                        {params.value ? (
+                            <>
+                                <img
+                                    src={params.value}
+                                    alt=""
+                                    style={{
+                                        width: 40,
+                                        height: 40,
+                                        objectFit: 'cover',
+                                        borderRadius: 4,
+                                        border: '1px solid #e0e0e0',
+                                        cursor: 'pointer'
+                                    }}
+                                />
+                                {hovered && (
+                                    <Box
+                                        sx={{
+                                            position: 'fixed',
+                                            inset: 0,
+                                            zIndex: 9999,
+                                            pointerEvents: 'none',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: 'rgba(0, 0, 0, 0.45)',
+                                            backdropFilter: 'blur(2px)'
+                                        }}
+                                    >
+                                        <Box
+                                            sx={{
+                                                width: 420,
+                                                height: 420,
+                                                backgroundColor: 'rgba(15, 23, 42, 0.94)',
+                                                borderRadius: 3,
+                                                boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+                                                border: '1px solid rgba(255,255,255,0.12)',
+                                                p: 1.5,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}
+                                        >
+                                            <img
+                                                src={params.value}
+                                                alt=""
+                                                style={{
+                                                    maxWidth: '100%',
+                                                    maxHeight: '100%',
+                                                    objectFit: 'contain',
+                                                    borderRadius: 2,
+                                                    display: 'block',
+                                                    boxShadow: '0 4px 16px rgba(0,0,0,0.4)'
+                                                }}
+                                            />
+                                        </Box>
+                                    </Box>
+                                )}
+                            </>
                         ) : (
                             <Typography variant="caption" color="text.secondary">-</Typography>
                         )}
