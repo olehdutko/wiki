@@ -266,7 +266,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         } finally {
             setLoading(prev => ({ ...prev, loading: false }));
         }
-    }, [entityType, pagination.page, pagination.pageSize, selectedCategoryId, filterModel, isSearchActive, searchQuery]);
+    }, [entityType, pagination.page, pagination.pageSize, selectedCategoryId, filterModel, isSearchActive, searchQuery, sortModel]);
 
     // Функція для завантаження категорій (тільки для weapons)
     const fetchCategories = useCallback(async () => {
