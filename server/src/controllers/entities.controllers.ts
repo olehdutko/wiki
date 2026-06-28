@@ -47,7 +47,7 @@ export class LinksController {
                     i.eng_name,
                     i.rus_name
                 FROM 
-                    links l
+                    item_links l
                 JOIN 
                     items i ON (
                         CASE 

@@ -24,7 +24,7 @@ export interface Link extends RowDataPacket {
 
 export class LinksService extends BaseService<Link> {
     constructor() {
-        super('links');
+        super('item_links');
     }
 }
 
@@ -274,7 +274,7 @@ export class WeaponItemService extends BaseService<WeaponItem> {
         try {
             await connection.beginTransaction();
             await connection.execute('DELETE FROM item_categories WHERE item_id = ?', [id]);
-            await connection.execute('DELETE FROM links WHERE item_id = ? OR other_item = ?', [id, id]);
+            await connection.execute('DELETE FROM item_links WHERE item_id = ? OR other_item = ?', [id, id]);
             await connection.execute('DELETE FROM items WHERE id = ?', [id]);
             await connection.commit();
             return true;

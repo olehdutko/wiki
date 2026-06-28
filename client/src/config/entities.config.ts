@@ -12,6 +12,7 @@ export interface GridColumn {
     editable?: boolean;
     type?: 'string' | 'number' | 'boolean' | 'date';
     valueGetter?: (params: any) => any;
+    valueFormatter?: (params: any) => string;
     renderCell?: (params: any) => any;
 }
 

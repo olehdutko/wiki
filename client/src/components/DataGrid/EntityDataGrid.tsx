@@ -5,12 +5,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
     DataGrid,
-    GridFilterInputValue,
     GridToolbar
 } from '@mui/x-data-grid';
 import type {
     GridColDef,
-    GridRowParams
+    GridRowParams,
+    GridSortModel
 } from '@mui/x-data-grid';
 import {
     Box,
@@ -96,7 +96,6 @@ export function EntityDataGrid<T extends BaseEntity>({
     // Стан
     const [data, setData] = useState<T[]>([]);
     const [allCategoryData, setAllCategoryData] = useState<T[]>([]); // Всі дані вибраної категорії
-    const [filteredData, setFilteredData] = useState<T[]>([]); // Відфільтровані дані
     const [loading, setLoading] = useState<LoadingState>({ loading: true, error: null });
     const [pagination, setPagination] = useState({
         page: 0,
@@ -109,7 +108,7 @@ export function EntityDataGrid<T extends BaseEntity>({
     });
     
     // Server-side sorting state
-    const [sortModel, setSortModel] = useState([
+    const [sortModel, setSortModel] = useState<GridSortModel>([
         { field: 'id', sort: 'asc' }
     ]);
 
@@ -121,6 +120,7 @@ export function EntityDataGrid<T extends BaseEntity>({
     const [searchDialog, setSearchDialog] = useState(false);
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isSearchActive, setIsSearchActive] = useState(false);
     const [imageUploadRow, setImageUploadRow] = useState<any>(null);
     const [imageUploadOpen, setImageUploadOpen] = useState(false);
     const [editDialog, setEditDialog] = useState<{ open: boolean; row: T | null }>({
@@ -205,7 +205,13 @@ export function EntityDataGrid<T extends BaseEntity>({
                 });
             }
             
-            if (entityType === 'weapons' && selectedCategoryId) {
+            if (entityType === 'weapons' && isSearchActive && searchQuery.trim().length >= 2) {
+                // Повторний/сторінковий запит для активного глобального пошуку
+                result = await apiService.searchWeapons(
+                    searchQuery.trim(),
+                    { page: currentPage, limit: pageSize, sortBy, sortOrder, ...filterParams }
+                );
+            } else if (entityType === 'weapons' && selectedCategoryId) {
                 result = await apiService.getWeaponsByCategory(
                     selectedCategoryId,
                     { page: currentPage, limit: pageSize, sortBy, sortOrder, ...filterParams }
@@ -248,7 +254,6 @@ export function EntityDataGrid<T extends BaseEntity>({
             }
 
             setAllCategoryData(processedItems as any);
-            setFilteredData(processedItems as any);
             setData(processedItems as any);
             setPagination(prev => ({
                 ...prev,
@@ -262,7 +267,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         } finally {
             setLoading(prev => ({ ...prev, loading: false }));
         }
-    }, [entityType, pagination.page, pagination.pageSize, selectedCategoryId, filterModel]);
+    }, [entityType, pagination.page, pagination.pageSize, selectedCategoryId, filterModel, isSearchActive, searchQuery]);
 
     // Функція для завантаження категорій (тільки для weapons)
     const fetchCategories = useCallback(async () => {
@@ -288,6 +293,10 @@ export function EntityDataGrid<T extends BaseEntity>({
     // ================= ОБРОБНИКИ ПОДІЙ =================
 
     const handleRefresh = () => {
+        if (isSearchActive && searchQuery.trim().length >= 2) {
+            // Оновлюємо результати пошуку
+            setPagination(prev => ({ ...prev, page: 0 }));
+        }
         fetchData();
     };
 
@@ -301,6 +310,8 @@ export function EntityDataGrid<T extends BaseEntity>({
 
     const handleCategoryChange = (categoryId: number | null) => {
         setSelectedCategoryId(categoryId);
+        setIsSearchActive(false);
+        setSearchQuery('');
         setPagination(prev => ({ ...prev, page: 0 })); // Скидаємо на першу сторінку
         setFilterModel({ items: [] }); // Скидаємо фільтри колонок
          // Скидаємо швидкий фільтр
@@ -316,18 +327,24 @@ export function EntityDataGrid<T extends BaseEntity>({
     const handleDeleteConfirm = async () => {
         if (!deleteDialog.row) return;
 
+        const deletedId = deleteDialog.row.id;
+
         try {
-            const success = await apiService.deleteEntity(entityType, deleteDialog.row.id);
+            const success = await apiService.deleteEntity(entityType, deletedId);
 
             if (success) {
-                setData(prev => prev.filter(row => row.id !== deleteDialog.row!.id));
-                setPagination(prev => ({ ...prev, total: prev.total - 1 }));
+                // Видаляємо рядок з обох станів, оскільки DataGrid рендерить allCategoryData
+                setAllCategoryData(prev => prev.filter(row => row.id !== deletedId));
+                setData(prev => prev.filter(row => row.id !== deletedId));
+                setPagination(prev => ({ ...prev, total: Math.max(0, prev.total - 1) }));
                 console.log('✅ Запис успішно видалено');
             } else {
                 console.error('❌ Не вдалося видалити запис');
             }
         } catch (error: any) {
             console.error('❌ Помилка видалення:', error);
+            // При помилці перезавантажуємо дані з сервера
+            fetchData();
         } finally {
             setDeleteDialog({ open: false, row: null });
         }
@@ -338,14 +355,11 @@ export function EntityDataGrid<T extends BaseEntity>({
         setEditDialog({ open: true, row });
     };
 
-    const handleEditSave = (updatedEntity: T) => {
-        // Оновлюємо дані в локальному стані
-        setData(prevData =>
-            prevData.map(item =>
-                item.id === updatedEntity.id ? updatedEntity : item
-            )
-        );
+    const handleEditSave = (_updatedEntity: T) => {
+        // Закриваємо діалог і перезавантажуємо дані з сервера,
+        // щоб отримати актуальний рядок з усіма обчисленими полями (category_name, epoha_name тощо).
         setEditDialog({ open: false, row: null });
+        fetchData();
     };
 
     // Функція для отримання найкращої назви (українська → англійська → російська)
@@ -364,9 +378,14 @@ export function EntityDataGrid<T extends BaseEntity>({
 
 
     const handleSearch = async () => {
-        if (!searchQuery.trim() || searchQuery.length < 2) {
+        const trimmedQuery = searchQuery.trim();
+        if (!trimmedQuery || trimmedQuery.length < 2) {
             setSearchDialog(false);
             // Скидаємо до даних поточної категорії
+            setIsSearchActive(false);
+            setSearchQuery('');
+            setFilterModel({ items: [] });
+            setPagination(prev => ({ ...prev, page: 0 }));
             fetchData();
             return;
         }
@@ -375,26 +394,47 @@ export function EntityDataGrid<T extends BaseEntity>({
 
         try {
             // Глобальний пошук через API endpoint /weapons/search
-            const searchResults = await apiService.search(
-                '/weapons',
-                searchQuery.trim()
+            const result = await apiService.searchWeapons(
+                trimmedQuery,
+                { page: 1, limit: pagination.pageSize, sortBy: 'id', sortOrder: 'ASC' }
             );
 
-            // Результати вже відфільтровані на сервері
+            // Трансформуємо дані так само, як і для звичайного завантаження weapons
+            let processedItems = result.items;
+            if (entityType === 'weapons') {
+                processedItems = result.items.map((item: any) => ({
+                    ...item,
+                    category_name: (item.categories_data || item.category_data || item.category?.ukr_name)
+                        ? Array.isArray(item.categories_data)
+                            ? item.categories_data.map((c: any) => c.ukr_name || c.ukr || 'Невідомо').join(', ')
+                            : Array.isArray(item.category_data)
+                                ? item.category_data.map((c: any) => c.ukr_name || c.ukr || 'Невідомо').join(', ')
+                                : item.category?.ukr_name || 'Не вказано'
+                        : 'Не вказано',
+                    epoha_name: item.epoha_data?.ukr || 'Не вказано',
+                    guard_type_name: item.guard_type_data?.ukr || 'Не вказано',
+                    blade_type_name: item.blade_type_data?.ukr || 'Не вказано',
+                    dolls_name: item.dolls_data?.ukr || 'Не вказано',
+                    usage_name: item.usage_data?.ukr || 'Не вказано',
+                    sharpening_name: item.sharpening_data?.ukr || 'Не вказано'
+                }));
+            }
+
             // Оновлюємо дані
-            setAllCategoryData(searchResults as T[]);
-            setData(searchResults as T[]);
-            setPagination(prev => ({ 
-                ...prev, 
-                total: searchResults.length, 
+            setAllCategoryData(processedItems as any);
+            setData(processedItems as any);
+            setPagination(prev => ({
+                ...prev,
+                total: result.total || processedItems.length,
                 page: 0,
-                totalPages: Math.ceil(searchResults.length / prev.pageSize)
+                totalPages: result.totalPages || Math.ceil((result.total || processedItems.length) / prev.pageSize)
             }));
+            setIsSearchActive(true);
             setFilterModel({ items: [] }); // Скидаємо фільтри колонок
             setLoading({ loading: false, error: null });
             setSearchDialog(false);
-            
-            console.log(`✅ Знайдено ${searchResults.length} результатів для "${searchQuery}"`);
+
+            console.log(`✅ Знайдено ${processedItems.length} результатів для "${trimmedQuery}"`);
         } catch (error: any) {
             console.error('Помилка пошуку:', error);
             setLoading({

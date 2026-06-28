@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -15,12 +15,11 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemButton,
   Chip,
   Snackbar
 } from '@mui/material';
 import { Add as AddIcon, Search as SearchIcon } from '@mui/icons-material';
-import { apiService } from '../services/api.service';
+import { apiService } from '../../services/api.service';
 
 interface AddLinkModalProps {
   open: boolean;
@@ -52,6 +51,8 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const idInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Debounce для пошуку
   useEffect(() => {
@@ -67,13 +68,34 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery, activeTab]);
 
+  // Фокус на відповідне поле при відкритті модалки
+  useEffect(() => {
+    if (!open) return;
+    const timer = setTimeout(() => {
+      if (activeTab === 0) {
+        idInputRef.current?.focus();
+      } else {
+        searchInputRef.current?.focus();
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [open, activeTab]);
+
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
     setError(null);
     setPreviewItem(null);
     setSearchResults([]);
-    setItemId('');
-    setSearchQuery('');
+    setSuccessMessage(null);
+
+    // Встановлюємо фокус на відповідне поле після перемикання вкладки
+    setTimeout(() => {
+      if (newValue === 0) {
+        idInputRef.current?.focus();
+      } else {
+        searchInputRef.current?.focus();
+      }
+    }, 50);
   };
 
   const checkItemById = async () => {
@@ -219,10 +241,9 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
                   value={itemId}
                   onChange={(e) => setItemId(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && checkItemById()}
-                  disabled={loading}
                   fullWidth
                   size="small"
-                  autoFocus
+                  inputRef={idInputRef}
                 />
                 <Button
                   variant="outlined"
@@ -286,10 +307,9 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
                 label="Пошук за назвою"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                disabled={loading}
                 fullWidth
                 size="small"
-                autoFocus
+                inputRef={searchInputRef}
                 placeholder="Наприклад: шпага, меч, клинок..."
                 sx={{ mb: 2 }}
               />

@@ -510,7 +510,12 @@ class ApiService {
      * Видалити зображення довідкової сутності
      */
     async deleteEntityImage(entityType: string, entityId: number): Promise<void> {
-        const response = await this.api.delete(`/upload/${entityType}/${entityId}
+        const response = await this.api.delete(`/upload/${entityType}/${entityId}`);
+
+        if (!response.data.success) {
+            throw new Error(response.data.message || 'Failed to delete image');
+        }
+    }
 
     // ================= LINKS (ЗВ'ЯЗКИ МІЖ АЙТЕМАМИ) =================
 
@@ -528,9 +533,9 @@ class ApiService {
                 throw new Error(response.data.message || 'Failed to create link');
             }
 
-            return response.data.data;
+            return response.data.data!;
         } catch (error: any) {
-            console.error('❌ Помилка створення зв'язку:', error);
+            console.error('❌ Помилка створення зв\'язку:', error);
             throw error;
         }
     }
@@ -559,9 +564,6 @@ class ApiService {
             console.error('❌ Помилка пошуку айтемів:', error);
             return [];
         }
-    }
-`);
-        return response.data;
     }
 }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -33,6 +33,7 @@ import { getEntityDisplayName } from '../../config/entities.config';
 import { SourceLinksField } from '../Fields/SourceLinksField';
 import { NotesField } from '../Fields/NotesField';
 import { ImageUploadField } from '../Fields/ImageUploadField';
+import { AddLinkModal } from '../Modals/AddLinkModal';
 
 // Типи
 interface BaseEntity {
@@ -129,6 +130,51 @@ export function EditEntityForm<T extends BaseEntity>({
 
   // State for add link modal
   const [addLinkModalOpen, setAddLinkModalOpen] = useState(false);
+
+  const loadLinkedObjects = useCallback(async () => {
+    if (entity && open && entityType === 'weapons') {
+      setLinkedObjectsLoading(true);
+      setLinkedObjectsError(null);
+      try {
+        const { apiService } = await import('../../services/api.service');
+        const response = await apiService.getLinkedObjects(entity.id);
+        console.log('📥 Отримано пов\'язані об\'єкти:', {
+          count: response.length,
+          data: response
+        });
+
+        if (Array.isArray(response)) {
+          const validData = response.every(item =>
+            item &&
+            typeof item === 'object' &&
+            'id' in item &&
+            'ukr_name' in item &&
+            'eng_name' in item &&
+            'rus_name' in item
+          );
+
+          if (validData) {
+            setLinkedObjects(response as any);
+            console.log('✅ Дані пов\'язаних об\'єктів встановлено:', {
+              count: response.length,
+              firstItem: response[0]
+            });
+          } else {
+            console.error('❌ Неправильна структура даних:', response);
+            setLinkedObjectsError('Неправильний формат даних від сервера');
+          }
+        } else {
+          console.error('❌ Неправильний тип даних:', typeof response);
+          setLinkedObjectsError('Неправильний формат даних від сервера');
+        }
+      } catch (error) {
+        console.error('❌ Помилка при завантаженні пов\'язаних об\'єктів:', error);
+        setLinkedObjectsError('Не вдалося завантажити пов\'язані об\'єкти');
+      } finally {
+        setLinkedObjectsLoading(false);
+      }
+    }
+  }, [entity?.id, open, entityType]);
 
   // Стани для діалогу видалення
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -355,7 +401,7 @@ export function EditEntityForm<T extends BaseEntity>({
             value = String(value);
           }
         } else {
-          value = value || ''}; // Для текстових полів
+          value = value || ''; // Для текстових полів
         }
 
         initialData[field.name] = value;
@@ -442,58 +488,8 @@ export function EditEntityForm<T extends BaseEntity>({
   };
 
   useEffect(() => {
-    // Refresh linked objects after adding new link
-  const refreshLinkedObjects = async () => {
-    await loadLinkedObjects();
-  };
-
-  const loadLinkedObjects = async () => {
-      if (entity && open && entityType === 'weapons') {
-        setLinkedObjectsLoading(true);
-        setLinkedObjectsError(null);
-        try {
-          const { apiService } = await import('../../services/api.service');
-          const response = await apiService.getLinkedObjects(entity.id);
-          console.log('📥 Отримано пов\'язані об\'єкти:', {
-            count: response.length,
-            data: response
-          });
-
-          if (Array.isArray(response)) {
-            // Перевіряємо структуру даних
-            const validData = response.every(item =>
-              item &&
-              typeof item === 'object' &&
-              'id' in item &&
-              'ukr_name' in item &&
-              'eng_name' in item &&
-              'rus_name' in item
-            );
-
-            if (validData) {
-              setLinkedObjects(response as any);
-              console.log('✅ Дані пов\'язаних об\'єктів встановлено:', {
-                count: response.length,
-                firstItem: response[0]
-              });
-            } else {
-              console.error('❌ Неправильна структура даних:', response);
-              setLinkedObjectsError('Неправильний формат даних від сервера');
-            }
-          } else {
-            console.error('❌ Неправильний тип даних:', typeof response);
-            setLinkedObjectsError('Неправильний формат даних від сервера');
-          }
-        } catch (error) {
-          console.error('❌ Помилка при завантаженні пов\'язаних об\'єктів:', error);
-          setLinkedObjectsError('Не вдалося завантажити пов\'язані об\'єкти');
-        } finally {
-          setLinkedObjectsLoading(false);
-        }
-      }
-    };
     loadLinkedObjects();
-  }, [entity?.id, open, entityType]);
+  }, [loadLinkedObjects]);
 
   const handleInputChange = (fieldName: string, value: any) => {
     console.log(`🔄 handleInputChange: ${fieldName} = ${value} (${typeof value})`);
@@ -850,7 +846,7 @@ export function EditEntityForm<T extends BaseEntity>({
     if (!field) return null;
 
     const isUkrainianDescription = descriptionField === 'description_ukr';
-    const textToRead = formData[descriptionField] || ''};
+    const textToRead = formData[descriptionField] || '';
 
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 2 }}>
@@ -934,7 +930,7 @@ export function EditEntityForm<T extends BaseEntity>({
           return (
             <SourceLinksField
               label={field.label}
-              value={value || ''}}
+              value={value || ''}
               onChange={(val) => handleInputChange(field.name, val)}
               disabled={isReadOnly}
             />
@@ -946,7 +942,7 @@ export function EditEntityForm<T extends BaseEntity>({
           return (
             <NotesField
               label={field.label}
-              value={value || ''}}
+              value={value || ''}
               onChange={(val) => handleInputChange(field.name, val)}
               disabled={isReadOnly}
               maxLength={field.maxLength}
@@ -960,12 +956,12 @@ export function EditEntityForm<T extends BaseEntity>({
             multiline
             rows={field.name.includes('description_') ? 12 : 2}
             label={getLabel()}
-            value={value || ''}}
+            value={value || ''}
             onChange={(e) => handleInputChange(field.name, e.target.value)}
             disabled={isReadOnly}
             required={isRequired}
             error={!!fieldError}
-            helperText={fieldError || (field.maxLength ? `${(value || ''}).length}/${field.maxLength}` : undefined)}
+            helperText={fieldError || (field.maxLength ? `${(value || '').length}/${field.maxLength}` : undefined)}
             inputProps={{ maxLength: field.maxLength, placeholder: '' }}
             size="small"
             sx={{
@@ -1016,7 +1012,7 @@ export function EditEntityForm<T extends BaseEntity>({
             fullWidth
             type="number"
             label={getLabel()}
-            value={value || ''}}
+            value={value || ''}
             onChange={(e) => handleInputChange(field.name, e.target.value === '' ? '' : Number(e.target.value))}
             disabled={isReadOnly}
             required={isRequired}
@@ -1077,7 +1073,7 @@ export function EditEntityForm<T extends BaseEntity>({
             disabled={isReadOnly}
             options={categories || []}
             value={(categories || []).filter(c => Array.isArray(value) && value.includes(c.id))}
-            getOptionLabel={(option) => option.ukr_name || ''}}
+            getOptionLabel={(option) => option.ukr_name || ''}
             isOptionEqualToValue={(option, val) => option.id === val.id}
             onChange={(_, newValue) => {
               handleInputChange(field.name, newValue.map(c => c.id));
@@ -1312,7 +1308,7 @@ export function EditEntityForm<T extends BaseEntity>({
           <TextField
             fullWidth
             label={getLabel()}
-            value={value || ''}}
+            value={value || ''}
             onChange={(e) => handleInputChange(field.name, e.target.value)}
             disabled={isReadOnly}
             required={isRequired}
@@ -1405,34 +1401,38 @@ export function EditEntityForm<T extends BaseEntity>({
         )
       },
       {
+        field: 'item_id',
+        headerName: 'ID об\'єкта',
+        width: 120,
+        headerAlign: 'center',
+        align: 'center',
+        type: 'number'
+      },
+      {
         field: 'link_id',
-        headerName: 'ID лінка',
-        width: 100,
+        headerName: 'ID зв\'язку',
+        width: 120,
+        headerAlign: 'center',
+        align: 'center',
         type: 'number'
       },
       {
         field: 'ukr_name',
         headerName: 'Українська назва',
         flex: 1,
-        minWidth: 250
+        minWidth: 200
       },
       {
         field: 'eng_name',
         headerName: 'Англійська назва',
         flex: 1,
-        minWidth: 250
+        minWidth: 200
       },
       {
         field: 'rus_name',
         headerName: 'Москальська назва',
         flex: 1,
-        minWidth: 250
-      },
-      {
-        field: 'item_id',
-        headerName: 'ID об\'єкта',
-        width: 100,
-        type: 'number'
+        minWidth: 200
       }
     ];
 
@@ -1788,9 +1788,9 @@ export function EditEntityForm<T extends BaseEntity>({
         open={addLinkModalOpen}
         onClose={() => setAddLinkModalOpen(false)}
         currentItemId={entity?.id || 0}
-        currentItemName={entity?.ukr_name || entity?.eng_name || ''}
+        currentItemName={(entity as any)?.ukr_name || (entity as any)?.eng_name || ''}
         onLinkAdded={loadLinkedObjects}
       />
     </Dialog>
   );
-};
+} 
