@@ -24,7 +24,6 @@ import {
     IconButton,
     Tooltip,
     Alert,
-    Popover,
     CircularProgress,
     FormControl,
     InputLabel,
@@ -838,23 +837,18 @@ export function EntityDataGrid<T extends BaseEntity>({
             disableColumnMenu: true,
             renderCell: (params: any) => {
                 const [hovered, setHovered] = useState(false);
-                const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-
-                const handleMouseEnter = (event: React.MouseEvent<HTMLElement>) => {
-                    setAnchorEl(event.currentTarget);
-                    setHovered(true);
-                };
-
-                const handleMouseLeave = () => {
-                    setHovered(false);
-                    setAnchorEl(null);
-                };
 
                 return (
                     <Box
-                        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
-                        onMouseEnter={handleMouseEnter}
-                        onMouseLeave={handleMouseLeave}
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '100%',
+                            position: 'relative'
+                        }}
+                        onMouseEnter={() => setHovered(true)}
+                        onMouseLeave={() => setHovered(false)}
                     >
                         {params.value ? (
                             <>
@@ -870,38 +864,39 @@ export function EntityDataGrid<T extends BaseEntity>({
                                         cursor: 'pointer'
                                     }}
                                 />
-                                <Popover
-                                    open={hovered}
-                                    anchorEl={anchorEl}
-                                    onClose={handleMouseLeave}
-                                    anchorOrigin={{
-                                        vertical: 'center',
-                                        horizontal: 'right'
-                                    }}
-                                    transformOrigin={{
-                                        vertical: 'center',
-                                        horizontal: 'left'
-                                    }}
-                                    PaperProps={{
-                                        sx: {
-                                            p: 0.5,
-                                            boxShadow: '0 8px 32px rgba(0,0,0,0.25)'
-                                        }
-                                    }}
-                                    disableRestoreFocus
-                                >
-                                    <img
-                                        src={params.value}
-                                        alt=""
-                                        style={{
+                                {hovered && (
+                                    <Box
+                                        sx={{
+                                            position: 'fixed',
+                                            left: '50%',
+                                            top: '50%',
+                                            transform: 'translate(-50%, -50%)',
                                             width: 400,
                                             height: 400,
-                                            objectFit: 'contain',
-                                            borderRadius: 4,
-                                            display: 'block'
+                                            zIndex: 9999,
+                                            pointerEvents: 'none',
+                                            backgroundColor: 'white',
+                                            borderRadius: 2,
+                                            boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+                                            p: 0.5,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
                                         }}
-                                    />
-                                </Popover>
+                                    >
+                                        <img
+                                            src={params.value}
+                                            alt=""
+                                            style={{
+                                                maxWidth: '100%',
+                                                maxHeight: '100%',
+                                                objectFit: 'contain',
+                                                borderRadius: 4,
+                                                display: 'block'
+                                            }}
+                                        />
+                                    </Box>
+                                )}
                             </>
                         ) : (
                             <Typography variant="caption" color="text.secondary">-</Typography>
