@@ -255,7 +255,6 @@ export class LinksController {
                         ELSE 4
                     END,
                     ukr_name ASC
-                LIMIT 20
             `, params);
 
             res.json({
