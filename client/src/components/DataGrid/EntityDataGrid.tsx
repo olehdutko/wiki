@@ -24,7 +24,7 @@ import {
     IconButton,
     Tooltip,
     Alert,
-
+    Popover,
     CircularProgress,
     FormControl,
     InputLabel,
@@ -829,7 +829,6 @@ export function EntityDataGrid<T extends BaseEntity>({
                 );
             }
         }] : []),
-        // Колонка primary зображення для зброї
         ...(entityType === 'weapons' ? [{
             field: 'primary_image_url',
             headerName: 'Зображення',
@@ -838,20 +837,72 @@ export function EntityDataGrid<T extends BaseEntity>({
             filterable: false,
             disableColumnMenu: true,
             renderCell: (params: any) => {
+                const [hovered, setHovered] = useState(false);
+                const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+
+                const handleMouseEnter = (event: React.MouseEvent<HTMLElement>) => {
+                    setAnchorEl(event.currentTarget);
+                    setHovered(true);
+                };
+
+                const handleMouseLeave = () => {
+                    setHovered(false);
+                    setAnchorEl(null);
+                };
+
                 return (
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                    <Box
+                        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
+                        onMouseEnter={handleMouseEnter}
+                        onMouseLeave={handleMouseLeave}
+                    >
                         {params.value ? (
-                            <img
-                                src={params.value}
-                                alt=""
-                                style={{
-                                    width: 40,
-                                    height: 40,
-                                    objectFit: 'cover',
-                                    borderRadius: 4,
-                                    border: '1px solid #e0e0e0'
-                                }}
-                            />
+                            <>
+                                <img
+                                    src={params.value}
+                                    alt=""
+                                    style={{
+                                        width: 40,
+                                        height: 40,
+                                        objectFit: 'cover',
+                                        borderRadius: 4,
+                                        border: '1px solid #e0e0e0',
+                                        cursor: 'pointer'
+                                    }}
+                                />
+                                <Popover
+                                    open={hovered}
+                                    anchorEl={anchorEl}
+                                    onClose={handleMouseLeave}
+                                    anchorOrigin={{
+                                        vertical: 'center',
+                                        horizontal: 'right'
+                                    }}
+                                    transformOrigin={{
+                                        vertical: 'center',
+                                        horizontal: 'left'
+                                    }}
+                                    PaperProps={{
+                                        sx: {
+                                            p: 0.5,
+                                            boxShadow: '0 8px 32px rgba(0,0,0,0.25)'
+                                        }
+                                    }}
+                                    disableRestoreFocus
+                                >
+                                    <img
+                                        src={params.value}
+                                        alt=""
+                                        style={{
+                                            width: 400,
+                                            height: 400,
+                                            objectFit: 'contain',
+                                            borderRadius: 4,
+                                            display: 'block'
+                                        }}
+                                    />
+                                </Popover>
+                            </>
                         ) : (
                             <Typography variant="caption" color="text.secondary">-</Typography>
                         )}
