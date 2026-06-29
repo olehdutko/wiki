@@ -825,8 +825,8 @@ export function EntityDataGrid<T extends BaseEntity>({
                                     src={params.value}
                                     alt=""
                                     style={{
-                                        width: 40,
-                                        height: 40,
+                                        width: 50,
+                                        height: 50,
                                         objectFit: 'contain',
                                         borderRadius: 4,
                                         border: '1px solid #e0e0e0'
@@ -843,7 +843,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         ...(entityType === 'weapons' ? [{
             field: 'primary_image_url',
             headerName: 'Зображення',
-            width: 80,
+            width: 100,
             sortable: false,
             filterable: false,
             disableColumnMenu: true,
@@ -868,8 +868,8 @@ export function EntityDataGrid<T extends BaseEntity>({
                                     src={params.value}
                                     alt=""
                                     style={{
-                                        width: 40,
-                                        height: 40,
+                                        width: 50,
+                                        height: 50,
                                         objectFit: 'cover',
                                         borderRadius: 4,
                                         border: '1px solid #e0e0e0',
