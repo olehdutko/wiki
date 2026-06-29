@@ -1145,7 +1145,7 @@ renderCell: (params: any) => {
                     }}
                     editMode="cell"
                     isCellEditable={isCellEditable}
-                    rowHeight={31}
+                    rowHeight={50}
                     slots={{
                         toolbar: GridToolbar,
                         loadingOverlay: () => (
