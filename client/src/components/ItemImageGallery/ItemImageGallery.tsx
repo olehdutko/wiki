@@ -52,13 +52,16 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
         setActiveTab(newValue);
     };
 
+    const handleFiles = (files: FileList | null) => {
+        if (!files) return;
+        const filtered = Array.from(files).filter(
+            file => file.type === 'image/jpeg' || file.type === 'image/png'
+        );
+        setSelectedFiles(prev => [...prev, ...filtered]);
+    };
+
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files) {
-            const files = Array.from(event.target.files).filter(
-                file => file.type === 'image/jpeg' || file.type === 'image/png'
-            );
-            setSelectedFiles(prev => [...prev, ...files]);
-        }
+        handleFiles(event.target.files);
     };
 
     const handleUpload = async () => {
@@ -139,21 +142,57 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
 
     const renderUploadTab = () => (
         <Box sx={{ p: 2 }}>
-            <Button
-                variant="outlined"
-                component="label"
-                startIcon={<CloudUploadIcon />}
-                sx={{ mb: 2 }}
+            <Box
+                sx={{
+                    border: '2px dashed #bdbdbd',
+                    borderRadius: 2,
+                    p: 3,
+                    mb: 2,
+                    textAlign: 'center',
+                    bgcolor: 'rgba(0, 0, 0, 0.02)',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                        borderColor: 'primary.main',
+                        bgcolor: 'rgba(25, 118, 210, 0.04)'
+                    },
+                    '&.drag-over': {
+                        borderColor: 'primary.main',
+                        bgcolor: 'rgba(25, 118, 210, 0.08)'
+                    }
+                }}
+                onDragOver={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.add('drag-over');
+                }}
+                onDragLeave={(e) => {
+                    e.currentTarget.classList.remove('drag-over');
+                }}
+                onDrop={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('drag-over');
+                    handleFiles(e.dataTransfer.files);
+                }}
             >
-                Вибрати зображення
-                <input
-                    type="file"
-                    accept="image/jpeg,image/png"
-                    multiple
-                    hidden
-                    onChange={handleFileSelect}
-                />
-            </Button>
+                <CloudUploadIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+                    Перетягніть зображення сюди
+                </Typography>
+                <Button
+                    variant="outlined"
+                    component="label"
+                    startIcon={<CloudUploadIcon />}
+                    size="small"
+                >
+                    Вибрати зображення
+                    <input
+                        type="file"
+                        accept="image/jpeg,image/png"
+                        multiple
+                        hidden
+                        onChange={handleFileSelect}
+                    />
+                </Button>
+            </Box>
 
             {selectedFiles.length > 0 && (
                 <Box sx={{ mb: 2 }}>
