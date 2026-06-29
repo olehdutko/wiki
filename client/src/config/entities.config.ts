@@ -10,6 +10,7 @@ export interface GridColumn {
     headerName: string;
     width?: number;
     editable?: boolean;
+    filterable?: boolean;
     type?: 'string' | 'number' | 'boolean' | 'date';
     valueGetter?: (params: any) => any;
     valueFormatter?: (params: any) => string;
@@ -122,7 +123,7 @@ const weaponColumns: GridColumn[] = [
         headerName: 'Заточення',
         width: 130,
         editable: false
-    }
+    },
 ];
 
 // ================= ПОЛЯ ДЛЯ ФОРМ =================

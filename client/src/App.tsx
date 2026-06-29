@@ -95,6 +95,9 @@ function App() {
   const [apiHealthy, setApiHealthy] = useState<boolean | null>(null);
   const [dumpLoading, setDumpLoading] = useState(false);
   const [dumpMessage, setDumpMessage] = useState<{ text: string; isError: boolean } | null>(null);
+  const [weaponsInitialFilterModel, setWeaponsInitialFilterModel] = useState<any>(undefined);
+  const [weaponsInitialCategoryId, setWeaponsInitialCategoryId] = useState<number | null>(null);
+  const [weaponsInitialFilterLabel, setWeaponsInitialFilterLabel] = useState<string | undefined>(undefined);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -120,6 +123,11 @@ function App() {
 
   const handleEntitySelect = (entityType: EntityType) => {
     setCurrentEntity(entityType);
+    if (entityType !== 'weapons') {
+      setWeaponsInitialFilterModel(undefined);
+      setWeaponsInitialCategoryId(null);
+      setWeaponsInitialFilterLabel(undefined);
+    }
     if (isMobile) {
       setMobileOpen(false);
     }
@@ -133,6 +141,22 @@ function App() {
   const handleRowEdit = (row: BaseEntity) => {
     console.log('Edit row:', row);
     // TODO: Відкрити форму редагування
+  };
+
+  const handleViewRelatedItems = (payload: { entityType: 'weapons'; filterModel?: any; categoryId?: number; filterLabel?: string }) => {
+    if (payload.filterModel) {
+      setWeaponsInitialFilterModel(payload.filterModel);
+      setWeaponsInitialCategoryId(null);
+      setWeaponsInitialFilterLabel(payload.filterLabel);
+    } else if (payload.categoryId) {
+      setWeaponsInitialCategoryId(payload.categoryId);
+      setWeaponsInitialFilterModel(undefined);
+      setWeaponsInitialFilterLabel(payload.filterLabel);
+    }
+    setCurrentEntity('weapons');
+    if (isMobile) {
+      setMobileOpen(false);
+    }
   };
 
   // Обробник для згортання/розгортання панелі
@@ -469,9 +493,14 @@ function App() {
         {/* Грід даних */}
         <Container maxWidth={false} disableGutters>
           <EntityDataGrid<BaseEntity>
+            key={currentEntity}
             entityType={currentEntity}
             onRowSelect={handleRowSelect}
             onRowEdit={handleRowEdit}
+            onViewRelatedItems={handleViewRelatedItems}
+            initialFilterModel={currentEntity === 'weapons' ? weaponsInitialFilterModel : undefined}
+            initialCategoryId={currentEntity === 'weapons' ? weaponsInitialCategoryId : undefined}
+            initialFilterLabel={currentEntity === 'weapons' ? weaponsInitialFilterLabel : undefined}
             height={700}
           />
         </Container>

@@ -413,9 +413,14 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                             }
                         } else {
                             // String fields
-                            const strValue = `%${value}%`;
-                            whereConditions.push(`i.${field} LIKE ?`);
-                            queryParams.push(strValue);
+                            if (operator === '=' || operator === 'eq' || operator === 'equals') {
+                                whereConditions.push(`i.${field} = ?`);
+                                queryParams.push(value);
+                            } else {
+                                const strValue = `%${value}%`;
+                                whereConditions.push(`i.${field} LIKE ?`);
+                                queryParams.push(strValue);
+                            }
                         }
                     }
                     filterIndex++;
@@ -772,9 +777,14 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
                             }
                         } else {
                             // String fields
-                            const strValue = `%${value}%`;
-                            whereConditions.push(`i.${field} LIKE ?`);
-                            queryParams.push(strValue);
+                            if (operator === '=' || operator === 'eq' || operator === 'equals') {
+                                whereConditions.push(`i.${field} = ?`);
+                                queryParams.push(value);
+                            } else {
+                                const strValue = `%${value}%`;
+                                whereConditions.push(`i.${field} LIKE ?`);
+                                queryParams.push(strValue);
+                            }
                         }
                     }
                     filterIndex++;

@@ -11,7 +11,8 @@ import {
 import type {
     GridColDef,
     GridRowParams,
-    GridSortModel
+    GridSortModel,
+    GridFilterModel
 } from '@mui/x-data-grid';
 import {
     Box,
@@ -29,7 +30,8 @@ import {
     FormControl,
     InputLabel,
     Select,
-    MenuItem
+    MenuItem,
+    Chip
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -39,7 +41,8 @@ import {
     Refresh as RefreshIcon,
     Check as CheckIcon,
     Close as CloseIcon,
-    Image as ImageIcon
+    Image as ImageIcon,
+    VisibilityOutlined as ViewItemsIcon
 } from '@mui/icons-material';
 
 import type {
@@ -59,6 +62,10 @@ interface EntityDataGridProps<T extends BaseEntity> {
     title?: string;
     onRowSelect?: (row: T) => void;
     onRowEdit?: (row: T) => void;
+    onViewRelatedItems?: (payload: { entityType: 'weapons'; filterModel?: GridFilterModel; categoryId?: number; filterLabel?: string }) => void;
+    initialFilterModel?: GridFilterModel;
+    initialCategoryId?: number | null;
+    initialFilterLabel?: string;
 
     height?: number;
     enableAdd?: boolean;
@@ -78,6 +85,10 @@ export function EntityDataGrid<T extends BaseEntity>({
     title,
     onRowSelect,
     onRowEdit,
+    onViewRelatedItems,
+    initialFilterModel,
+    initialCategoryId,
+    initialFilterLabel,
     height = 600,
     enableAdd = true,
     enableEdit = true,
@@ -104,9 +115,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         total: 0
     });
     // Фільтрація для DataGrid - використовуємо вбудований механізм
-    const [filterModel, setFilterModel] = useState({
-        items: []
-    });
+    const [filterModel, setFilterModel] = useState<GridFilterModel>(() => initialFilterModel || { items: [] });
     
     // Server-side sorting state
     const [sortModel, setSortModel] = useState<GridSortModel>([
@@ -120,7 +129,14 @@ export function EntityDataGrid<T extends BaseEntity>({
             pageSize: entityConfig.defaultPageSize || 25,
             total: prev.total
         }));
-    }, [entityType, entityConfig.defaultPageSize]);
+        // Only clear filters when navigating to an entity without an initial filter
+        if (!initialFilterModel) {
+            setFilterModel({ items: [] });
+        }
+        if (initialCategoryId === undefined) {
+            setSelectedCategoryId(null);
+        }
+    }, [entityType, entityConfig.defaultPageSize, initialFilterModel, initialCategoryId, initialFilterLabel]);
 
     // Діалоги
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; row: T | null }>({
@@ -141,7 +157,7 @@ export function EntityDataGrid<T extends BaseEntity>({
 
     // Стан для фільтрування по категоріях (тільки для weapons)
     const [categories, setCategories] = useState<Array<{ id: number, ukr_name: string }>>([]);
-    const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(entityType === 'weapons' ? 1 : null);
+    const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(() => initialCategoryId ?? (entityType === 'weapons' ? 1 : null));
     const [categoriesLoading, setCategoriesLoading] = useState(false);
 
     // ================= ФУНКЦІЇ =================
@@ -711,6 +727,44 @@ export function EntityDataGrid<T extends BaseEntity>({
     };
 
     // Оновлюємо рендеринг кнопок для нового рядка
+    // Map reference entity type to the items foreign-key column
+    const REFERENCE_ENTITY_FILTER_FIELDS: Record<EntityType, string | null> = {
+        'guard-type': 'guard_type',
+        'blade-type': 'blade_type',
+        'global-type': 'global_type',
+        'pommel': 'pommel',
+        'sharpening': 'sharpening',
+        'usage': 'using_it',
+        'dolls': 'dolls',
+        'epoha': 'epoha',
+        'categories': null,
+        'weapons': null
+    };
+
+    const handleViewRelatedItems = (row: any) => {
+        if (!onViewRelatedItems) return;
+
+        const filterLabel = row.ukr || row.ukr_name || String(row.id);
+
+        if (entityType === 'categories') {
+            onViewRelatedItems({ entityType: 'weapons', categoryId: row.id, filterLabel });
+            return;
+        }
+
+        const filterField = REFERENCE_ENTITY_FILTER_FIELDS[entityType];
+        if (!filterField) return;
+
+        onViewRelatedItems({
+            entityType: 'weapons',
+            filterModel: {
+                items: [
+                    { field: filterField, operator: 'equals', value: String(row.id) }
+                ]
+            },
+            filterLabel
+        });
+    };
+
     const renderActionButtons = (params: any) => {
         // Спеціальна обробка для нового рядка
         if (params.row.isNew) {
@@ -768,6 +822,27 @@ export function EntityDataGrid<T extends BaseEntity>({
                             color="secondary"
                         >
                             <ImageIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
+                )}
+                {(
+                    entityType === 'guard-type' ||
+                    entityType === 'blade-type' ||
+                    entityType === 'global-type' ||
+                    entityType === 'pommel' ||
+                    entityType === 'sharpening' ||
+                    entityType === 'usage' ||
+                    entityType === 'dolls' ||
+                    entityType === 'epoha' ||
+                    entityType === 'categories'
+                ) && onViewRelatedItems && (
+                    <Tooltip title="Показати пов'язану зброю">
+                        <IconButton
+                            size="small"
+                            onClick={() => handleViewRelatedItems(params.row)}
+                            color="info"
+                        >
+                            <ViewItemsIcon fontSize="small" />
                         </IconButton>
                     </Tooltip>
                 )}
@@ -880,6 +955,66 @@ renderCell: (params: any) => {
         return supportsInline && !isNew && columnEditable;
     };
 
+    // Build a human-readable description of the active filters
+    const getActiveFiltersLabel = (): string | null => {
+        // If we navigated here from a reference-entity row, show its Ukrainian name
+        if (initialFilterLabel) {
+            const firstFilter = filterModel.items?.[0];
+            const field = firstFilter?.field;
+            let fieldLabel = 'Фільтр';
+            if (field) {
+                const column = columns.find(c => c.field === field);
+                if (column && column.headerName) {
+                    fieldLabel = column.headerName.replace(' ID', '');
+                }
+            }
+            return `${fieldLabel}: ${initialFilterLabel}`;
+        }
+
+        const parts: string[] = [];
+
+        if (selectedCategoryId) {
+            const category = categories.find(c => c.id === selectedCategoryId);
+            parts.push(`Категорія: ${category?.ukr_name || selectedCategoryId}`);
+        }
+
+        if (filterModel.items?.length > 0) {
+            filterModel.items.forEach(item => {
+                if (item.value === undefined || item.value === null || item.value === '') return;
+                const column = columns.find(c => c.field === item.field);
+                const fieldLabel = column?.headerName || item.field;
+                let operatorLabel = '=';
+                if (item.operator === 'contains') operatorLabel = 'містить';
+                else if (item.operator === 'equals') operatorLabel = '=';
+                else if (item.operator === 'startsWith') operatorLabel = 'починається з';
+                else if (item.operator === 'endsWith') operatorLabel = 'закінчується на';
+                else if (item.operator === 'isEmpty') operatorLabel = 'порожнє';
+                else if (item.operator === 'isNotEmpty') operatorLabel = 'ne порожнє';
+                else if (item.operator === 'isAnyOf') operatorLabel = 'будь-яке з';
+                else operatorLabel = String(item.operator || '=');
+                parts.push(`${fieldLabel}: ${operatorLabel} \"${item.value}\"`);
+            });
+        }
+
+        if (isSearchActive && searchQuery.trim()) {
+            parts.push(`Пошук: \"${searchQuery.trim()}\"`);
+        }
+
+        return parts.length > 0 ? parts.join(' * ') : null;
+    };
+
+    const clearFilters = () => {
+        setFilterModel({ items: [] });
+        if (selectedCategoryId) {
+            handleCategoryChange(null);
+        }
+        if (isSearchActive) {
+            setIsSearchActive(false);
+            setSearchQuery('');
+        }
+        setPagination(prev => ({ ...prev, page: 0 }));
+    };
+
     // ================= РЕНДЕР =================
 
     if (loading.error) {
@@ -932,6 +1067,42 @@ renderCell: (params: any) => {
                         </FormControl>
                     )}
 
+                    <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {(() => {
+                            const label = getActiveFiltersLabel();
+                            return label ? (
+                                <Chip
+                                    label={label}
+                                    size="small"
+                                    onDelete={clearFilters}
+                                    sx={{
+                                        maxWidth: '75%',
+                                        height: 'auto',
+                                        minHeight: '24px',
+                                        py: 0.5,
+                                        backgroundColor: '#e3f2fd',
+                                        '&:hover': {
+                                            backgroundColor: '#bbdefb'
+                                        },
+                                        '& .MuiChip-label': {
+                                            whiteSpace: 'normal',
+                                            textAlign: 'center',
+                                            lineHeight: 1.3,
+                                            padding: 0
+                                        },
+                                        '& .MuiChip-deleteIcon': {
+                                            color: '#ef9a9a',
+                                            transition: 'color 0.2s ease',
+                                            alignSelf: 'center',
+                                            '&:hover': {
+                                                color: '#d32f2f'
+                                            }
+                                        }
+                                    }}
+                                />
+                            ) : null;
+                        })()}
+                    </Box>
                     <Box sx={{ display: 'flex', gap: 1 }}>
                         {/* Показуємо кнопку пошуку тільки для weapons */}
                         {entityType === 'weapons' && (
