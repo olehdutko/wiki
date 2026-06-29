@@ -42,6 +42,9 @@ export type SortOrder = 'ASC' | 'DESC';
 // ================= СУТНОСТІ =================
 
 export interface Pommel extends NamedEntity { 
+    type?: string | null;
+    description?: string | null;
+    rus?: string | null;
     image_url?: string | null;
 }
 

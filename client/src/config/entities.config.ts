@@ -44,6 +44,15 @@ const namedEntityColumns: GridColumn[] = [
     { field: 'rus', headerName: 'Москальська', width: 200, editable: true, type: 'string' }
 ];
 
+const pommelColumns: GridColumn[] = [
+    { field: 'id', headerName: 'ID', width: 80, type: 'number', valueFormatter: (params) => String(params.value) },
+    { field: 'ukr', headerName: 'Українська назва', width: 200, editable: true, type: 'string' },
+    { field: 'eng', headerName: 'English name', width: 200, editable: true, type: 'string' },
+    { field: 'type', headerName: 'Типологія', width: 120, editable: true, type: 'string' },
+    { field: 'description', headerName: 'Опис', width: 300, editable: true, type: 'string' },
+    { field: 'rus', headerName: 'Москальська назва', width: 180, editable: true, type: 'string' }
+];
+
 const categoryColumns: GridColumn[] = [
     { field: 'id', headerName: 'ID', width: 80, type: 'number', valueFormatter: (params) => String(params.value) },
     { field: 'ukr_name', headerName: 'Українська назва', width: 250, editable: true, type: 'string' },
@@ -123,6 +132,14 @@ const namedEntityFormFields: FormField[] = [
     { name: 'rus', label: 'Москальська назва', type: 'text', maxLength: 100 }
 ];
 
+const pommelFormFields: FormField[] = [
+    { name: 'ukr', label: 'Українська назва', type: 'text', maxLength: 100 },
+    { name: 'eng', label: 'English name', type: 'text', maxLength: 100 },
+    { name: 'type', label: 'Типологія', type: 'text', maxLength: 10 },
+    { name: 'description', label: 'Опис', type: 'textarea', maxLength: 1000 },
+    { name: 'rus', label: 'Москальська назва', type: 'text', maxLength: 100 }
+];
+
 const categoryFormFields: FormField[] = [
     { name: 'ukr_name', label: 'Українська назва', type: 'text', required: true, maxLength: 300 },
     { name: 'eng_name', label: 'English name', type: 'text', maxLength: 300 },
@@ -180,8 +197,8 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
         name: 'pommel',
         displayName: 'Навершя (pommel)',
         apiEndpoint: '/pommel',
-        columns: namedEntityColumns,
-        formFields: namedEntityFormFields,
+        columns: pommelColumns,
+        formFields: pommelFormFields,
         useForm: false,
         supportsInlineEditing: true
     },

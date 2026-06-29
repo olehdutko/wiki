@@ -46,6 +46,23 @@ const namedEntityUpdateValidation = [
     body('rus').optional().isString().isLength({ max: 100 })
 ];
 
+// Валідація для навершь (pommel)
+const pommelValidation = [
+    body('ukr').notEmpty().withMessage('Українська назва обов\'язкова').isString().isLength({ max: 100 }),
+    body('eng').optional().isString().isLength({ max: 100 }),
+    body('type').optional().isString().isLength({ max: 10 }),
+    body('description').optional().isString().isLength({ max: 1000 }),
+    body('rus').optional().isString().isLength({ max: 100 })
+];
+
+const pommelUpdateValidation = [
+    body('ukr').optional().isString().isLength({ max: 100 }),
+    body('eng').optional().isString().isLength({ max: 100 }),
+    body('type').optional().isString().isLength({ max: 10 }),
+    body('description').optional().isString().isLength({ max: 1000 }),
+    body('rus').optional().isString().isLength({ max: 100 })
+];
+
 const categoryValidation = [
     body('ukr_name').notEmpty().withMessage('Українська назва обов\'язкова').isString().isLength({ max: 300 }),
     body('eng_name').optional().isString().isLength({ max: 300 }),
@@ -200,8 +217,8 @@ router.get('/pommel/search', pommelController.search.bind(pommelController));
 router.get('/pommel/count', pommelController.getCount.bind(pommelController));
 router.get('/pommel/max-id', pommelController.getMaxId.bind(pommelController));
 router.get('/pommel/:id', pommelController.getById.bind(pommelController));
-router.post('/pommel', namedEntityValidation, pommelController.create.bind(pommelController));
-router.put('/pommel/:id', namedEntityUpdateValidation, pommelController.update.bind(pommelController));
+router.post('/pommel', pommelValidation, pommelController.create.bind(pommelController));
+router.put('/pommel/:id', pommelUpdateValidation, pommelController.update.bind(pommelController));
 router.delete('/pommel/:id', pommelController.delete.bind(pommelController));
 
 // Dolls (доли)

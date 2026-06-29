@@ -12,18 +12,25 @@ export class Pommel implements NamedEntity {
     id!: number;
 
     @IsOptional()
-    @IsOptional()
     @IsString()
     @MaxLength(100)
     ukr?: string | null;
 
-    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(100)
     eng?: string | null;
 
     @IsOptional()
+    @IsString()
+    @MaxLength(10)
+    type?: string | null;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(1000)
+    description?: string | null;
+
     @IsOptional()
     @IsString()
     @MaxLength(100)
