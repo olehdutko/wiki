@@ -112,6 +112,15 @@ export function EntityDataGrid<T extends BaseEntity>({
         { field: 'id', sort: 'asc' }
     ]);
 
+    // Скидаємо пагінацію до дефолтного pageSize при зміні сутності
+    useEffect(() => {
+        setPagination(prev => ({
+            page: 0,
+            pageSize: entityConfig.defaultPageSize || 25,
+            total: prev.total
+        }));
+    }, [entityType, entityConfig.defaultPageSize]);
+
     // Діалоги
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; row: T | null }>({
         open: false,
