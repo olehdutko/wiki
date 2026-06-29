@@ -189,29 +189,29 @@ class ApiService {
 
     // ================= СПЕЦИФІЧНІ МЕТОДИ ДЛЯ ДОВІДКОВИХ СУТНОСТЕЙ =================
 
-    // Apple
-    async getApples(params?: PaginationParams) {
-        return this.getAll<NamedEntity>('/apple', params);
+    // Pommel
+    async getAllPommel() {
+        return this.getAll<NamedEntity>('/pommel', { limit: 100000 });
     }
 
-    async getAppleById(id: number) {
-        return this.getById<NamedEntity>('/apple', id);
+    async getPommelById(id: number) {
+        return this.getById<NamedEntity>('/pommel', id);
     }
 
-    async createApple(data: CreateNamedEntityDto) {
-        return this.create<NamedEntity>('/apple', data);
+    async createPommel(data: CreateNamedEntityDto) {
+        return this.create<NamedEntity>('/pommel', data);
     }
 
-    async updateApple(id: number, data: UpdateNamedEntityDto) {
-        return this.update<NamedEntity>('/apple', id, data);
+    async updatePommel(id: number, data: UpdateNamedEntityDto) {
+        return this.update<NamedEntity>('/pommel', id, data);
     }
 
-    async deleteApple(id: number) {
-        return this.delete('/apple', id);
+    async deletePommel(id: number) {
+        return this.delete('/pommel', id);
     }
 
-    async searchApples(query: string) {
-        return this.search<NamedEntity>('/apple', query);
+    async searchPommel(query: string) {
+        return this.search<NamedEntity>('/pommel', query);
     }
 
     // Blade Types
@@ -287,11 +287,6 @@ class ApiService {
     // Usage
     async getAllUsage() {
         return this.getAll<NamedEntity>('/usage', { limit: 1000 });
-    }
-
-    // Apple
-    async getAllApple() {
-        return this.getAll<NamedEntity>('/apple', { limit: 1000 });
     }
 
     // Sharpening
@@ -378,7 +373,7 @@ class ApiService {
 
     private getEndpointByEntityType(entityType: EntityType): string {
         const endpointMap: Record<EntityType, string> = {
-            'apple': '/apple',
+            'pommel': '/pommel',
             'blade-type': '/blade-type',
             'categories': '/categories',
             'dolls': '/dolls',

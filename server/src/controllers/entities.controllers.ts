@@ -7,13 +7,13 @@ import { BaseController } from './base.controller';
 import { pool } from '../config/database.config';
 import type { RowDataPacket } from 'mysql2';
 import {
-    AppleService, BladeTypeService, CategoryService, DollsService, EpohaService,
+    PommelService, BladeTypeService, CategoryService, DollsService, EpohaService,
     GlobalTypeService, GuardTypeService, SharpeningService, UsageService,
     WeaponItemService
 } from '../services/entities.services';
 import { PaginationParams } from '../types/base.types';
 import {
-    Apple, BladeType, Category, Dolls, Epoha, GlobalType, GuardType,
+    Pommel, BladeType, Category, Dolls, Epoha, GlobalType, GuardType,
     Sharpening, Usage
 } from '../models/entities.models';
 
@@ -75,9 +75,9 @@ export class LinksController {
 
 // ================= ДОВІДКОВІ КОНТРОЛЕРИ =================
 
-export class AppleController extends BaseController<Apple> {
+export class PommelController extends BaseController<Pommel> {
     constructor() {
-        super(new AppleService());
+        super(new PommelService());
     }
 }
 

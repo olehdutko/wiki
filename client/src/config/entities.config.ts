@@ -33,6 +33,7 @@ export interface EntityConfig {
     formFields: FormField[];
     useForm?: boolean; // true для items, false для інших (тільки грід)
     supportsInlineEditing?: boolean; // true для сутностей, які підтримують inline редагування
+    defaultPageSize?: number; // дефолтна кількість записів на сторінку гріду
 }
 
 // ================= КОЛОНКИ ДЛЯ ГРІДІВ =================
@@ -42,6 +43,15 @@ const namedEntityColumns: GridColumn[] = [
     { field: 'ukr', headerName: 'Українська', width: 200, editable: true, type: 'string' },
     { field: 'eng', headerName: 'English', width: 200, editable: true, type: 'string' },
     { field: 'rus', headerName: 'Москальська', width: 200, editable: true, type: 'string' }
+];
+
+const pommelColumns: GridColumn[] = [
+    { field: 'id', headerName: 'ID', width: 80, type: 'number', valueFormatter: (params) => String(params.value) },
+    { field: 'ukr', headerName: 'Українська назва', width: 200, editable: true, type: 'string' },
+    { field: 'eng', headerName: 'English name', width: 200, editable: true, type: 'string' },
+    { field: 'type', headerName: 'Типологія', width: 120, editable: true, type: 'string' },
+    { field: 'description', headerName: 'Опис', width: 300, editable: true, type: 'string' },
+    { field: 'rus', headerName: 'Москальська назва', width: 180, editable: true, type: 'string' }
 ];
 
 const categoryColumns: GridColumn[] = [
@@ -96,8 +106,8 @@ const weaponColumns: GridColumn[] = [
         editable: false
     },
     {
-        field: 'apple_name',
-        headerName: 'Яблуко (навершя)',
+        field: 'pommel_name',
+        headerName: 'Навершя (pommel)',
         width: 150,
         editable: false
     },
@@ -120,6 +130,14 @@ const weaponColumns: GridColumn[] = [
 const namedEntityFormFields: FormField[] = [
     { name: 'ukr', label: 'Українська назва', type: 'text', maxLength: 100 },
     { name: 'eng', label: 'English name', type: 'text', maxLength: 100 },
+    { name: 'rus', label: 'Москальська назва', type: 'text', maxLength: 100 }
+];
+
+const pommelFormFields: FormField[] = [
+    { name: 'ukr', label: 'Українська назва', type: 'text', maxLength: 100 },
+    { name: 'eng', label: 'English name', type: 'text', maxLength: 100 },
+    { name: 'type', label: 'Типологія', type: 'text', maxLength: 10 },
+    { name: 'description', label: 'Опис', type: 'textarea', maxLength: 1000 },
     { name: 'rus', label: 'Москальська назва', type: 'text', maxLength: 100 }
 ];
 
@@ -162,7 +180,7 @@ const weaponFormFields: FormField[] = [
     { name: 'guard_type', label: 'Тип гарди', type: 'select', maxLength: 20 },
     { name: 'blade_type', label: 'Тип клинка', type: 'select', maxLength: 20 },
     { name: 'dolls', label: 'Доли', type: 'select', maxLength: 10 },
-    { name: 'apple', label: 'Яблуко (навершя)', type: 'select', maxLength: 20 },
+    { name: 'pommel', label: 'Навершя (pommel)', type: 'select', maxLength: 20 },
     { name: 'using_it', label: 'Використання', type: 'select', maxLength: 50 },
     { name: 'sharpening', label: 'Заточення', type: 'select', maxLength: 10 },
 
@@ -176,14 +194,15 @@ const weaponFormFields: FormField[] = [
 // ================= КОНФІГУРАЦІЯ СУТНОСТЕЙ =================
 
 export const entitiesConfig: Record<EntityType, EntityConfig> = {
-    'apple': {
-        name: 'apple',
-        displayName: 'Яблука (навершя)',
-        apiEndpoint: '/apple',
-        columns: namedEntityColumns,
-        formFields: namedEntityFormFields,
+    'pommel': {
+        name: 'pommel',
+        displayName: 'Навершя (pommel)',
+        apiEndpoint: '/pommel',
+        columns: pommelColumns,
+        formFields: pommelFormFields,
         useForm: false,
-        supportsInlineEditing: true
+        supportsInlineEditing: true,
+        defaultPageSize: 100
     },
 
     'blade-type': {
@@ -288,7 +307,7 @@ export const getEntityDisplayName = (entityType: EntityType): string => {
 
 export const getAllReferenceEntities = (): EntityType[] => {
     return [
-        'apple',
+        'pommel',
         'blade-type',
         'dolls',
         'epoha',

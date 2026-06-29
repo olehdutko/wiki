@@ -3,6 +3,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { ImagePreviewCell } from './ImagePreviewCell';
 import {
     DataGrid,
     GridToolbar
@@ -96,9 +97,10 @@ export function EntityDataGrid<T extends BaseEntity>({
     const [data, setData] = useState<T[]>([]);
     const [allCategoryData, setAllCategoryData] = useState<T[]>([]); // Всі дані вибраної категорії
     const [loading, setLoading] = useState<LoadingState>({ loading: true, error: null });
+    const entityConfig = getEntityConfig(entityType);
     const [pagination, setPagination] = useState({
         page: 0,
-        pageSize: 25,
+        pageSize: entityConfig.defaultPageSize || 25,
         total: 0
     });
     // Фільтрація для DataGrid - використовуємо вбудований механізм
@@ -110,6 +112,15 @@ export function EntityDataGrid<T extends BaseEntity>({
     const [sortModel, setSortModel] = useState<GridSortModel>([
         { field: 'id', sort: 'asc' }
     ]);
+
+    // Скидаємо пагінацію до дефолтного pageSize при зміні сутності
+    useEffect(() => {
+        setPagination(prev => ({
+            page: 0,
+            pageSize: entityConfig.defaultPageSize || 25,
+            total: prev.total
+        }));
+    }, [entityType, entityConfig.defaultPageSize]);
 
     // Діалоги
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; row: T | null }>({
@@ -457,6 +468,8 @@ export function EntityDataGrid<T extends BaseEntity>({
                 return ['ukr_name', 'eng_name', 'comments'];
             case 'weapons':
                 return ['ukr_name', 'eng_name', 'rus_name', 'category_ids'];
+            case 'pommel':
+                return ['ukr', 'eng', 'type', 'description', 'rus'];
             default:
                 return ['ukr', 'eng', 'rus'];
         }
@@ -744,7 +757,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         return (
             <Box>
                 {/* Кнопка завантаження зображення для довідкових сутностей */}
-                {(entityType === 'guard-type' || entityType === 'apple' || entityType === 'sharpening') && (
+                {(entityType === 'guard-type' || entityType === 'pommel' || entityType === 'sharpening') && (
                     <Tooltip title="Завантажити зображення">
                         <IconButton
                             size="small"
@@ -797,123 +810,27 @@ export function EntityDataGrid<T extends BaseEntity>({
             renderCell: renderActionButtons
         }] : []),
         // Колонка зображення для довідкових сутностей
-        ...(entityType === 'guard-type' || entityType === 'apple' || entityType === 'sharpening' ? [{
+        ...(entityType === 'guard-type' || entityType === 'pommel' || entityType === 'sharpening' ? [{
             field: 'image_url',
             headerName: 'Зображення',
             width: 120,
             sortable: false,
             filterable: false,
             disableColumnMenu: true,
-            renderCell: (params: any) => {
-                return (
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                        {params.value ? (
-                            <Box sx={{ position: 'relative', display: 'inline-block' }}>
-                                <img
-                                    src={params.value}
-                                    alt=""
-                                    style={{
-                                        width: 40,
-                                        height: 40,
-                                        objectFit: 'contain',
-                                        borderRadius: 4,
-                                        border: '1px solid #e0e0e0'
-                                    }}
-                                />
-                            </Box>
-                        ) : (
-                            <Typography variant="caption" color="text.secondary">-</Typography>
-                        )}
-                    </Box>
-                );
-            }
+            renderCell: (params: any) => (
+                <ImagePreviewCell imageUrl={params.value} previewSize={50} />
+            )
         }] : []),
         ...(entityType === 'weapons' ? [{
             field: 'primary_image_url',
             headerName: 'Зображення',
-            width: 80,
+            width: 100,
             sortable: false,
             filterable: false,
             disableColumnMenu: true,
-            renderCell: (params: any) => {
-                const [hovered, setHovered] = useState(false);
-
-                return (
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            height: '100%',
-                            position: 'relative'
-                        }}
-                        onMouseEnter={() => setHovered(true)}
-                        onMouseLeave={() => setHovered(false)}
-                    >
-                        {params.value ? (
-                            <>
-                                <img
-                                    src={params.value}
-                                    alt=""
-                                    style={{
-                                        width: 40,
-                                        height: 40,
-                                        objectFit: 'cover',
-                                        borderRadius: 4,
-                                        border: '1px solid #e0e0e0',
-                                        cursor: 'pointer'
-                                    }}
-                                />
-                                {hovered && (
-                                    <Box
-                                        sx={{
-                                            position: 'fixed',
-                                            inset: 0,
-                                            zIndex: 9999,
-                                            pointerEvents: 'none',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: 'rgba(0, 0, 0, 0.45)',
-                                            backdropFilter: 'blur(2px)'
-                                        }}
-                                    >
-                                        <Box
-                                            sx={{
-                                                width: 420,
-                                                height: 420,
-                                                backgroundColor: 'rgba(15, 23, 42, 0.94)',
-                                                borderRadius: 3,
-                                                boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
-                                                border: '1px solid rgba(255,255,255,0.12)',
-                                                p: 1.5,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center'
-                                            }}
-                                        >
-                                            <img
-                                                src={params.value}
-                                                alt=""
-                                                style={{
-                                                    maxWidth: '100%',
-                                                    maxHeight: '100%',
-                                                    objectFit: 'contain',
-                                                    borderRadius: 2,
-                                                    display: 'block',
-                                                    boxShadow: '0 4px 16px rgba(0,0,0,0.4)'
-                                                }}
-                                            />
-                                        </Box>
-                                    </Box>
-                                )}
-                            </>
-                        ) : (
-                            <Typography variant="caption" color="text.secondary">-</Typography>
-                        )}
-                    </Box>
-                );
-            }
+            renderCell: (params: any) => (
+                <ImagePreviewCell imageUrl={params.value} previewSize={50} />
+            )
         }] : []),
         // Інші колонки
         ...config.columns.map(col => {
@@ -1130,7 +1047,7 @@ renderCell: (params: any) => {
                     }}
                     editMode="cell"
                     isCellEditable={isCellEditable}
-                    rowHeight={31}
+                    rowHeight={50}
                     slots={{
                         toolbar: GridToolbar,
                         loadingOverlay: () => (

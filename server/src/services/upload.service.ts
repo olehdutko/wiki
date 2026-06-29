@@ -124,7 +124,7 @@ export class UploadService {
     private getTableName(entityType: string): string {
         const tableMap: Record<string, string> = {
             'guard-type': 'guard_type',
-            'apple': 'apple',
+            'pommel': 'pommel',
             'sharpening': 'sharpening'
         };
         

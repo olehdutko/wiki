@@ -55,7 +55,7 @@ export function addImperialUnits(data: any): any {
     return data;
 }
 import {
-    Apple, BladeType, Category, Dolls, Epoha, GlobalType, GuardType,
+    Pommel, BladeType, Category, Dolls, Epoha, GlobalType, GuardType,
     Sharpening, Usage, WeaponItem, WeaponItemResponse, CreateWeaponItemDto, UpdateWeaponItemDto
 } from '../models/entities.models';
 import { PaginationParams, PaginatedResponse } from '../types/base.types';
@@ -79,9 +79,9 @@ export class LinksService extends BaseService<Link> {
 
 // ================= ДОВІДКОВІ СЕРВІСИ =================
 
-export class AppleService extends BaseService<Apple> {
+export class PommelService extends BaseService<Pommel> {
     constructor() {
-        super('apple');
+        super('pommel');
     }
 }
 
@@ -848,8 +848,8 @@ export class ServiceFactory {
     static getService<T extends BaseService<any>>(entityName: string): T {
         if (!this.instances.has(entityName)) {
             switch (entityName) {
-                case 'apple':
-                    this.instances.set(entityName, new AppleService());
+                case 'pommel':
+                    this.instances.set(entityName, new PommelService());
                     break;
                 case 'blade_type':
                     this.instances.set(entityName, new BladeTypeService());
