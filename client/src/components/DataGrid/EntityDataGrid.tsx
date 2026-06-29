@@ -3,6 +3,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
     DataGrid,
     GridToolbar
@@ -876,19 +877,20 @@ export function EntityDataGrid<T extends BaseEntity>({
                                         cursor: 'pointer'
                                     }}
                                 />
-                                {hovered && (
+                                {hovered && createPortal(
                                     <Box
                                         sx={{
                                             position: 'fixed',
                                             inset: 0,
                                             zIndex: 9999,
-                                            pointerEvents: 'none',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             backgroundColor: 'rgba(0, 0, 0, 0.45)',
                                             backdropFilter: 'blur(2px)'
                                         }}
+                                        onMouseEnter={() => setHovered(true)}
+                                        onMouseLeave={() => setHovered(false)}
                                     >
                                         <Box
                                             sx={{
@@ -917,7 +919,8 @@ export function EntityDataGrid<T extends BaseEntity>({
                                                 }}
                                             />
                                         </Box>
-                                    </Box>
+                                    </Box>,
+                                    document.body
                                 )}
                             </>
                         ) : (
