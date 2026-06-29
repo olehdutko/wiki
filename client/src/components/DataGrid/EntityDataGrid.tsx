@@ -96,9 +96,10 @@ export function EntityDataGrid<T extends BaseEntity>({
     const [data, setData] = useState<T[]>([]);
     const [allCategoryData, setAllCategoryData] = useState<T[]>([]); // Всі дані вибраної категорії
     const [loading, setLoading] = useState<LoadingState>({ loading: true, error: null });
+    const entityConfig = getEntityConfig(entityType);
     const [pagination, setPagination] = useState({
         page: 0,
-        pageSize: 25,
+        pageSize: entityConfig.defaultPageSize || 25,
         total: 0
     });
     // Фільтрація для DataGrid - використовуємо вбудований механізм

@@ -33,6 +33,7 @@ export interface EntityConfig {
     formFields: FormField[];
     useForm?: boolean; // true для items, false для інших (тільки грід)
     supportsInlineEditing?: boolean; // true для сутностей, які підтримують inline редагування
+    defaultPageSize?: number; // дефолтна кількість записів на сторінку гріду
 }
 
 // ================= КОЛОНКИ ДЛЯ ГРІДІВ =================
@@ -200,7 +201,8 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
         columns: pommelColumns,
         formFields: pommelFormFields,
         useForm: false,
-        supportsInlineEditing: true
+        supportsInlineEditing: true,
+        defaultPageSize: 100
     },
 
     'blade-type': {

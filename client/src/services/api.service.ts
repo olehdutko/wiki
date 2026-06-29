@@ -190,8 +190,8 @@ class ApiService {
     // ================= СПЕЦИФІЧНІ МЕТОДИ ДЛЯ ДОВІДКОВИХ СУТНОСТЕЙ =================
 
     // Pommel
-    async getAllPommel(params?: PaginationParams) {
-        return this.getAll<NamedEntity>('/pommel', params);
+    async getAllPommel() {
+        return this.getAll<NamedEntity>('/pommel', { limit: 100000 });
     }
 
     async getPommelById(id: number) {
@@ -287,11 +287,6 @@ class ApiService {
     // Usage
     async getAllUsage() {
         return this.getAll<NamedEntity>('/usage', { limit: 1000 });
-    }
-
-    // Apple
-    async getAllApple() {
-        return this.getAll<NamedEntity>('/pommel', { limit: 1000 });
     }
 
     // Sharpening
