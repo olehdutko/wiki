@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import { ImagePreviewCell } from './ImagePreviewCell';
 import {
     DataGrid,
     GridToolbar
@@ -817,29 +817,9 @@ export function EntityDataGrid<T extends BaseEntity>({
             sortable: false,
             filterable: false,
             disableColumnMenu: true,
-            renderCell: (params: any) => {
-                return (
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                        {params.value ? (
-                            <Box sx={{ position: 'relative', display: 'inline-block' }}>
-                                <img
-                                    src={params.value}
-                                    alt=""
-                                    style={{
-                                        width: 50,
-                                        height: 50,
-                                        objectFit: 'contain',
-                                        borderRadius: 4,
-                                        border: '1px solid #e0e0e0'
-                                    }}
-                                />
-                            </Box>
-                        ) : (
-                            <Typography variant="caption" color="text.secondary">-</Typography>
-                        )}
-                    </Box>
-                );
-            }
+            renderCell: (params: any) => (
+                <ImagePreviewCell imageUrl={params.value} previewSize={50} />
+            )
         }] : []),
         ...(entityType === 'weapons' ? [{
             field: 'primary_image_url',
@@ -848,87 +828,9 @@ export function EntityDataGrid<T extends BaseEntity>({
             sortable: false,
             filterable: false,
             disableColumnMenu: true,
-            renderCell: (params: any) => {
-                const [hovered, setHovered] = useState(false);
-
-                return (
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            height: '100%',
-                            position: 'relative'
-                        }}
-                        onMouseEnter={() => setHovered(true)}
-                        onMouseLeave={() => setHovered(false)}
-                    >
-                        {params.value ? (
-                            <>
-                                <img
-                                    src={params.value}
-                                    alt=""
-                                    style={{
-                                        width: 50,
-                                        height: 50,
-                                        objectFit: 'cover',
-                                        borderRadius: 4,
-                                        border: '1px solid #e0e0e0',
-                                        cursor: 'pointer'
-                                    }}
-                                />
-                                {hovered && createPortal(
-                                    <Box
-                                        sx={{
-                                            position: 'fixed',
-                                            inset: 0,
-                                            zIndex: 9999,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: 'rgba(0, 0, 0, 0.45)',
-                                            backdropFilter: 'blur(2px)'
-                                        }}
-                                        onMouseEnter={() => setHovered(true)}
-                                        onMouseLeave={() => setHovered(false)}
-                                    >
-                                        <Box
-                                            sx={{
-                                                width: 420,
-                                                height: 420,
-                                                backgroundColor: 'rgba(15, 23, 42, 0.94)',
-                                                borderRadius: 3,
-                                                boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
-                                                border: '1px solid rgba(255,255,255,0.12)',
-                                                p: 1.5,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center'
-                                            }}
-                                        >
-                                            <img
-                                                src={params.value}
-                                                alt=""
-                                                style={{
-                                                    maxWidth: '100%',
-                                                    maxHeight: '100%',
-                                                    objectFit: 'contain',
-                                                    borderRadius: 2,
-                                                    display: 'block',
-                                                    boxShadow: '0 4px 16px rgba(0,0,0,0.4)'
-                                                }}
-                                            />
-                                        </Box>
-                                    </Box>,
-                                    document.body
-                                )}
-                            </>
-                        ) : (
-                            <Typography variant="caption" color="text.secondary">-</Typography>
-                        )}
-                    </Box>
-                );
-            }
+            renderCell: (params: any) => (
+                <ImagePreviewCell imageUrl={params.value} previewSize={50} />
+            )
         }] : []),
         // Інші колонки
         ...config.columns.map(col => {
