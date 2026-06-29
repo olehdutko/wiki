@@ -307,12 +307,58 @@ export class WeaponItemService extends BaseService<WeaponItem> {
     }
 
     /**
+     * Мапа колонок гріду, які показують українську назву довідкової сутності,
+     * на справжнє поле в таблиці items та назву довідкової таблиці.
+     */
+    private static escapeIdentifier(name: string): string {
+        return `\`${name.replace(/`/g, '``')}\``;
+    }
+
+    private static readonly REFERENCE_NAME_FIELDS: Record<string, { itemField: string; refTable: string }> = {
+        'epoha_name': { itemField: 'epoha', refTable: 'epoha' },
+        'guard_type_name': { itemField: 'guard_type', refTable: 'guard_type' },
+        'blade_type_name': { itemField: 'blade_type', refTable: 'blade_type' },
+        'global_type_name': { itemField: 'global_type', refTable: 'global_type' },
+        'dolls_name': { itemField: 'dolls', refTable: 'dolls' },
+        'pommel_name': { itemField: 'pommel', refTable: 'pommel' },
+        'usage_name': { itemField: 'using_it', refTable: 'usage' },
+        'sharpening_name': { itemField: 'sharpening', refTable: 'sharpening' }
+    };
+
+    /**
      * Допоміжний метод для отримання items з опціональним фільтром.
      * Не використовує GROUP_CONCAT для категорій, щоб уникнути втрати категорій
      * при фільтрації по одній з них.
      */
-    private buildItemWithCategoriesQuery(whereClause = '', orderBy = 'i.id', limit?: number, offset?: number): string {
-        let sql = `SELECT i.* FROM items i`;
+    /**
+     * Постійні LEFT JOIN з довідковими таблицями, щоб мати українські назви
+     * для відображення в гріді зброї.
+     */
+    private static readonly REFERENCE_DISPLAY_JOINS = [
+        { field: 'epoha', table: 'epoha', displayColumn: 'epoha_name' },
+        { field: 'guard_type', table: 'guard_type', displayColumn: 'guard_type_name' },
+        { field: 'blade_type', table: 'blade_type', displayColumn: 'blade_type_name' },
+        { field: 'global_type', table: 'global_type', displayColumn: 'global_type_name' },
+        { field: 'dolls', table: 'dolls', displayColumn: 'dolls_name' },
+        { field: 'pommel', table: 'pommel', displayColumn: 'pommel_name' },
+        { field: 'using_it', table: 'usage', displayColumn: 'usage_name' },
+        { field: 'sharpening', table: 'sharpening', displayColumn: 'sharpening_name' }
+    ];
+
+    private buildItemWithCategoriesQuery(whereClause = '', orderBy = 'i.id', joins: string[] = [], limit?: number, offset?: number): string {
+        const displayJoins = WeaponItemService.REFERENCE_DISPLAY_JOINS.map(j => {
+            const alias = `ref_${j.field}`;
+            return `LEFT JOIN ${WeaponItemService.escapeIdentifier(j.table)} ${alias} ON i.${j.field} = ${alias}.id`;
+        });
+        const allJoins = [...displayJoins, ...joins];
+        const joinClause = allJoins.length > 0 ? ' ' + allJoins.join(' ') : '';
+
+        const displayColumns = WeaponItemService.REFERENCE_DISPLAY_JOINS
+            .map(j => `ref_${j.field}.ukr as ${j.displayColumn}`)
+            .join(', ');
+        const selectColumns = displayColumns ? `i.*, ${displayColumns}` : 'i.*';
+
+        let sql = `SELECT ${selectColumns} FROM items i${joinClause}`;
 
         if (whereClause) {
             sql += ` WHERE ${whereClause}`;
@@ -362,6 +408,9 @@ export class WeaponItemService extends BaseService<WeaponItem> {
             let whereConditions: string[] = [];
             let queryParams: any[] = [];
             
+            const joins: string[] = [];
+            let forceEmptyResult = false;
+
             if (filterParams) {
                 let filterIndex = 0;
                 while (filterParams[`filterField${filterIndex > 0 ? filterIndex : ''}`]) {
@@ -411,6 +460,15 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                                         break;
                                 }
                             }
+                        } else if (WeaponItemService.REFERENCE_NAME_FIELDS[field]) {
+                            const mapping = WeaponItemService.REFERENCE_NAME_FIELDS[field];
+                            const alias = `ref_${mapping.itemField}`;
+                            if (!joins.some(j => j.includes(` ${alias} `) || j.endsWith(` ${alias}`))) {
+                                joins.push(`LEFT JOIN ${WeaponItemService.escapeIdentifier(mapping.refTable)} ${alias} ON i.${mapping.itemField} = ${alias}.id`);
+                            }
+                            const strValue = `%${value}%`;
+                            whereConditions.push(`${alias}.ukr LIKE ?`);
+                            queryParams.push(strValue);
                         } else {
                             // String fields
                             if (operator === '=' || operator === 'eq' || operator === 'equals') {
@@ -426,13 +484,26 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                     filterIndex++;
                 }
             }
+
+            if (forceEmptyResult) {
+                return {
+                    items: [],
+                    total: 0,
+                    page,
+                    limit,
+                    totalPages: 0
+                };
+            }
             
             const whereClause = whereConditions.length > 0 
                 ? whereConditions.join(' AND ') 
                 : '';
 
             // Get total count with filters
-            let countQuery = 'SELECT COUNT(*) as total FROM items i';
+            let countQuery = 'SELECT COUNT(DISTINCT i.id) as total FROM items i';
+            if (joins.length > 0) {
+                countQuery += ' ' + joins.join(' ');
+            }
             if (whereClause) {
                 countQuery += ` WHERE ${whereClause}`;
             }
@@ -442,7 +513,7 @@ export class WeaponItemService extends BaseService<WeaponItem> {
 
             // Get items with categories (with filters)
             const [rows] = await pool.query(
-                this.buildItemWithCategoriesQuery(whereClause, `i.${sortBy} ${sortOrder}`, limit, offset),
+                this.buildItemWithCategoriesQuery(whereClause, `i.${sortBy} ${sortOrder}`, joins, limit, offset),
                 queryParams
             );
 
@@ -486,7 +557,7 @@ export class WeaponItemService extends BaseService<WeaponItem> {
     async findByIdWithCategories(id: number): Promise<WeaponItemResponse | null> {
         try {
             const [rows] = await pool.query(
-                this.buildItemWithCategoriesQuery('i.id = ?'),
+                this.buildItemWithCategoriesQuery('i.id = ?', 'i.id', []),
                 [id]
             );
 
@@ -665,6 +736,7 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
                 this.buildItemWithCategoriesQuery(
                     'i.ukr_name LIKE ? OR i.eng_name LIKE ? OR i.rus_name LIKE ? OR CAST(i.id AS CHAR) LIKE ?',
                     `i.${sortBy} ${sortOrder}`,
+                    [],
                     limit,
                     offset
                 ),
@@ -726,6 +798,9 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
             queryParams.push(categoryId);
             
             // Add filter conditions
+            const joins: string[] = [];
+            let forceEmptyResult = false;
+
             if (filterParams) {
                 let filterIndex = 0;
                 while (filterParams[`filterField${filterIndex > 0 ? filterIndex : ''}`]) {
@@ -775,6 +850,15 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
                                         break;
                                 }
                             }
+                        } else if (WeaponItemService.REFERENCE_NAME_FIELDS[field]) {
+                            const mapping = WeaponItemService.REFERENCE_NAME_FIELDS[field];
+                            const alias = `ref_${mapping.itemField}`;
+                            if (!joins.some(j => j.includes(` ${alias} `) || j.endsWith(` ${alias}`))) {
+                                joins.push(`LEFT JOIN ${WeaponItemService.escapeIdentifier(mapping.refTable)} ${alias} ON i.${mapping.itemField} = ${alias}.id`);
+                            }
+                            const strValue = `%${value}%`;
+                            whereConditions.push(`${alias}.ukr LIKE ?`);
+                            queryParams.push(strValue);
                         } else {
                             // String fields
                             if (operator === '=' || operator === 'eq' || operator === 'equals') {
@@ -790,13 +874,24 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
                     filterIndex++;
                 }
             }
+
+            if (forceEmptyResult) {
+                return {
+                    items: [],
+                    total: 0,
+                    page,
+                    limit,
+                    totalPages: 0
+                };
+            }
             
             const whereClause = whereConditions.join(' AND ');
 
             // Get total count for category with filters
+            const joinClause = joins.length > 0 ? ' ' + joins.join(' ') : '';
             const [countResult] = await pool.execute(
-                `SELECT COUNT(DISTINCT item_id) as total FROM item_categories ic 
-                 JOIN items i ON i.id = ic.item_id 
+                `SELECT COUNT(DISTINCT ic.item_id) as total FROM item_categories ic 
+                 JOIN items i ON i.id = ic.item_id${joinClause} 
                  WHERE ${whereClause}`,
                 queryParams
             ) as [RowDataPacket[], any];
@@ -808,6 +903,7 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
                 this.buildItemWithCategoriesQuery(
                     whereClause,
                     `i.${sortBy} ${sortOrder}`,
+                    joins,
                     limit,
                     offset
                 ),
