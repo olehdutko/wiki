@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Box } from '@mui/material';
 import { createPortal } from 'react-dom';
 
@@ -10,8 +10,7 @@ interface ImagePreviewCellProps {
 export function ImagePreviewCell({ imageUrl, previewSize = 50 }: ImagePreviewCellProps) {
     const [showPreview, setShowPreview] = useState(false);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const portalRef = useRef<HTMLDivElement | null>(null);
-    const thumbRef = useRef<HTMLDivElement | null>(null);
+    const isHoveringRef = useRef(false);
 
     const clearHideTimeout = useCallback(() => {
         if (timeoutRef.current) {
@@ -23,38 +22,22 @@ export function ImagePreviewCell({ imageUrl, previewSize = 50 }: ImagePreviewCel
     const scheduleHide = useCallback(() => {
         clearHideTimeout();
         timeoutRef.current = setTimeout(() => {
-            setShowPreview(false);
+            if (!isHoveringRef.current) {
+                setShowPreview(false);
+            }
         }, 250);
     }, [clearHideTimeout]);
 
     const handleEnter = useCallback(() => {
+        isHoveringRef.current = true;
         clearHideTimeout();
         setShowPreview(true);
     }, [clearHideTimeout]);
 
-    useEffect(() => {
-        const thumb = thumbRef.current;
-        const portal = portalRef.current;
-        if (!thumb) return;
-
-        thumb.addEventListener('mouseenter', handleEnter);
-        thumb.addEventListener('mouseleave', scheduleHide);
-
-        if (portal) {
-            portal.addEventListener('mouseenter', handleEnter);
-            portal.addEventListener('mouseleave', scheduleHide);
-        }
-
-        return () => {
-            thumb.removeEventListener('mouseenter', handleEnter);
-            thumb.removeEventListener('mouseleave', scheduleHide);
-            if (portal) {
-                portal.removeEventListener('mouseenter', handleEnter);
-                portal.removeEventListener('mouseleave', scheduleHide);
-            }
-            clearHideTimeout();
-        };
-    }, [handleEnter, scheduleHide]);
+    const handleLeave = useCallback(() => {
+        isHoveringRef.current = false;
+        scheduleHide();
+    }, [scheduleHide]);
 
     if (!imageUrl) {
         return <span>-</span>;
@@ -62,7 +45,6 @@ export function ImagePreviewCell({ imageUrl, previewSize = 50 }: ImagePreviewCel
 
     return (
         <Box
-            ref={thumbRef}
             sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -70,6 +52,8 @@ export function ImagePreviewCell({ imageUrl, previewSize = 50 }: ImagePreviewCel
                 height: '100%',
                 width: '100%'
             }}
+            onMouseEnter={handleEnter}
+            onMouseLeave={handleLeave}
         >
             <img
                 src={imageUrl}
@@ -99,7 +83,6 @@ export function ImagePreviewCell({ imageUrl, previewSize = 50 }: ImagePreviewCel
                     }}
                 >
                     <Box
-                        ref={portalRef}
                         sx={{
                             width: 420,
                             height: 420,
@@ -113,6 +96,8 @@ export function ImagePreviewCell({ imageUrl, previewSize = 50 }: ImagePreviewCel
                             justifyContent: 'center',
                             pointerEvents: 'auto'
                         }}
+                        onMouseEnter={handleEnter}
+                        onMouseLeave={handleLeave}
                     >
                         <img
                             src={imageUrl}
