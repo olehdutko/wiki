@@ -133,8 +133,10 @@ export function EntityDataGrid<T extends BaseEntity>({
         if (!initialFilterModel) {
             setFilterModel({ items: [] });
         }
-        if (initialCategoryId === undefined) {
-            setSelectedCategoryId(null);
+        if (initialCategoryId !== undefined) {
+            setSelectedCategoryId(initialCategoryId);
+        } else {
+            setSelectedCategoryId(entityType === 'weapons' ? 1 : null);
         }
     }, [entityType, entityConfig.defaultPageSize, initialFilterModel, initialCategoryId, initialFilterLabel]);
 
@@ -157,7 +159,12 @@ export function EntityDataGrid<T extends BaseEntity>({
 
     // Стан для фільтрування по категоріях (тільки для weapons)
     const [categories, setCategories] = useState<Array<{ id: number, ukr_name: string }>>([]);
-    const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(() => initialCategoryId ?? (entityType === 'weapons' ? 1 : null));
+    const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(() => {
+        if (initialCategoryId !== undefined) {
+            return initialCategoryId;
+        }
+        return entityType === 'weapons' ? 1 : null;
+    });
     const [categoriesLoading, setCategoriesLoading] = useState(false);
 
     // ================= ФУНКЦІЇ =================
@@ -237,6 +244,13 @@ export function EntityDataGrid<T extends BaseEntity>({
                     searchQuery.trim(),
                     { page: currentPage, limit: pageSize, sortBy, sortOrder, ...filterParams }
                 );
+            } else if (entityType === 'weapons' && filterModel.items?.length > 0) {
+                // Якщо активний фільтр по довідковому полю — використовуємо загальний запит items,
+                // ігноруючи поточну категорію, щоб показати всі зброю з таким значенням.
+                result = await apiService.getEntityData(
+                    entityType,
+                    { page: currentPage, limit: pageSize, sortBy, sortOrder, ...filterParams }
+                );
             } else if (entityType === 'weapons' && selectedCategoryId) {
                 result = await apiService.getWeaponsByCategory(
                     selectedCategoryId,
@@ -270,12 +284,14 @@ export function EntityDataGrid<T extends BaseEntity>({
                                 ? item.category_data.map((c: any) => c.ukr_name || c.ukr || 'Невідомо').join(', ')
                                 : item.category?.ukr_name || 'Не вказано'
                         : 'Не вказано',
-                    epoha_name: item.epoha_data?.ukr || 'Не вказано',
-                    guard_type_name: item.guard_type_data?.ukr || 'Не вказано',
-                    blade_type_name: item.blade_type_data?.ukr || 'Не вказано',
-                    dolls_name: item.dolls_data?.ukr || 'Не вказано',
-                    usage_name: item.usage_data?.ukr || 'Не вказано',
-                    sharpening_name: item.sharpening_data?.ukr || 'Не вказано'
+                    epoha_name: item.epoha_name || item.epoha_data?.ukr || 'Не вказано',
+                    guard_type_name: item.guard_type_name || item.guard_type_data?.ukr || 'Не вказано',
+                    blade_type_name: item.blade_type_name || item.blade_type_data?.ukr || 'Не вказано',
+                    global_type_name: item.global_type_name || item.global_type_data?.ukr || 'Не вказано',
+                    dolls_name: item.dolls_name || item.dolls_data?.ukr || 'Не вказано',
+                    pommel_name: item.pommel_name || item.pommel_data?.ukr || 'Не вказано',
+                    usage_name: item.usage_name || item.usage_data?.ukr || 'Не вказано',
+                    sharpening_name: item.sharpening_name || item.sharpening_data?.ukr || 'Не вказано'
                 }));
             }
 
@@ -437,12 +453,14 @@ export function EntityDataGrid<T extends BaseEntity>({
                                 ? item.category_data.map((c: any) => c.ukr_name || c.ukr || 'Невідомо').join(', ')
                                 : item.category?.ukr_name || 'Не вказано'
                         : 'Не вказано',
-                    epoha_name: item.epoha_data?.ukr || 'Не вказано',
-                    guard_type_name: item.guard_type_data?.ukr || 'Не вказано',
-                    blade_type_name: item.blade_type_data?.ukr || 'Не вказано',
-                    dolls_name: item.dolls_data?.ukr || 'Не вказано',
-                    usage_name: item.usage_data?.ukr || 'Не вказано',
-                    sharpening_name: item.sharpening_data?.ukr || 'Не вказано'
+                    epoha_name: item.epoha_name || item.epoha_data?.ukr || 'Не вказано',
+                    guard_type_name: item.guard_type_name || item.guard_type_data?.ukr || 'Не вказано',
+                    blade_type_name: item.blade_type_name || item.blade_type_data?.ukr || 'Не вказано',
+                    global_type_name: item.global_type_name || item.global_type_data?.ukr || 'Не вказано',
+                    dolls_name: item.dolls_name || item.dolls_data?.ukr || 'Не вказано',
+                    pommel_name: item.pommel_name || item.pommel_data?.ukr || 'Не вказано',
+                    usage_name: item.usage_name || item.usage_data?.ukr || 'Не вказано',
+                    sharpening_name: item.sharpening_name || item.sharpening_data?.ukr || 'Не вказано'
                 }));
             }
 
@@ -729,14 +747,14 @@ export function EntityDataGrid<T extends BaseEntity>({
     // Оновлюємо рендеринг кнопок для нового рядка
     // Map reference entity type to the items foreign-key column
     const REFERENCE_ENTITY_FILTER_FIELDS: Record<EntityType, string | null> = {
-        'guard-type': 'guard_type',
-        'blade-type': 'blade_type',
-        'global-type': 'global_type',
-        'pommel': 'pommel',
-        'sharpening': 'sharpening',
-        'usage': 'using_it',
-        'dolls': 'dolls',
-        'epoha': 'epoha',
+        'guard-type': 'guard_type_name',
+        'blade-type': 'blade_type_name',
+        'global-type': 'global_type_name',
+        'pommel': 'pommel_name',
+        'sharpening': 'sharpening_name',
+        'usage': 'usage_name',
+        'dolls': 'dolls_name',
+        'epoha': 'epoha_name',
         'categories': null,
         'weapons': null
     };
@@ -754,11 +772,13 @@ export function EntityDataGrid<T extends BaseEntity>({
         const filterField = REFERENCE_ENTITY_FILTER_FIELDS[entityType];
         if (!filterField) return;
 
+        const filterValue = row.ukr || row.ukr_name || String(row.id);
+
         onViewRelatedItems({
             entityType: 'weapons',
             filterModel: {
                 items: [
-                    { field: filterField, operator: 'equals', value: String(row.id) }
+                    { field: filterField, operator: 'contains', value: filterValue }
                 ]
             },
             filterLabel
