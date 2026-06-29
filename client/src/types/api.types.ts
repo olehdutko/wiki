@@ -41,7 +41,7 @@ export type SortOrder = 'ASC' | 'DESC';
 
 // ================= СУТНОСТІ =================
 
-export interface Apple extends NamedEntity { 
+export interface Pommel extends NamedEntity { 
     image_url?: string | null;
 }
 
@@ -103,7 +103,7 @@ export interface WeaponItem extends BaseEntity {
     dolls?: string | null;
     using_it?: string | null;
     sharpening?: string | null;
-    apple: string;
+    pommel: string;
     links?: string | null;
     comments?: string | null;
     source: string;
@@ -148,7 +148,7 @@ export interface UpdateNamedEntityDto extends Partial<CreateNamedEntityDto> { }
 // ================= UNION TYPES для сутностей =================
 
 export type EntityType =
-    | 'apple'
+    | 'pommel'
     | 'blade-type'
     | 'categories'
     | 'dolls'
@@ -186,7 +186,7 @@ export interface NotificationState {
 // ================= UTILITIES =================
 
 export type EntityUnion =
-    | Apple
+    | Pommel
     | BladeType
     | Category
     | Dolls

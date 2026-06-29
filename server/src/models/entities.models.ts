@@ -7,7 +7,7 @@ import { BaseEntity, NamedEntity } from '../types/base.types';
 
 // ================= ДОВІДКОВІ СУТНОСТІ =================
 
-export class Apple implements NamedEntity {
+export class Pommel implements NamedEntity {
     @IsNumber()
     id!: number;
 
@@ -382,7 +382,7 @@ export class WeaponItem implements BaseEntity {
     @IsOptional()
     @IsString()
     @MaxLength(10)
-    apple?: string | null;
+    pommel?: string | null;
 
     @IsOptional()
     @IsOptional()
@@ -431,7 +431,7 @@ export interface WeaponItemResponse extends WeaponItem {
 
 // Типи для всіх сутностей
 export type EntityType =
-    | Apple
+    | Pommel
     | BladeType
     | Category
     | Dolls
@@ -444,7 +444,7 @@ export type EntityType =
 
 // Мапа назв сутностей
 export const ENTITY_NAMES = {
-    apple: 'apple',
+    pommel: 'pommel',
     blade_type: 'blade_type',
     categories: 'categories',
     dolls: 'dolls',

@@ -744,7 +744,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         return (
             <Box>
                 {/* Кнопка завантаження зображення для довідкових сутностей */}
-                {(entityType === 'guard-type' || entityType === 'apple' || entityType === 'sharpening') && (
+                {(entityType === 'guard-type' || entityType === 'pommel' || entityType === 'sharpening') && (
                     <Tooltip title="Завантажити зображення">
                         <IconButton
                             size="small"
@@ -797,7 +797,7 @@ export function EntityDataGrid<T extends BaseEntity>({
             renderCell: renderActionButtons
         }] : []),
         // Колонка зображення для довідкових сутностей
-        ...(entityType === 'guard-type' || entityType === 'apple' || entityType === 'sharpening' ? [{
+        ...(entityType === 'guard-type' || entityType === 'pommel' || entityType === 'sharpening' ? [{
             field: 'image_url',
             headerName: 'Зображення',
             width: 120,

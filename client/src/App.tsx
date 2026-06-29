@@ -60,7 +60,7 @@ const ENTITY_ICONS: Record<EntityType, React.ReactElement> = {
   'epoha': <EpohaIcon />,
   'guard-type': <GuardIcon />,
   'blade-type': <BladeIcon />,
-  'apple': <AppleIcon />,
+  'pommel': <AppleIcon />,
   'sharpening': <SharpeningIcon />,
   'usage': <UsageIcon />,
   'dolls': <DollsIcon />
@@ -78,7 +78,7 @@ const ENTITY_GROUPS: Array<{ title: string; entities: EntityType[] }> = [
       'global-type',
       'guard-type',
       'blade-type',
-      'apple',
+      'pommel',
       'sharpening',
       'usage',
       'dolls',

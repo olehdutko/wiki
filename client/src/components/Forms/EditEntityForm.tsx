@@ -43,7 +43,7 @@ interface BaseEntity {
 }
 
 type EntityType =
-  | 'apple'
+  | 'pommel'
   | 'blade-type'
   | 'categories'
   | 'dolls'
@@ -114,7 +114,7 @@ export function EditEntityForm<T extends BaseEntity>({
   const [dollsList, setDollsList] = useState<Array<{ id: number, ukr: string }>>([]);
   const [usageList, setUsageList] = useState<Array<{ id: number, ukr: string }>>([]);
   const [sharpeningList, setSharpeningList] = useState<Array<{ id: number, ukr: string }>>([]);
-  const [appleList, setAppleList] = useState<Array<{ id: number, ukr: string }>>([]);
+  const [pommelList, setPommelList] = useState<Array<{ id: number, ukr: string }>>([]);
   const [config, setConfig] = useState<EntityConfig | null>(null);
   const [activeTab, setActiveTab] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -465,7 +465,7 @@ export function EditEntityForm<T extends BaseEntity>({
       };
 
       // Завантажуємо всі довідкові дані паралельно
-      const [epohaItems, guardTypeItems, bladeTypeItems, globalTypeItems, dollsItems, usageItems, sharpeningItems, appleItems] = await Promise.all([
+      const [epohaItems, guardTypeItems, bladeTypeItems, globalTypeItems, dollsItems, usageItems, sharpeningItems, pommelItems] = await Promise.all([
         loadData(() => apiService.getAllEpoha(), 'epoha'),
         loadData(() => apiService.getAllGuardTypes(), 'guard-type'),
         loadData(() => apiService.getAllBladeTypes(), 'blade-type'),
@@ -473,7 +473,7 @@ export function EditEntityForm<T extends BaseEntity>({
         loadData(() => apiService.getAllDolls(), 'dolls'),
         loadData(() => apiService.getAllUsage(), 'usage'),
         loadData(() => apiService.getAllSharpening(), 'sharpening'),
-        loadData(() => apiService.getAllApple(), 'apple')
+        loadData(() => apiService.getAllPommel(), 'pommel')
       ]);
 
       console.log('📊 Встановлюємо дані в стан:', {
@@ -484,7 +484,7 @@ export function EditEntityForm<T extends BaseEntity>({
         dolls: dollsItems.length,
         usage: usageItems.length,
         sharpening: sharpeningItems.length,
-        apple: appleItems.length
+        pommel: pommelItems.length
       });
 
       setEpohaList(epohaItems);
@@ -494,7 +494,7 @@ export function EditEntityForm<T extends BaseEntity>({
       setDollsList(dollsItems);
       setUsageList(usageItems);
       setSharpeningList(sharpeningItems);
-      setAppleList(appleItems);
+      setPommelList(pommelItems);
 
       console.log('✅ Довідкові дані завантажено успішно');
     } catch (error) {
@@ -755,7 +755,7 @@ export function EditEntityForm<T extends BaseEntity>({
           </Typography>
 
           {/* Зображення для довідкових сутностей */}
-          {['guard-type', 'apple', 'sharpening'].includes(entityType) && entity && (
+          {['guard-type', 'pommel', 'sharpening'].includes(entityType) && entity && (
             <ImageUploadField
               entityType={entityType}
               entityId={entity.id}
@@ -1351,8 +1351,8 @@ export function EditEntityForm<T extends BaseEntity>({
           case 'dolls':
             options = dollsList;
             break;
-          case 'apple':
-            options = appleList;
+          case 'pommel':
+            options = pommelList;
             break;
           case 'using_it':
             options = usageList;
@@ -1474,7 +1474,7 @@ export function EditEntityForm<T extends BaseEntity>({
               {options?.map((option) => (
                 <MenuItem key={option.id} value={option.id}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {(field.name === 'guard_type' || field.name === 'apple' || field.name === 'sharpening') && option.image_url && (
+                    {(field.name === 'guard_type' || field.name === 'pommel' || field.name === 'sharpening') && option.image_url && (
                       <img
                         src={option.image_url}
                         alt=""

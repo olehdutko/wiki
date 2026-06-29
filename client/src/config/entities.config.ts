@@ -96,8 +96,8 @@ const weaponColumns: GridColumn[] = [
         editable: false
     },
     {
-        field: 'apple_name',
-        headerName: 'Яблуко (навершя)',
+        field: 'pommel_name',
+        headerName: 'Навершя (pommel)',
         width: 150,
         editable: false
     },
@@ -162,7 +162,7 @@ const weaponFormFields: FormField[] = [
     { name: 'guard_type', label: 'Тип гарди', type: 'select', maxLength: 20 },
     { name: 'blade_type', label: 'Тип клинка', type: 'select', maxLength: 20 },
     { name: 'dolls', label: 'Доли', type: 'select', maxLength: 10 },
-    { name: 'apple', label: 'Яблуко (навершя)', type: 'select', maxLength: 20 },
+    { name: 'pommel', label: 'Навершя (pommel)', type: 'select', maxLength: 20 },
     { name: 'using_it', label: 'Використання', type: 'select', maxLength: 50 },
     { name: 'sharpening', label: 'Заточення', type: 'select', maxLength: 10 },
 
@@ -176,10 +176,10 @@ const weaponFormFields: FormField[] = [
 // ================= КОНФІГУРАЦІЯ СУТНОСТЕЙ =================
 
 export const entitiesConfig: Record<EntityType, EntityConfig> = {
-    'apple': {
-        name: 'apple',
-        displayName: 'Яблука (навершя)',
-        apiEndpoint: '/apple',
+    'pommel': {
+        name: 'pommel',
+        displayName: 'Навершя (pommel)',
+        apiEndpoint: '/pommel',
         columns: namedEntityColumns,
         formFields: namedEntityFormFields,
         useForm: false,
@@ -288,7 +288,7 @@ export const getEntityDisplayName = (entityType: EntityType): string => {
 
 export const getAllReferenceEntities = (): EntityType[] => {
     return [
-        'apple',
+        'pommel',
         'blade-type',
         'dolls',
         'epoha',

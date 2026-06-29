@@ -5,7 +5,7 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import {
-    AppleController, BladeTypeController, CategoryController, DollsController,
+    PommelController, BladeTypeController, CategoryController, DollsController,
     EpohaController, GlobalTypeController, GuardTypeController, SharpeningController,
     UsageController, WeaponItemController
 } from '../controllers/entities.controllers';
@@ -19,7 +19,7 @@ const router = Router();
 
 // ================= ІНСТАНЦІЇ КОНТРОЛЕРІВ =================
 
-const appleController = new AppleController();
+const pommelController = new PommelController();
 const bladeTypeController = new BladeTypeController();
 const categoryController = new CategoryController();
 const dollsController = new DollsController();
@@ -94,7 +94,7 @@ const weaponItemValidation = [
     body('dolls').optional().isString().isLength({ max: 10 }),
     body('using_it').optional().isString().isLength({ max: 50 }),
     body('sharpening').optional().isString().isLength({ max: 10 }),
-    body('apple').optional().isString().isLength({ max: 20 }),
+    body('pommel').optional().isString().isLength({ max: 20 }),
     body('links').optional().isString().isLength({ max: 1500 }),
     body('comments').optional().isString().isLength({ max: 800 }),
     body('source').notEmpty().isString().isLength({ max: 800 }),
@@ -146,7 +146,7 @@ const weaponItemUpdateValidation = [
     body('dolls').optional().isString().isLength({ max: 10 }),
     body('using_it').optional().isString().isLength({ max: 50 }),
     body('sharpening').optional().isString().isLength({ max: 10 }),
-    body('apple').optional().isString().isLength({ max: 20 }),
+    body('pommel').optional().isString().isLength({ max: 20 }),
     body('links').optional().isString().isLength({ max: 1500 }),
     body('comments').optional().isString().isLength({ max: 800 }),
     body('source').optional().isString().isLength({ max: 800 }),
@@ -195,14 +195,14 @@ router.put('/blade-type/:id', namedEntityUpdateValidation, bladeTypeController.u
 router.delete('/blade-type/:id', bladeTypeController.delete.bind(bladeTypeController));
 
 // Apple (яблука - навершя)
-router.get('/apple', appleController.getAll.bind(appleController));
-router.get('/apple/search', appleController.search.bind(appleController));
-router.get('/apple/count', appleController.getCount.bind(appleController));
-router.get('/apple/max-id', appleController.getMaxId.bind(appleController));
-router.get('/apple/:id', appleController.getById.bind(appleController));
-router.post('/apple', namedEntityValidation, appleController.create.bind(appleController));
-router.put('/apple/:id', namedEntityUpdateValidation, appleController.update.bind(appleController));
-router.delete('/apple/:id', appleController.delete.bind(appleController));
+router.get('/pommel', pommelController.getAll.bind(pommelController));
+router.get('/pommel/search', pommelController.search.bind(pommelController));
+router.get('/pommel/count', pommelController.getCount.bind(pommelController));
+router.get('/pommel/max-id', pommelController.getMaxId.bind(pommelController));
+router.get('/pommel/:id', pommelController.getById.bind(pommelController));
+router.post('/pommel', namedEntityValidation, pommelController.create.bind(pommelController));
+router.put('/pommel/:id', namedEntityUpdateValidation, pommelController.update.bind(pommelController));
+router.delete('/pommel/:id', pommelController.delete.bind(pommelController));
 
 // Dolls (доли)
 router.get('/dolls', dollsController.getAll.bind(dollsController));
@@ -303,7 +303,7 @@ router.get('/info', (_req, res) => {
             description: 'API для енциклопедії холодної зброї',
             endpoints: {
                 reference: [
-                    '/api/apple',
+                    '/api/pommel',
                     '/api/blade-type',
                     '/api/dolls',
                     '/api/epoha',
