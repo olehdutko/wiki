@@ -93,12 +93,18 @@ export function exportDatabaseDump(req: Request, res: Response): void {
         args.push(`-p${dbConfig.password}`);
     }
     args.push(
-        '--single-transaction',
+        '--databases',
+        dbConfig.database,
+        '--add-drop-database',
+        '--opt',
+        '--hex-blob',
         '--routines',
         '--triggers',
         '--events',
+        '--set-gtid-purged=OFF',
+        '--single-transaction',
         '--no-tablespaces',
-        dbConfig.database
+        '--comments'
     );
 
     const child = spawn(mysqldumpPath, args, {
