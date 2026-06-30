@@ -2,7 +2,7 @@
  * Спеціалізовані сервіси для всіх сутностей
  */
 
-import type { RowDataPacket } from 'mysql2';
+import type { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { BaseService } from './base.service';
 import { pool } from '../config/database.config';
 import { getItemImageUrl, ItemImagesService } from './itemImages.service';
@@ -55,7 +55,7 @@ export function addImperialUnits(data: any): any {
     return data;
 }
 import {
-    Pommel, BladeType, Category, Dolls, Epoha, GlobalType, GuardType,
+    Pommel, BladeType, Category, Territory, Dolls, Epoha, GlobalType, GuardType,
     Sharpening, Usage, WeaponItem, WeaponItemResponse, CreateWeaponItemDto, UpdateWeaponItemDto
 } from '../models/entities.models';
 import { PaginationParams, PaginatedResponse } from '../types/base.types';
@@ -150,6 +150,66 @@ export class CategoryService extends BaseService<Category> {
         } catch (error) {
             console.error(`Помилка при пошуку категорій:`, error);
             throw new Error('Не вдалося виконати пошук категорій');
+        }
+    }
+}
+
+// ================= СЕРВІС ТЕРИТОРІЙ =================
+
+export class TerritoryService extends BaseService<Territory> {
+    constructor() {
+        super('territory');
+    }
+
+    /**
+     * Пошук територій за українською назвою
+     */
+    async search(searchTerm: string): Promise<Territory[]> {
+        try {
+            const [rows] = await pool.execute(
+                `SELECT * FROM \`${this.tableName}\` WHERE ukr_name LIKE ? ORDER BY ukr_name`,
+                [`%${searchTerm}%`]
+            ) as [RowDataPacket[], any];
+
+            return rows as Territory[];
+        } catch (error) {
+            console.error(`Помилка при пошуку територій:`, error);
+            throw new Error('Не вдалося виконати пошук територій');
+        }
+    }
+
+    /**
+     * Знайти або створити територію за українською назвою
+     */
+    async findOrCreateByUkrName(ukrName: string): Promise<Territory> {
+        const trimmed = ukrName.trim();
+        if (!trimmed) {
+            throw new Error('Назва території не може бути порожньою');
+        }
+
+        try {
+            const [existing] = await pool.execute(
+                `SELECT * FROM \`${this.tableName}\` WHERE ukr_name = ?`,
+                [trimmed]
+            ) as [RowDataPacket[], any];
+
+            if (existing.length > 0) {
+                return existing[0] as Territory;
+            }
+
+            const [result] = await pool.execute(
+                `INSERT INTO \`${this.tableName}\` (ukr_name) VALUES (?)`,
+                [trimmed]
+            ) as [ResultSetHeader, any];
+
+            const created = await this.findById(result.insertId);
+            if (!created) {
+                throw new Error('Не вдалося створити територію');
+            }
+            return created;
+        } catch (error) {
+            console.error(`Помилка при пошуку/створенні території:`, error);
+            throw new Error('Не вдалося обробити територію');
         }
     }
 }
@@ -304,6 +364,113 @@ export class WeaponItemService extends BaseService<WeaponItem> {
             eng_name: row.eng_name,
             comments: row.comments
         })) as Category[];
+    }
+
+    /**
+     * Отримати території для списку айтемів
+     */
+    private async loadTerritoriesForItems(itemIds: number[]): Promise<Map<number, Territory[]>> {
+        if (itemIds.length === 0) {
+            return new Map();
+        }
+
+        const placeholders = itemIds.map(() => '?').join(',');
+        const [rows] = await pool.execute(
+            `SELECT it.item_id, it.territory_id, t.ukr_name, t.eng_name, t.rus_name
+             FROM item_territories it
+             JOIN territory t ON it.territory_id = t.id
+             WHERE it.item_id IN (${placeholders})
+             ORDER BY t.ukr_name`,
+            itemIds
+        ) as [RowDataPacket[], any];
+
+        const result = new Map<number, Territory[]>();
+        for (const row of rows) {
+            const territory: Territory = {
+                id: row.territory_id,
+                ukr_name: row.ukr_name,
+                eng_name: row.eng_name,
+                rus_name: row.rus_name
+            };
+
+            if (!result.has(row.item_id)) {
+                result.set(row.item_id, []);
+            }
+            result.get(row.item_id)!.push(territory);
+        }
+
+        return result;
+    }
+
+    /**
+     * Зберегти зв’язки територій для айтема.
+     * territoryIds може містити існуючі ID (number) або нові назви (string).
+     * Для рядків створюємо новий запис у territory.
+     */
+    private async saveItemTerritories(itemId: number, territoryIds: (number | string)[] | undefined): Promise<Territory[]> {
+        if (!territoryIds || !Array.isArray(territoryIds)) {
+            return this.getItemTerritories(itemId);
+        }
+
+        const territoryService = new TerritoryService();
+        const resolvedIds: number[] = [];
+
+        for (const value of territoryIds) {
+            if (typeof value === 'number' && Number.isInteger(value) && value > 0) {
+                resolvedIds.push(value);
+            } else if (typeof value === 'string' && value.trim()) {
+                const territory = await territoryService.findOrCreateByUkrName(value.trim());
+                resolvedIds.push(territory.id);
+            }
+        }
+
+        const uniqueIds = [...new Set(resolvedIds)];
+        if (uniqueIds.length === 0) {
+            await pool.execute('DELETE FROM item_territories WHERE item_id = ?', [itemId]);
+            return [];
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            await connection.beginTransaction();
+            await connection.execute('DELETE FROM item_territories WHERE item_id = ?', [itemId]);
+
+            const values = uniqueIds.map((territoryId) => [itemId, territoryId]);
+            await connection.query(
+                `INSERT INTO item_territories (item_id, territory_id) VALUES ?`,
+                [values]
+            );
+
+            await connection.commit();
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+
+        return this.getItemTerritories(itemId);
+    }
+
+    /**
+     * Отримати території конкретного айтема
+     */
+    private async getItemTerritories(itemId: number): Promise<Territory[]> {
+        const [rows] = await pool.execute(
+            `SELECT it.territory_id, t.ukr_name, t.eng_name, t.rus_name
+             FROM item_territories it
+             JOIN territory t ON it.territory_id = t.id
+             WHERE it.item_id = ?
+             ORDER BY t.ukr_name`,
+            [itemId]
+        ) as [RowDataPacket[], any];
+
+        return rows.map((row: any) => ({
+            id: row.territory_id,
+            ukr_name: row.ukr_name,
+            eng_name: row.eng_name,
+            rus_name: row.rus_name
+        })) as Territory[];
     }
 
     /**
@@ -536,6 +703,7 @@ export class WeaponItemService extends BaseService<WeaponItem> {
             // Явно завантажуємо категорії, щоб у відповіді були повні об'єкти
             const itemIds = items.map(item => item.id);
             const categoriesMap = await this.loadCategoriesForItems(itemIds);
+            const territoriesMap = await this.loadTerritoriesForItems(itemIds);
             const primaryImagesMap = await this.loadPrimaryImagesForItems(itemIds);
             for (const item of items) {
                 item.categories_data = categoriesMap.get(item.id) || [];
@@ -544,6 +712,8 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                 if (item.categories_data.length > 0 && !item.category_name) {
                     item.category_name = item.categories_data[0].ukr_name;
                 }
+                item.territories_data = territoriesMap.get(item.id) || [];
+                item.territory_ids = (item.territories_data as any[]).map((t: any) => t.id);
                 const primaryFileName = primaryImagesMap.get(item.id);
                 if (primaryFileName) {
                     (item as any).primary_image_url = getItemImageUrl(item, primaryFileName);
@@ -582,6 +752,8 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
             if (converted.categories_data.length > 0 && !converted.category_name) {
                 converted.category_name = converted.categories_data[0].ukr_name;
             }
+            converted.territories_data = await this.getItemTerritories(id);
+            converted.territory_ids = (converted.territories_data as any[]).map((t: any) => t.id);
 
             const imageService = new ItemImagesService();
             const primaryFileName = await imageService.getPrimaryImageForItem(id);
@@ -631,6 +803,12 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
 
             if (categoryIds) {
                 await this.saveItemCategories(created.id, categoryIds, itemData.category_id);
+            }
+
+            const territoryIds = data.territory_ids;
+            delete itemData.territory_ids;
+            if (territoryIds !== undefined) {
+                await this.saveItemTerritories(created.id, territoryIds);
             }
 
             const withCategories = await this.findByIdWithCategories(created.id);
@@ -697,6 +875,12 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
                 await this.saveItemCategories(id, categoryIds, itemData.category_id);
             }
 
+            const territoryIds = data.territory_ids;
+            delete itemData.territory_ids;
+            if (territoryIds !== undefined) {
+                await this.saveItemTerritories(id, territoryIds);
+            }
+
             return await this.findByIdWithCategories(id);
         } catch (error) {
             console.error(`Помилка при оновленні запису зброї з ID ${id}:`, error);
@@ -760,6 +944,7 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
 
             const itemIds = items.map(item => item.id);
             const categoriesMap = await this.loadCategoriesForItems(itemIds);
+            const territoriesMap = await this.loadTerritoriesForItems(itemIds);
             const primaryImagesMap = await this.loadPrimaryImagesForItems(itemIds);
             for (const item of items) {
                 item.categories_data = categoriesMap.get(item.id) || [];
@@ -768,6 +953,8 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
                 if (item.categories_data.length > 0 && !item.category_name) {
                     item.category_name = item.categories_data[0].ukr_name;
                 }
+                item.territories_data = territoriesMap.get(item.id) || [];
+                item.territory_ids = (item.territories_data as any[]).map((t: any) => t.id);
                 const primaryFileName = primaryImagesMap.get(item.id);
                 if (primaryFileName) {
                     (item as any).primary_image_url = getItemImageUrl(item, primaryFileName);
@@ -927,6 +1114,7 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
 
             const itemIds = items.map(item => item.id);
             const categoriesMap = await this.loadCategoriesForItems(itemIds);
+            const territoriesMap = await this.loadTerritoriesForItems(itemIds);
             const primaryImagesMap = await this.loadPrimaryImagesForItems(itemIds);
             for (const item of items) {
                 item.categories_data = categoriesMap.get(item.id) || [];
@@ -935,6 +1123,8 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
                 if (item.categories_data.length > 0 && !item.category_name) {
                     item.category_name = item.categories_data[0].ukr_name;
                 }
+                item.territories_data = territoriesMap.get(item.id) || [];
+                item.territory_ids = (item.territories_data as any[]).map((t: any) => t.id);
                 const primaryFileName = primaryImagesMap.get(item.id);
                 if (primaryFileName) {
                     (item as any).primary_image_url = getItemImageUrl(item, primaryFileName);

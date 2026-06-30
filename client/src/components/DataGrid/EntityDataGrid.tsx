@@ -756,6 +756,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         'dolls': 'dolls_name',
         'epoha': 'epoha_name',
         'categories': null,
+        'territories': 'territory_names',
         'weapons': null
     };
 

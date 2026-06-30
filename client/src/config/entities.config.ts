@@ -75,7 +75,15 @@ const weaponColumns: GridColumn[] = [
     { field: 'blade_len', headerName: 'Довжина клинка', width: 150, editable: false },
     { field: 'weight', headerName: 'Вага', width: 100, editable: false },
     { field: 'century', headerName: 'Століття', width: 120, editable: false },
-    { field: 'theritory', headerName: 'Територія', width: 90, editable: false },
+    {
+        field: 'territory_names',
+        headerName: 'Територія',
+        width: 120,
+        editable: false,
+        valueGetter: (params: any) => {
+            return (params.row.territories_data || []).map((t: any) => t.ukr_name).join(', ');
+        }
+    },
     {
         field: 'epoha_name',
         headerName: 'Епоха',
@@ -171,7 +179,7 @@ const weaponFormFields: FormField[] = [
     { name: 'weight', label: 'Загальна вага', type: 'text', maxLength: 25 },
 
     // Історичні дані
-    { name: 'theritory', label: 'Територія', type: 'text', maxLength: 100 },
+    { name: 'territory_ids', label: 'Територія', type: 'multiselect' },
     { name: 'century', label: 'Роки/Століття', type: 'text', maxLength: 25 },
     { name: 'arch_period', label: 'Археологічний період', type: 'text', maxLength: 50 },
     { name: 'epoha', label: 'Епоха', type: 'select', maxLength: 50 },
@@ -286,6 +294,25 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
         supportsInlineEditing: true
     },
 
+    'territories': {
+        name: 'territories',
+        displayName: 'Території',
+        apiEndpoint: '/territories',
+        columns: [
+            { field: 'id', headerName: 'ID', width: 58, type: 'number', valueFormatter: (params: any) => String(params.value) },
+            { field: 'ukr_name', headerName: 'Українська назва', width: 250, editable: true, type: 'string' },
+            { field: 'eng_name', headerName: 'English name', width: 250, editable: true, type: 'string' },
+            { field: 'rus_name', headerName: 'Москальська назва', width: 250, editable: true, type: 'string' }
+        ],
+        formFields: [
+            { name: 'ukr_name', label: 'Українська назва', type: 'text', maxLength: 300, required: true },
+            { name: 'eng_name', label: 'English name', type: 'text', maxLength: 300 },
+            { name: 'rus_name', label: 'Москальська назва', type: 'text', maxLength: 300 }
+        ],
+        useForm: false,
+        supportsInlineEditing: true
+    },
+
     'weapons': {
         name: 'weapons',
         displayName: 'Зброя',
@@ -316,7 +343,8 @@ export const getAllReferenceEntities = (): EntityType[] => {
         'guard-type',
         'sharpening',
         'usage',
-        'categories'
+        'categories',
+        'territories'
     ];
 };
 

@@ -7,13 +7,13 @@ import { BaseController } from './base.controller';
 import { pool } from '../config/database.config';
 import type { RowDataPacket } from 'mysql2';
 import {
-    PommelService, BladeTypeService, CategoryService, DollsService, EpohaService,
+    PommelService, BladeTypeService, CategoryService, TerritoryService, DollsService, EpohaService,
     GlobalTypeService, GuardTypeService, SharpeningService, UsageService,
     WeaponItemService
 } from '../services/entities.services';
 import { PaginationParams } from '../types/base.types';
 import {
-    Pommel, BladeType, Category, Dolls, Epoha, GlobalType, GuardType,
+    Pommel, BladeType, Category, Territory, Dolls, Epoha, GlobalType, GuardType,
     Sharpening, Usage
 } from '../models/entities.models';
 
@@ -90,6 +90,32 @@ export class BladeTypeController extends BaseController<BladeType> {
 export class CategoryController extends BaseController<Category> {
     constructor() {
         super(new CategoryService());
+    }
+}
+
+export class TerritoryController extends BaseController<Territory> {
+    private territoryService: TerritoryService;
+
+    constructor() {
+        super(new TerritoryService());
+        this.territoryService = new TerritoryService();
+    }
+
+    async search(req: Request, res: Response): Promise<void> {
+        try {
+            const searchTerm = req.query.q as string || '';
+            const territories = await this.territoryService.search(searchTerm);
+            res.json({
+                success: true,
+                data: territories
+            });
+        } catch (error) {
+            console.error('Error searching territories:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Internal server error'
+            });
+        }
     }
 }
 

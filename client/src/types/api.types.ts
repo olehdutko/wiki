@@ -72,6 +72,12 @@ export interface Category extends BaseEntity {
     comments: string;
 }
 
+export interface Territory extends BaseEntity {
+    ukr_name: string;
+    eng_name?: string;
+    rus_name?: string;
+}
+
 export interface WeaponItem extends BaseEntity {
     ready: boolean;
     description_ukr?: string | null;
@@ -132,6 +138,8 @@ export interface WeaponItemResponse extends WeaponItem {
     dolls_data?: Dolls;
     usage_data?: Usage;
     sharpening_data?: Sharpening;
+    territories_data?: Territory[];
+    territory_ids?: number[];
 }
 
 // ================= DTO для створення/оновлення =================
@@ -144,6 +152,10 @@ export interface CreateCategoryDto extends Omit<Category, 'id'> { }
 
 export interface UpdateCategoryDto extends Partial<CreateCategoryDto> { }
 
+export interface CreateTerritoryDto extends Omit<Territory, 'id'> { }
+
+export interface UpdateTerritoryDto extends Partial<CreateTerritoryDto> { }
+
 export interface CreateNamedEntityDto extends Omit<NamedEntity, 'id'> { }
 
 export interface UpdateNamedEntityDto extends Partial<CreateNamedEntityDto> { }
@@ -154,6 +166,7 @@ export type EntityType =
     | 'pommel'
     | 'blade-type'
     | 'categories'
+    | 'territories'
     | 'dolls'
     | 'epoha'
     | 'global-type'
@@ -192,6 +205,7 @@ export type EntityUnion =
     | Pommel
     | BladeType
     | Category
+    | Territory
     | Dolls
     | Epoha
     | GlobalType

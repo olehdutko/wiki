@@ -56,6 +56,7 @@ const DRAWER_WIDTH = 224;
 const ENTITY_ICONS: Record<EntityType, React.ReactElement> = {
   'weapons': <WeaponsIcon />,
   'categories': <CategoryIcon />,
+  'territories': <CategoryIcon />,
   'global-type': <TypeIcon />,
   'epoha': <EpohaIcon />,
   'guard-type': <GuardIcon />,

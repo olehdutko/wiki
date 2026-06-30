@@ -46,6 +46,7 @@ type EntityType =
   | 'pommel'
   | 'blade-type'
   | 'categories'
+  | 'territories'
   | 'dolls'
   | 'epoha'
   | 'global-type'
@@ -107,6 +108,7 @@ export function EditEntityForm<T extends BaseEntity>({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<Array<{ id: number, ukr_name: string }>>([]);
+  const [territories, setTerritories] = useState<Array<{ id: number, ukr_name: string }>>([]);
   const [epohaList, setEpohaList] = useState<Array<{ id: number, ukr: string }>>([]);
   const [guardTypeList, setGuardTypeList] = useState<Array<{ id: number, ukr: string }>>([]);
   const [bladeTypeList, setBladeTypeList] = useState<Array<{ id: number, ukr: string }>>([]);
@@ -432,6 +434,7 @@ export function EditEntityForm<T extends BaseEntity>({
   useEffect(() => {
     if (entityType === 'weapons' && open) {
       loadCategories();
+      loadTerritories();
       loadReferenceData();
     }
   }, [entityType, open]);
@@ -443,6 +446,16 @@ export function EditEntityForm<T extends BaseEntity>({
       setCategories(result.items);
     } catch (error) {
       console.error('Помилка завантаження категорій:', error);
+    }
+  };
+
+  const loadTerritories = async () => {
+    try {
+      const { apiService } = await import('../../services/api.service');
+      const result = await apiService.getAllTerritories();
+      setTerritories(result.items);
+    } catch (error) {
+      console.error('Помилка завантаження територій:', error);
     }
   };
 
@@ -710,7 +723,8 @@ export function EditEntityForm<T extends BaseEntity>({
       !sizeFields.includes(field.name) &&
       !bottomFields.includes(field.name) &&
       field.name !== 'ready' &&
-      field.name !== 'category_ids'
+      field.name !== 'category_ids' &&
+      field.name !== 'territory_ids'
     );
 
     // Функція для групування полів по 3 в ряд
@@ -773,6 +787,20 @@ export function EditEntityForm<T extends BaseEntity>({
                 <Grid container spacing={2} sx={{ mb: 2 }}>
                   <Grid  size={{ xs: 12 }}>
                     {renderField(categoryField)}
+                  </Grid>
+                </Grid>
+              );
+            }
+            return null;
+          })()}
+
+          {(() => {
+            const territoryField = mainFields.find(field => field.name === 'territory_ids');
+            if (territoryField) {
+              return (
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                  <Grid size={{ xs: 12 }}>
+                    {renderField(territoryField)}
                   </Grid>
                 </Grid>
               );
@@ -1259,30 +1287,68 @@ export function EditEntityForm<T extends BaseEntity>({
           />
         );
 
-      case 'multiselect':
+      case 'multiselect': {
+        const isTerritory = field.name === 'territory_ids';
+        const availableOptions = isTerritory ? (territories || []) : (categories || []);
+        const selectedOptions = availableOptions.filter(o => Array.isArray(value) && value.includes(o.id));
+        // For territories, include typed values that don't exist yet as string options
+        const territoryValue = isTerritory && Array.isArray(value)
+          ? value.map(v => {
+              if (typeof v === 'number') {
+                const existing = availableOptions.find(o => o.id === v);
+                return existing || { id: v, ukr_name: '' };
+              }
+              return { id: v as string, ukr_name: v as string };
+            })
+          : selectedOptions;
+
         return (
           <Autocomplete
             multiple
             size="small"
             disabled={isReadOnly}
-            options={categories || []}
-            value={(categories || []).filter(c => Array.isArray(value) && value.includes(c.id))}
-            getOptionLabel={(option) => option.ukr_name || ''}
-            isOptionEqualToValue={(option, val) => option.id === val.id}
-            onChange={(_, newValue) => {
-              handleInputChange(field.name, newValue.map(c => c.id));
+            freeSolo={isTerritory}
+            options={availableOptions}
+            value={isTerritory ? territoryValue as any : selectedOptions}
+            getOptionLabel={(option: any) => option.ukr_name || option.ukr || option || ''}
+            isOptionEqualToValue={(option: any, val: any) => {
+              if (isTerritory) {
+                if (typeof val === 'string') return (option.ukr_name || option.ukr || option) === val;
+                return option.id === val.id;
+              }
+              return option.id === val.id;
             }}
-            renderTags={(selected, getTagProps) => (
+            filterSelectedOptions
+            onChange={(_, newValue: any[]) => {
+              if (isTerritory) {
+                const result = newValue.map(item => {
+                  if (typeof item === 'string') return item;
+                  return item.id;
+                });
+                handleInputChange(field.name, result);
+              } else {
+                handleInputChange(field.name, newValue.map(c => c.id));
+              }
+            }}
+            renderTags={(selected: any[], getTagProps) => (
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                {selected.map((category, index) => (
+                {selected.map((option, index) => (
                   <Chip
                     {...getTagProps({ index })}
-                    key={category.id}
-                    label={category.ukr_name}
+                    key={index}
+                    label={option.ukr_name || option.ukr || option}
                     size="small"
                     onDelete={() => {
-                      const newIds = (Array.isArray(value) ? value : []).filter(id => id !== category.id);
-                      handleInputChange(field.name, newIds);
+                      if (isTerritory) {
+                        const newIds = (Array.isArray(value) ? value : []).filter(v => {
+                          if (typeof v === 'string') return v !== option;
+                          return v !== option.id;
+                        });
+                        handleInputChange(field.name, newIds);
+                      } else {
+                        const newIds = (Array.isArray(value) ? value : []).filter(id => id !== option.id);
+                        handleInputChange(field.name, newIds);
+                      }
                     }}
                     sx={{
                       backgroundColor: '#e3f2fd',
@@ -1301,9 +1367,9 @@ export function EditEntityForm<T extends BaseEntity>({
                 ))}
               </Box>
             )}
-            renderOption={(props, option, { selected }) => (
+            renderOption={(props, option: any, { selected }) => (
               <li {...props} style={{ backgroundColor: selected ? '#e3f2fd' : 'inherit', fontWeight: selected ? 600 : 400 }}>
-                {option.ukr_name}
+                {option.ukr_name || option.ukr || option}
               </li>
             )}
             renderInput={(params) => (
@@ -1331,6 +1397,7 @@ export function EditEntityForm<T extends BaseEntity>({
             )}
           />
         );
+      }
 
       case 'select':
         // Обробка select полів

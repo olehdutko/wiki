@@ -5,7 +5,7 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import {
-    PommelController, BladeTypeController, CategoryController, DollsController,
+    PommelController, BladeTypeController, CategoryController, TerritoryController, DollsController,
     EpohaController, GlobalTypeController, GuardTypeController, SharpeningController,
     UsageController, WeaponItemController
 } from '../controllers/entities.controllers';
@@ -22,6 +22,7 @@ const router = Router();
 const pommelController = new PommelController();
 const bladeTypeController = new BladeTypeController();
 const categoryController = new CategoryController();
+const territoryController = new TerritoryController();
 const dollsController = new DollsController();
 const epohaController = new EpohaController();
 const globalTypeController = new GlobalTypeController();
@@ -69,11 +70,23 @@ const categoryValidation = [
     body('comments').optional().isString().isLength({ max: 800 })
 ];
 
+const territoryValidation = [
+    body('ukr_name').notEmpty().withMessage('Українська назва обов\'язкова').isString().isLength({ max: 300 }),
+    body('eng_name').optional().isString().isLength({ max: 300 }),
+    body('rus_name').optional().isString().isLength({ max: 300 })
+];
+
 // Валідація для часткового оновлення категорій
 const categoryUpdateValidation = [
     body('ukr_name').optional().isString().isLength({ max: 300 }),
     body('eng_name').optional().isString().isLength({ max: 300 }),
     body('comments').optional().isString().isLength({ max: 800 })
+];
+
+const territoryUpdateValidation = [
+    body('ukr_name').optional().isString().isLength({ max: 300 }),
+    body('eng_name').optional().isString().isLength({ max: 300 }),
+    body('rus_name').optional().isString().isLength({ max: 300 })
 ];
 
 const weaponItemValidation = [
@@ -270,6 +283,16 @@ router.get('/categories/:id', categoryController.getById.bind(categoryController
 router.post('/categories', categoryValidation, categoryController.create.bind(categoryController));
 router.put('/categories/:id', categoryUpdateValidation, categoryController.update.bind(categoryController));
 router.delete('/categories/:id', categoryController.delete.bind(categoryController));
+
+// ================= МАРШРУТИ ТЕРИТОРІЙ =================
+router.get('/territories', territoryController.getAll.bind(territoryController));
+router.get('/territories/search', territoryController.search.bind(territoryController));
+router.get('/territories/count', territoryController.getCount.bind(territoryController));
+router.get('/territories/max-id', territoryController.getMaxId.bind(territoryController));
+router.get('/territories/:id', territoryController.getById.bind(territoryController));
+router.post('/territories', territoryValidation, territoryController.create.bind(territoryController));
+router.put('/territories/:id', territoryUpdateValidation, territoryController.update.bind(territoryController));
+router.delete('/territories/:id', territoryController.delete.bind(territoryController));
 
 // ================= ГОЛОВНА СУТНІСТЬ - WEAPON ITEMS =================
 
