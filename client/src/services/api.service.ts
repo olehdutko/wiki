@@ -34,6 +34,7 @@ export interface ItemImage {
     item_id: number;
     file_name: string;
     is_primary: boolean;
+    show: boolean;
     created_at: string;
     url?: string;
 }
@@ -649,6 +650,18 @@ class ApiService {
             await this.api.patch<ApiResponse<void>>(`/items/${itemId}/images/${imageId}/primary`);
         } catch (error: any) {
             console.error('❌ Помилка встановлення primary зображення:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Встановити флаг show для зображення
+     */
+    async setItemImageShow(itemId: number, imageId: number, show: boolean): Promise<void> {
+        try {
+            await this.api.patch<ApiResponse<void>>(`/items/${itemId}/images/${imageId}/show`, { show });
+        } catch (error: any) {
+            console.error('❌ Помилка зміни видимості зображення:', error);
             throw error;
         }
     }

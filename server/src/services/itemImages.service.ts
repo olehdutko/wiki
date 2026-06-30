@@ -18,6 +18,7 @@ export interface ItemImage {
     item_id: number;
     file_name: string;
     is_primary: boolean;
+    show: boolean;
     created_at: string;
 }
 
@@ -75,7 +76,8 @@ export class ItemImagesService {
 
         return rows.map((row: any) => ({
             ...row,
-            is_primary: Boolean(row.is_primary)
+            is_primary: Boolean(row.is_primary),
+            show: Boolean(row.show)
         }));
     }
 
@@ -128,8 +130,8 @@ export class ItemImagesService {
 
             // Додаємо запис в БД
             const [result] = await pool.execute(
-                `INSERT INTO item_images (item_id, file_name, is_primary) VALUES (?, ?, ?)`,
-                [item.id, uniqueFileName, existingImages.length === 0 && i === 0 ? 1 : 0]
+                `INSERT INTO item_images (item_id, file_name, is_primary, \`show\`) VALUES (?, ?, ?, ?)`,
+                [item.id, uniqueFileName, existingImages.length === 0 && i === 0 ? 1 : 0, 1]
             ) as any;
 
             uploadedImages.push({
@@ -137,6 +139,7 @@ export class ItemImagesService {
                 item_id: item.id,
                 file_name: uniqueFileName,
                 is_primary: existingImages.length === 0 && i === 0,
+                show: true,
                 created_at: new Date().toISOString()
             });
         }
@@ -180,6 +183,20 @@ export class ItemImagesService {
             throw error;
         } finally {
             connection.release();
+        }
+    }
+
+    /**
+     * Встановити флаг show для зображення
+     */
+    async setShowImage(itemId: number, imageId: number, show: boolean): Promise<void> {
+        const [result] = await pool.execute(
+            `UPDATE item_images SET \`show\` = ? WHERE id = ? AND item_id = ?`,
+            [show ? 1 : 0, imageId, itemId]
+        ) as any;
+
+        if (result.affectedRows === 0) {
+            throw new Error('Image not found for this item');
         }
     }
 

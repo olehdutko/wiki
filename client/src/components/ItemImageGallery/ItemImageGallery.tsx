@@ -20,6 +20,8 @@ import {
     Tooltip
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CloseIcon from '@mui/icons-material/Close';
@@ -98,6 +100,16 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
             await loadImages();
         } catch (error) {
             console.error('Set primary failed:', error);
+        }
+    };
+
+    const handleSetShow = async (imageId: number, show: boolean) => {
+        try {
+            await apiService.setItemImageShow(itemId, imageId, show);
+            setImages(prev => prev.map(img => img.id === imageId ? { ...img, show } : img));
+        } catch (error: any) {
+            console.error('Set show failed:', error);
+            alert('Не вдалося змінити видимість зображення: ' + (error?.response?.data?.message || error.message));
         }
     };
 
@@ -247,18 +259,30 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
                                         height: 140,
                                         objectFit: 'cover',
                                         cursor: 'pointer',
-                                        display: 'block'
+                                        display: 'block',
+                                        filter: image.show ? 'none' : 'grayscale(100%)',
+                                        transition: 'filter 0.2s'
                                     }}
                                     onClick={() => openFullscreen(index)}
                                 />
                                 <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <Tooltip title={image.is_primary ? 'Primary зображення' : 'Зробити primary'}>
-                                        <Radio
-                                            checked={image.is_primary}
-                                            onChange={() => handleSetPrimary(image.id)}
-                                            size="small"
-                                        />
-                                    </Tooltip>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Tooltip title={image.is_primary ? 'Primary зображення' : 'Зробити primary'}>
+                                            <Radio
+                                                checked={image.is_primary}
+                                                onChange={() => handleSetPrimary(image.id)}
+                                                size="small"
+                                            />
+                                        </Tooltip>
+                                        <Tooltip title={image.show ? 'Приховати з галереї' : 'Показувати в галереї'}>
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => handleSetShow(image.id, !image.show)}
+                                            >
+                                                {image.show ? <VisibilityIcon /> : <VisibilityOffIcon />}
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Box>
                                     <IconButton
                                         size="small"
                                         color="error"
@@ -275,9 +299,11 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
         </Box>
     );
 
-    const renderGalleryTab = () => (
+    const renderGalleryTab = () => {
+        const visibleImages = images.filter(img => img.show);
+        return (
         <Box sx={{ p: 2, textAlign: 'center' }}>
-            {images.length === 0 ? (
+            {visibleImages.length === 0 ? (
                 <Typography color="text.secondary">Немає зображень для перегляду</Typography>
             ) : (
                 <Box
@@ -289,7 +315,7 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
                         justifyContent: 'center'
                     }}
                 >
-                    {images.map((image, index) => (
+                    {visibleImages.map((image, index) => (
                         <Box
                             key={image.id}
                             component="img"
@@ -311,6 +337,7 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
             )}
         </Box>
     );
+    };
 
     return (
         <Box>

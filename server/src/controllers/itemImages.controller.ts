@@ -160,6 +160,38 @@ export class ItemImagesController {
     }
 
     /**
+     * Встановити флаг show для зображення
+     */
+    async setShow(req: Request, res: Response): Promise<void> {
+        try {
+            const itemId = parseInt(req.params.itemId);
+            const imageId = parseInt(req.params.imageId);
+            const show = req.body.show === true;
+
+            if (isNaN(itemId) || isNaN(imageId)) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Invalid item ID or image ID'
+                });
+                return;
+            }
+
+            await this.itemImagesService.setShowImage(itemId, imageId, show);
+
+            res.status(200).json({
+                success: true,
+                message: 'Image visibility updated'
+            });
+        } catch (error: any) {
+            console.error('Error setting image show flag:', error);
+            res.status(500).json({
+                success: false,
+                message: error.message || 'Failed to update image visibility'
+            });
+        }
+    }
+
+    /**
      * Видалити зображення
      */
     async deleteImage(req: Request, res: Response): Promise<void> {
