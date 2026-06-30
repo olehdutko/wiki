@@ -32,16 +32,17 @@ import {
   ChevronRight as ChevronRightIcon,
   Refresh as RefreshIcon,
   CloudDownload as CloudDownloadIcon,
-  SportsEsports as WeaponsIcon,
-  Category as CategoryIcon,
-  Engineering as TypeIcon,
-  Timeline as EpohaIcon,
-  Security as GuardIcon,
-  Architecture as BladeIcon,
-  RadioButtonChecked as AppleIcon,
-  Build as SharpeningIcon,
-  Assignment as UsageIcon,
-  Apps as DollsIcon
+  SportsMartialArts as WeaponsIcon,
+  Folder as CategoriesIcon,
+  Public as GlobalTypeIcon,
+  AccessTime as EpohaIcon,
+  ClearAll as GuardIcon,
+  PlayArrow as BladeIcon,
+  PanoramaFishEye as PommelIcon,
+  AutoFixHigh as SharpeningIcon,
+  Handshake as UsageIcon,
+  Straighten as DollsIcon,
+  Map as TerritoriesIcon
 } from '@mui/icons-material';
 
 import { EntityDataGrid } from './components/DataGrid/EntityDataGrid';
@@ -52,16 +53,16 @@ import { apiService } from './services/api.service';
 // Конфігурація ширини бічної панелі
 const DRAWER_WIDTH = 224;
 
-// Іконки для кожного типу сутності
+// Монохромні іконки для кожного типу сутності
 const ENTITY_ICONS: Record<EntityType, React.ReactElement> = {
   'weapons': <WeaponsIcon />,
-  'categories': <CategoryIcon />,
-  'territories': <CategoryIcon />,
-  'global-type': <TypeIcon />,
+  'categories': <CategoriesIcon />,
+  'territories': <TerritoriesIcon />,
+  'global-type': <GlobalTypeIcon />,
   'epoha': <EpohaIcon />,
   'guard-type': <GuardIcon />,
   'blade-type': <BladeIcon />,
-  'pommel': <AppleIcon />,
+  'pommel': <PommelIcon />,
   'sharpening': <SharpeningIcon />,
   'usage': <UsageIcon />,
   'dolls': <DollsIcon />
