@@ -31,9 +31,10 @@ import type { ItemImage } from "../../services/api.service";
 
 interface ItemImageGalleryProps {
     itemId: number;
-    }
+    open?: boolean;
+}
 
-export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) => {
+export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId, open }) => {
     const [activeTab, setActiveTab] = useState(0);
     const [images, setImages] = useState<ItemImage[]>([]);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -47,8 +48,12 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
     }, [itemId]);
 
     useEffect(() => {
-        loadImages();
-    }, [loadImages]);
+        if (open) {
+            loadImages();
+        } else {
+            setImages([]);
+        }
+    }, [open, loadImages]);
 
     const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
         setActiveTab(newValue);
@@ -302,38 +307,31 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
     const renderGalleryTab = () => {
         const visibleImages = images.filter(img => img.show);
         return (
-        <Box sx={{ p: 2, textAlign: 'center' }}>
+        <Box sx={{ p: 2 }}>
             {visibleImages.length === 0 ? (
-                <Typography color="text.secondary">Немає зображень для перегляду</Typography>
+                <Typography color="text.secondary" textAlign="center">Немає зображень для перегляду</Typography>
             ) : (
-                <Box
-                    sx={{
-                        display: 'flex',
-                        gap: 1,
-                        overflowX: 'auto',
-                        pb: 1,
-                        justifyContent: 'center'
-                    }}
-                >
+                <Grid container spacing={1}>
                     {visibleImages.map((image, index) => (
-                        <Box
-                            key={image.id}
-                            component="img"
-                            src={image.url}
-                            alt={`Thumbnail ${index + 1}`}
-                            onClick={() => openFullscreen(index)}
-                            sx={{
-                                height: 120,
-                                width: 120,
-                                objectFit: 'cover',
-                                cursor: 'pointer',
-                                border: image.is_primary ? '2px solid #1976d2' : '2px solid transparent',
-                                borderRadius: 1,
-                                flexShrink: 0
-                            }}
-                        />
+                        <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={image.id}>
+                            <Box
+                                component="img"
+                                src={image.url}
+                                alt={`Thumbnail ${index + 1}`}
+                                onClick={() => openFullscreen(index)}
+                                sx={{
+                                    width: '100%',
+                                    height: 120,
+                                    objectFit: 'cover',
+                                    cursor: 'pointer',
+                                    border: image.is_primary ? '2px solid #1976d2' : '2px solid transparent',
+                                    borderRadius: 1,
+                                    display: 'block'
+                                }}
+                            />
+                        </Grid>
                     ))}
-                </Box>
+                </Grid>
             )}
         </Box>
     );

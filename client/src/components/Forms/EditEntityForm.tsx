@@ -2052,7 +2052,7 @@ export function EditEntityForm<T extends BaseEntity>({
           {activeTab === 2 && renderDescriptionTab('description_eng')}
           {activeTab === 3 && renderDescriptionTab('description_rus')}
           {activeTab === 4 && renderSimilarObjectsTab()}
-          {activeTab === 5 && <ItemImageGallery itemId={entity?.id || 0} />}
+          {activeTab === 5 && <ItemImageGallery itemId={entity?.id || 0} open={open} />}
         </Box>
       </DialogContent>
 

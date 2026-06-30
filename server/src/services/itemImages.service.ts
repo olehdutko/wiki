@@ -67,7 +67,7 @@ export class ItemImagesService {
      */
     async getImagesByItemId(itemId: number): Promise<ItemImage[]> {
         const [rows] = await pool.execute(
-            `SELECT id, item_id, file_name, is_primary, created_at
+            `SELECT id, item_id, file_name, is_primary, \`show\`, created_at
              FROM item_images
              WHERE item_id = ?
              ORDER BY is_primary DESC, created_at ASC`,
