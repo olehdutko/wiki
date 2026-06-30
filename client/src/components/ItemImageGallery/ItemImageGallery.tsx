@@ -57,19 +57,18 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
         const filtered = Array.from(files).filter(
             file => file.type === 'image/jpeg' || file.type === 'image/png'
         );
-        setSelectedFiles(prev => [...prev, ...filtered]);
+        if (filtered.length === 0) return;
+        const newFiles = [...selectedFiles, ...filtered];
+        setSelectedFiles(newFiles);
+        uploadFiles(newFiles);
     };
 
-    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        handleFiles(event.target.files);
-    };
-
-    const handleUpload = async () => {
-        if (selectedFiles.length === 0) return;
+    const uploadFiles = async (filesToUpload: File[]) => {
+        if (filesToUpload.length === 0) return;
 
         setLoading(true);
         try {
-            await apiService.uploadItemImages(itemId, selectedFiles);
+            await apiService.uploadItemImages(itemId, filesToUpload);
             setSelectedFiles([]);
             await loadImages();
         } catch (error) {
@@ -77,6 +76,11 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        handleFiles(event.target.files);
+        event.target.value = '';
     };
 
     const handleDelete = async (imageId: number) => {
@@ -208,20 +212,18 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
                                 <IconButton
                                     size="small"
                                     onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
+                                    disabled={loading}
                                 >
                                     <CloseIcon />
                                 </IconButton>
                             </Paper>
                         ))}
                     </Stack>
-                    <Button
-                        variant="contained"
-                        onClick={handleUpload}
-                        disabled={loading}
-                        sx={{ mt: 2 }}
-                    >
-                        {loading ? 'Завантаження...' : 'Завантажити все'}
-                    </Button>
+                    {loading && (
+                        <Typography variant="body2" color="primary" sx={{ mt: 1 }}>
+                            Завантаження...
+                        </Typography>
+                    )}
                 </Box>
             )}
 
