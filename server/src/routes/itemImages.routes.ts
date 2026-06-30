@@ -30,6 +30,9 @@ router.post('/:itemId/images', upload.array('images', 50), itemImagesController.
 // PATCH /api/items/:itemId/images/:imageId/primary — встановити primary
 router.patch('/:itemId/images/:imageId/primary', itemImagesController.setPrimary.bind(itemImagesController));
 
+// PATCH /api/items/:itemId/images/:imageId/show — встановити флаг show
+router.patch('/:itemId/images/:imageId/show', itemImagesController.setShow.bind(itemImagesController));
+
 // DELETE /api/items/:itemId/images/:imageId — видалити зображення
 router.delete('/:itemId/images/:imageId', itemImagesController.deleteImage.bind(itemImagesController));
 

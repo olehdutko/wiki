@@ -20,6 +20,8 @@ import {
     Tooltip
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CloseIcon from '@mui/icons-material/Close';
@@ -29,9 +31,10 @@ import type { ItemImage } from "../../services/api.service";
 
 interface ItemImageGalleryProps {
     itemId: number;
-    }
+    open?: boolean;
+}
 
-export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) => {
+export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId, open }) => {
     const [activeTab, setActiveTab] = useState(0);
     const [images, setImages] = useState<ItemImage[]>([]);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -45,8 +48,12 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
     }, [itemId]);
 
     useEffect(() => {
-        loadImages();
-    }, [loadImages]);
+        if (open) {
+            loadImages();
+        } else {
+            setImages([]);
+        }
+    }, [open, loadImages]);
 
     const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
         setActiveTab(newValue);
@@ -57,19 +64,18 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
         const filtered = Array.from(files).filter(
             file => file.type === 'image/jpeg' || file.type === 'image/png'
         );
-        setSelectedFiles(prev => [...prev, ...filtered]);
+        if (filtered.length === 0) return;
+        const newFiles = [...selectedFiles, ...filtered];
+        setSelectedFiles(newFiles);
+        uploadFiles(newFiles);
     };
 
-    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        handleFiles(event.target.files);
-    };
-
-    const handleUpload = async () => {
-        if (selectedFiles.length === 0) return;
+    const uploadFiles = async (filesToUpload: File[]) => {
+        if (filesToUpload.length === 0) return;
 
         setLoading(true);
         try {
-            await apiService.uploadItemImages(itemId, selectedFiles);
+            await apiService.uploadItemImages(itemId, filesToUpload);
             setSelectedFiles([]);
             await loadImages();
         } catch (error) {
@@ -77,6 +83,11 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        handleFiles(event.target.files);
+        event.target.value = '';
     };
 
     const handleDelete = async (imageId: number) => {
@@ -94,6 +105,16 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
             await loadImages();
         } catch (error) {
             console.error('Set primary failed:', error);
+        }
+    };
+
+    const handleSetShow = async (imageId: number, show: boolean) => {
+        try {
+            await apiService.setItemImageShow(itemId, imageId, show);
+            setImages(prev => prev.map(img => img.id === imageId ? { ...img, show } : img));
+        } catch (error: any) {
+            console.error('Set show failed:', error);
+            alert('Не вдалося змінити видимість зображення: ' + (error?.response?.data?.message || error.message));
         }
     };
 
@@ -208,20 +229,18 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
                                 <IconButton
                                     size="small"
                                     onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
+                                    disabled={loading}
                                 >
                                     <CloseIcon />
                                 </IconButton>
                             </Paper>
                         ))}
                     </Stack>
-                    <Button
-                        variant="contained"
-                        onClick={handleUpload}
-                        disabled={loading}
-                        sx={{ mt: 2 }}
-                    >
-                        {loading ? 'Завантаження...' : 'Завантажити все'}
-                    </Button>
+                    {loading && (
+                        <Typography variant="body2" color="primary" sx={{ mt: 1 }}>
+                            Завантаження...
+                        </Typography>
+                    )}
                 </Box>
             )}
 
@@ -245,18 +264,30 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
                                         height: 140,
                                         objectFit: 'cover',
                                         cursor: 'pointer',
-                                        display: 'block'
+                                        display: 'block',
+                                        filter: image.show ? 'none' : 'grayscale(100%)',
+                                        transition: 'filter 0.2s'
                                     }}
                                     onClick={() => openFullscreen(index)}
                                 />
                                 <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <Tooltip title={image.is_primary ? 'Primary зображення' : 'Зробити primary'}>
-                                        <Radio
-                                            checked={image.is_primary}
-                                            onChange={() => handleSetPrimary(image.id)}
-                                            size="small"
-                                        />
-                                    </Tooltip>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Tooltip title={image.is_primary ? 'Primary зображення' : 'Зробити primary'}>
+                                            <Radio
+                                                checked={image.is_primary}
+                                                onChange={() => handleSetPrimary(image.id)}
+                                                size="small"
+                                            />
+                                        </Tooltip>
+                                        <Tooltip title={image.show ? 'Приховати з галереї' : 'Показувати в галереї'}>
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => handleSetShow(image.id, !image.show)}
+                                            >
+                                                {image.show ? <VisibilityIcon /> : <VisibilityOffIcon />}
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Box>
                                     <IconButton
                                         size="small"
                                         color="error"
@@ -273,42 +304,38 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId }) =>
         </Box>
     );
 
-    const renderGalleryTab = () => (
-        <Box sx={{ p: 2, textAlign: 'center' }}>
-            {images.length === 0 ? (
-                <Typography color="text.secondary">Немає зображень для перегляду</Typography>
+    const renderGalleryTab = () => {
+        const visibleImages = images.filter(img => img.show);
+        return (
+        <Box sx={{ p: 2 }}>
+            {visibleImages.length === 0 ? (
+                <Typography color="text.secondary" textAlign="center">Немає зображень для перегляду</Typography>
             ) : (
-                <Box
-                    sx={{
-                        display: 'flex',
-                        gap: 1,
-                        overflowX: 'auto',
-                        pb: 1,
-                        justifyContent: 'center'
-                    }}
-                >
-                    {images.map((image, index) => (
-                        <Box
-                            key={image.id}
-                            component="img"
-                            src={image.url}
-                            alt={`Thumbnail ${index + 1}`}
-                            onClick={() => openFullscreen(index)}
-                            sx={{
-                                height: 120,
-                                width: 120,
-                                objectFit: 'cover',
-                                cursor: 'pointer',
-                                border: image.is_primary ? '2px solid #1976d2' : '2px solid transparent',
-                                borderRadius: 1,
-                                flexShrink: 0
-                            }}
-                        />
+                <Grid container spacing={1}>
+                    {visibleImages.map((image, index) => (
+                        <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={image.id}>
+                            <Box
+                                component="img"
+                                src={image.url}
+                                alt={`Thumbnail ${index + 1}`}
+                                onClick={() => openFullscreen(index)}
+                                sx={{
+                                    width: '100%',
+                                    height: 120,
+                                    objectFit: 'cover',
+                                    cursor: 'pointer',
+                                    border: image.is_primary ? '2px solid #1976d2' : '2px solid transparent',
+                                    borderRadius: 1,
+                                    display: 'block'
+                                }}
+                            />
+                        </Grid>
                     ))}
-                </Box>
+                </Grid>
             )}
         </Box>
     );
+    };
 
     return (
         <Box>
