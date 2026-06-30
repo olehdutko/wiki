@@ -15,7 +15,16 @@ import { getItemImageUrl, ItemImagesService } from './itemImages.service';
  */
 export function mmToInches(mm: string | number | null | undefined): string | null {
     if (!mm || mm === '' || mm === '0') return null;
-    const mmValue = typeof mm === 'string' ? parseFloat(mm.replace(',', '.')) : mm;
+    const str = String(mm).trim().replace(/,/g, '.');
+    if (str.includes('-')) {
+        const parts = str.split('-').map(s => s.trim()).filter(Boolean);
+        if (parts.length !== 2) return null;
+        const vals = parts.map(p => parseFloat(p));
+        if (vals.some(v => isNaN(v) || v === 0)) return null;
+        const inches = vals.map(v => (v / 25.4).toFixed(2).replace(/\.00$/, ''));
+        return `${inches[0]}-${inches[1]}`;
+    }
+    const mmValue = parseFloat(str);
     if (isNaN(mmValue) || mmValue === 0) return null;
     const inches = mmValue / 25.4;
     // Округляємо до 2 знаків після коми
@@ -28,7 +37,16 @@ export function mmToInches(mm: string | number | null | undefined): string | nul
  */
 export function gramsToPounds(grams: string | number | null | undefined): string | null {
     if (!grams || grams === '' || grams === '0') return null;
-    const gValue = typeof grams === 'string' ? parseFloat(grams.replace(',', '.')) : grams;
+    const str = String(grams).trim().replace(/,/g, '.');
+    if (str.includes('-')) {
+        const parts = str.split('-').map(s => s.trim()).filter(Boolean);
+        if (parts.length !== 2) return null;
+        const vals = parts.map(p => parseFloat(p));
+        if (vals.some(v => isNaN(v) || v === 0)) return null;
+        const pounds = vals.map(v => (v / 453.59237).toFixed(2).replace(/\.00$/, ''));
+        return `${pounds[0]}-${pounds[1]}`;
+    }
+    const gValue = parseFloat(str);
     if (isNaN(gValue) || gValue === 0) return null;
     const pounds = gValue / 453.59237;
     // Округляємо до 2 знаків після коми

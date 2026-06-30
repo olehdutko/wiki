@@ -1005,94 +1005,19 @@ export function EditEntityForm<T extends BaseEntity>({
   // Форматування значення з одиницями виміру
   
     // Отримання одиниці виміру для поля
-  const getUnitForField = (fieldName: string): string => {
-    const mmFields = ['total_len', 'blade_len', 'handle_len', 'handle_len_w', 'width', 'guard_width', 'thikness'];
-    if (mmFields.includes(fieldName)) return 'mm';
-    if (fieldName === 'weight') return 'g';
+  const getUnitForField = (_fieldName: string): string => {
+    // Одиниці виміру більше не відображаються у полі вводу
     return '';
   };
 
-  const formatValueWithUnit = (value: any, fieldName: string): string => {
+  const formatValueWithUnit = (value: any, _fieldName: string): string => {
     if (value === null || value === undefined || value === '') return '';
-    
-    const strValue = String(value);
-    
-    // Метрична система (mm, g)
-    const mmFields = ['total_len', 'blade_len', 'handle_len', 'handle_len_w', 'width', 'guard_width', 'thikness'];
-    if (mmFields.includes(fieldName)) {
-      return strValue + ' mm';
-    }
-    if (fieldName === 'weight') {
-      return strValue + ' g';
-    }
-    
-    // Імперська система (in, lb)
-    const inFields = ['total_len_in', 'blade_len_in', 'handle_len_in', 'handle_len_w_in', 'width_in', 'guard_width_in', 'thikness_in'];
-    if (inFields.includes(fieldName)) {
-      return strValue + ' in';
-    }
-    if (fieldName === 'weight_lb') {
-      return strValue + ' lb';
-    }
-    
-    return strValue;
+    return String(value);
   };
 
-    // Рендеринг метричних полів з одиницями виміру в значенні
+    // Рендеринг метричних полів — одиниці виміру не показуються в полі вводу
   const renderMetricField = (field: FormField) => {
-    const unit = getUnitForField(field.name);
-    if (!unit) {
-      // Для полів без одиниць використовуємо стандартний рендеринг
-      return renderField(field);
-    }
-    
-    // Для полів з одиницями - модифікуємо поведінку
-    const originalValue = formData[field.name] ?? '';
-    const displayValue = originalValue ? `${originalValue} ${unit}` : '';
-    
-    // Повертаємо TextField з formatted значенням
-    return (
-      <TextField
-        fullWidth
-        label={field.label}
-        value={displayValue}
-        onChange={(e) => {
-          // При редагуванні прибираємо одиниці
-          const newValue = e.target.value.replace(/\s*${unit}$/, '').trim();
-          handleInputChange(field.name, newValue);
-        }}
-        onFocus={(e) => {
-          // При фокусі показуємо тільки число
-          const numericValue = formData[field.name] ?? '';
-          e.currentTarget.value = String(numericValue);
-        }}
-        onBlur={(e) => {
-          // При втраті фокусу додаємо одиниці
-          const value = formData[field.name];
-          if (value) {
-            e.currentTarget.value = `${value} ${unit}`;
-          }
-        }}
-        size="small"
-        InputLabelProps={{ shrink: true }}
-        sx={{
-          '& .MuiOutlinedInput-root': {
-            borderRadius: 1,
-            background: 'white',
-            height: COMPACT_FIELD_HEIGHT,
-          },
-          '& .MuiInputLabel-root': {
-            fontWeight: 500,
-            color: '#64748b',
-            fontSize: '0.75rem',
-          },
-          '& .MuiInputBase-input': {
-            padding: COMPACT_FIELD_INPUT_PADDING,
-            fontSize: '0.875rem'
-          }
-        }}
-      />
-    );
+    return renderField(field);
   };
 
   const renderField = (field: FormField) => {
