@@ -105,6 +105,7 @@ export function EditEntityForm<T extends BaseEntity>({
   saveButtonText
 }: EditEntityFormProps<T>) {
   const [formData, setFormData] = useState<FormData>({});
+  const [territoryInputValue, setTerritoryInputValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<Array<{ id: number, ukr_name: string }>>([]);
@@ -608,8 +609,19 @@ export function EditEntityForm<T extends BaseEntity>({
             preparedData[field.name] = null;
           }
         } else if (field.type === 'multiselect') {
+          const isTerritoryField = field.name === 'territory_ids';
           preparedData[field.name] = Array.isArray(preparedData[field.name])
-            ? preparedData[field.name].map((v: any) => Number(v))
+            ? preparedData[field.name].map((v: any) => {
+                // Territory IDs can be strings for new territories to be created on the backend
+                if (isTerritoryField && typeof v === 'string' && v.trim() && isNaN(Number(v))) {
+                  return v;
+                }
+                return Number(v);
+              }).filter((v: any) => {
+                // For territories, drop IDs that no longer exist in the dictionary
+                if (!isTerritoryField || typeof v !== 'number') return true;
+                return territories.some(t => t.id === v);
+              })
             : [];
         }
       });
@@ -1291,15 +1303,16 @@ export function EditEntityForm<T extends BaseEntity>({
         const isTerritory = field.name === 'territory_ids';
         const availableOptions = isTerritory ? (territories || []) : (categories || []);
         const selectedOptions = availableOptions.filter(o => Array.isArray(value) && value.includes(o.id));
-        // For territories, include typed values that don't exist yet as string options
+        // For territories, Autocomplete value is string labels; existing IDs are resolved to their names.
+        // IDs that no longer exist in the territory dictionary are not shown.
         const territoryValue = isTerritory && Array.isArray(value)
           ? value.map(v => {
               if (typeof v === 'number') {
                 const existing = availableOptions.find(o => o.id === v);
-                return existing || { id: v, ukr_name: '' };
+                return existing ? existing.ukr_name : null;
               }
-              return { id: v as string, ukr_name: v as string };
-            })
+              return v;
+            }).filter(Boolean)
           : selectedOptions;
 
         return (
@@ -1310,11 +1323,48 @@ export function EditEntityForm<T extends BaseEntity>({
             freeSolo={isTerritory}
             options={availableOptions}
             value={isTerritory ? territoryValue as any : selectedOptions}
-            getOptionLabel={(option: any) => option.ukr_name || option.ukr || option || ''}
+            inputValue={isTerritory ? territoryInputValue : undefined}
+            onInputChange={(_, newInputValue) => {
+              if (isTerritory) setTerritoryInputValue(newInputValue);
+            }}
+            onBlur={() => {
+              if (!isTerritory) return;
+              const typed = territoryInputValue.trim();
+              if (typed) {
+                const current = Array.isArray(value) ? value : [];
+                const exists = current.some((v: any) => {
+                  if (typeof v === 'string') return v === typed;
+                  const opt = availableOptions.find(o => o.id === v);
+                  return opt?.ukr_name === typed || opt?.ukr === typed;
+                });
+                if (!exists) {
+                  handleInputChange(field.name, [...current, typed]);
+                }
+                setTimeout(() => setTerritoryInputValue(''), 0);
+              }
+            }}
+            onKeyDown={(e: any) => {
+              if (isTerritory && (e.key === 'Enter' || e.key === 'Tab' || e.key === ',')) {
+                e.preventDefault();
+                const typed = territoryInputValue.trim();
+                if (typed) {
+                  const current = Array.isArray(value) ? value : [];
+                  const exists = current.some((v: any) => {
+                    if (typeof v === 'string') return v === typed;
+                    const opt = availableOptions.find(o => o.id === v);
+                    return opt?.ukr_name === typed || opt?.ukr === typed;
+                  });
+                  if (!exists) {
+                    handleInputChange(field.name, [...current, typed]);
+                  }
+                  setTimeout(() => setTerritoryInputValue(''), 0);
+                }
+              }
+            }}
+            getOptionLabel={(option: any) => String(option.ukr_name || option.ukr || option.id || option || '')}
             isOptionEqualToValue={(option: any, val: any) => {
               if (isTerritory) {
-                if (typeof val === 'string') return (option.ukr_name || option.ukr || option) === val;
-                return option.id === val.id;
+                return (option.ukr_name || option.ukr || option.id || '') === val;
               }
               return option.id === val.id;
             }}
@@ -1322,7 +1372,10 @@ export function EditEntityForm<T extends BaseEntity>({
             onChange={(_, newValue: any[]) => {
               if (isTerritory) {
                 const result = newValue.map(item => {
-                  if (typeof item === 'string') return item;
+                  if (typeof item === 'string') {
+                    const existing = availableOptions.find(o => o.ukr_name === item || o.ukr === item);
+                    return existing ? existing.id : item;
+                  }
                   return item.id;
                 });
                 handleInputChange(field.name, result);
@@ -1336,13 +1389,16 @@ export function EditEntityForm<T extends BaseEntity>({
                   <Chip
                     {...getTagProps({ index })}
                     key={index}
-                    label={option.ukr_name || option.ukr || option}
+                    label={String(option.ukr_name || option.ukr || option.id || option)}
                     size="small"
                     onDelete={() => {
                       if (isTerritory) {
-                        const newIds = (Array.isArray(value) ? value : []).filter(v => {
+                        const current = Array.isArray(value) ? value : [];
+                        // option is the display label; find matching id or string value
+                        const matchingId = availableOptions.find(o => (o.ukr_name || o.ukr) === option)?.id;
+                        const newIds = current.filter(v => {
                           if (typeof v === 'string') return v !== option;
-                          return v !== option.id;
+                          return v !== matchingId;
                         });
                         handleInputChange(field.name, newIds);
                       } else {
@@ -1367,11 +1423,14 @@ export function EditEntityForm<T extends BaseEntity>({
                 ))}
               </Box>
             )}
-            renderOption={(props, option: any, { selected }) => (
-              <li {...props} style={{ backgroundColor: selected ? '#e3f2fd' : 'inherit', fontWeight: selected ? 600 : 400 }}>
-                {option.ukr_name || option.ukr || option}
-              </li>
-            )}
+            renderOption={(props, option: any, { selected }) => {
+              const { key, ...rest } = props;
+              return (
+                <li key={key} {...rest} style={{ backgroundColor: selected ? '#e3f2fd' : 'inherit', fontWeight: selected ? 600 : 400 }}>
+                  {String(option.ukr_name || option.ukr || option.id || option)}
+                </li>
+              );
+            }}
             renderInput={(params) => (
               <TextField
                 {...params}

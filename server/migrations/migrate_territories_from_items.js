@@ -1,5 +1,6 @@
+const path = require('path');
 const mysql = require('mysql2/promise');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
 async function run() {
   const pool = mysql.createPool({
@@ -7,12 +8,13 @@ async function run() {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
+    port: Number(process.env.DB_PORT) || 3306,
     multipleStatements: true
   });
 
   try {
     // Ensure tables exist
-    await pool.execute(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS territory (
         id INT AUTO_INCREMENT PRIMARY KEY,
         ukr_name VARCHAR(300) NOT NULL,
@@ -25,7 +27,7 @@ async function run() {
 
       CREATE TABLE IF NOT EXISTS item_territories (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        item_id INT NOT NULL,
+        item_id INT UNSIGNED NOT NULL,
         territory_id INT NOT NULL,
         UNIQUE KEY uk_item_territory (item_id, territory_id),
         KEY idx_item (item_id),

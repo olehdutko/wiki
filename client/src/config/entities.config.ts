@@ -62,6 +62,13 @@ const categoryColumns: GridColumn[] = [
     { field: 'comments', headerName: 'Коментарі', width: 300, editable: true, type: 'string' }
 ];
 
+const territoryColumns: GridColumn[] = [
+    { field: 'id', headerName: 'ID', width: 80, type: 'number', valueFormatter: (params) => String(params.value) },
+    { field: 'ukr_name', headerName: 'Українська назва', width: 250, editable: true, type: 'string' },
+    { field: 'eng_name', headerName: 'English name', width: 250, editable: true, type: 'string' },
+    { field: 'rus_name', headerName: 'Москальська назва', width: 250, editable: true, type: 'string' }
+];
+
 const weaponColumns: GridColumn[] = [
     { field: 'id', headerName: 'ID', width: 58, type: 'number', valueFormatter: (params) => String(params.value) },
     { field: 'ready', headerName: 'Готовність', width: 100, type: 'boolean', editable: false },
@@ -81,7 +88,7 @@ const weaponColumns: GridColumn[] = [
         width: 120,
         editable: false,
         valueGetter: (params: any) => {
-            return (params.row.territories_data || []).map((t: any) => t.ukr_name).join(', ');
+            return (params?.row?.territories_data || []).map((t: any) => t.ukr_name).join(', ');
         }
     },
     {

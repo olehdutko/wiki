@@ -83,7 +83,8 @@ const ENTITY_GROUPS: Array<{ title: string; entities: EntityType[] }> = [
       'sharpening',
       'usage',
       'dolls',
-      'epoha'
+      'epoha',
+      'territories'
     ]
   }
 ];

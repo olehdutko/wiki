@@ -212,6 +212,30 @@ export class TerritoryService extends BaseService<Territory> {
             throw new Error('Не вдалося обробити територію');
         }
     }
+
+    /**
+     * Видалити територію та всі зв'язки з айтемами
+     */
+    async delete(id: number): Promise<boolean> {
+        try {
+            // Спочатку видаляємо всі зв'язки з айтемами
+            await pool.execute(
+                'DELETE FROM item_territories WHERE territory_id = ?',
+                [id]
+            );
+
+            // Потім видаляємо саму територію
+            const [result] = await pool.execute(
+                `DELETE FROM \`${this.tableName}\` WHERE id = ?`,
+                [id]
+            ) as [ResultSetHeader, any];
+
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error(`Помилка при видаленні території з ID ${id}:`, error);
+            throw new Error(`Не вдалося видалити територію з ID ${id}`);
+        }
+    }
 }
 
 // ================= ГОЛОВНИЙ СЕРВІС ДЛЯ WEAPON ITEMS =================
@@ -806,7 +830,6 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
             }
 
             const territoryIds = data.territory_ids;
-            delete itemData.territory_ids;
             if (territoryIds !== undefined) {
                 await this.saveItemTerritories(created.id, territoryIds);
             }
@@ -830,23 +853,11 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
         try {
             const categoryIds = data.category_ids;
 
-            // Видаляємо масив категорій перед базовим update
+            // Видаляємо масиви категорій і територій перед базовим update
             const itemData = { ...data } as any;
             delete itemData.category_ids;
-            
-            // Автоматично додаємо імперські одиниці
-            itemData.total_len_in = mmToInches(itemData.total_len);
-            itemData.blade_len_in = mmToInches(itemData.blade_len);
-            itemData.handle_len_in = mmToInches(itemData.handle_len);
-            // handle_len_w_in - опціонально, може не бути в БД
-            if (itemData.handle_len_w) {
-                itemData.handle_len_w_in = mmToInches(itemData.handle_len_w);
-            }
-            itemData.width_in = mmToInches(itemData.width);
-            itemData.guard_width_in = mmToInches(itemData.guard_width);
-            itemData.thikness_in = mmToInches(itemData.thikness);
-            itemData.weight_lb = gramsToPounds(itemData.weight);
-            
+            delete itemData.territory_ids;
+
             // Автоматично додаємо імперські одиниці
             itemData.total_len_in = mmToInches(itemData.total_len);
             itemData.blade_len_in = mmToInches(itemData.blade_len);
@@ -876,7 +887,6 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
             }
 
             const territoryIds = data.territory_ids;
-            delete itemData.territory_ids;
             if (territoryIds !== undefined) {
                 await this.saveItemTerritories(id, territoryIds);
             }

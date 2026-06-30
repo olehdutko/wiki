@@ -22,7 +22,7 @@ export abstract class BaseController<T extends BaseEntity> {
         try {
             const params: PaginationParams = {
                 page: parseInt(req.query.page as string) || 1,
-                limit: Math.min(parseInt(req.query.limit as string) || 20, 100), // Максимум 100 записів
+                limit: Math.min(parseInt(req.query.limit as string) || 20, 10000), // Максимум 10000 записів
                 sortBy: req.query.sortBy as string || 'id',
                 sortOrder: (req.query.sortOrder as 'ASC' | 'DESC') || 'DESC'
             };
