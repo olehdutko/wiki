@@ -12,11 +12,14 @@ import type {
     BaseEntity,
     NamedEntity,
     Category,
+    Territory,
     WeaponItemResponse,
     CreateWeaponItemDto,
     UpdateWeaponItemDto,
     CreateCategoryDto,
     UpdateCategoryDto,
+    CreateTerritoryDto,
+    UpdateTerritoryDto,
     CreateNamedEntityDto,
     UpdateNamedEntityDto
 } from '../types/api.types';
@@ -264,6 +267,35 @@ class ApiService {
         return this.getAll<Category>('/categories', { limit: 1000 }); // Отримуємо всі категорії
     }
 
+    // Territories
+    async getTerritories(params?: PaginationParams) {
+        return this.getAll<Territory>('/territories', params);
+    }
+
+    async getTerritoryById(id: number) {
+        return this.getById<Territory>('/territories', id);
+    }
+
+    async createTerritory(data: CreateTerritoryDto) {
+        return this.create<Territory>('/territories', data);
+    }
+
+    async updateTerritory(id: number, data: UpdateTerritoryDto) {
+        return this.update<Territory>('/territories', id, data);
+    }
+
+    async deleteTerritory(id: number) {
+        return this.delete('/territories', id);
+    }
+
+    async searchTerritories(query: string) {
+        return this.search<Territory>('/territories', query);
+    }
+
+    async getAllTerritories() {
+        return this.getAll<Territory>('/territories', { limit: 1000 });
+    }
+
     // Epoha
     async getAllEpoha() {
         return this.getAll<NamedEntity>('/epoha', { limit: 1000 });
@@ -376,6 +408,7 @@ class ApiService {
             'pommel': '/pommel',
             'blade-type': '/blade-type',
             'categories': '/categories',
+            'territories': '/territories',
             'dolls': '/dolls',
             'epoha': '/epoha',
             'global-type': '/global-type',

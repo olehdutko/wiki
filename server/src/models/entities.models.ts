@@ -235,6 +235,26 @@ export class Category implements BaseEntity {
     comments!: string;
 }
 
+export class Territory implements BaseEntity {
+    @IsNumber()
+    id!: number;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(300)
+    ukr_name!: string;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(300)
+    eng_name?: string;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(300)
+    rus_name?: string;
+}
+
 // ================= ГОЛОВНА СУТНІСТЬ - ITEMS =================
 
 export class WeaponItem implements BaseEntity {
@@ -416,6 +436,12 @@ export class WeaponItem implements BaseEntity {
 
     @IsOptional()
     categories_data?: Category[];
+
+    @IsOptional()
+    territory_ids?: number[];
+
+    @IsOptional()
+    territories_data?: Territory[];
 }
 
 // ================= DTO для API =================
@@ -428,6 +454,7 @@ export interface WeaponItemResponse extends WeaponItem {
     category?: Category;
     category_name?: string;
     categories_data?: Category[];
+    territories_data?: Territory[];
     epoha_data?: Epoha;
     guard_type_data?: GuardType;
     blade_type_data?: BladeType;
@@ -441,6 +468,7 @@ export type EntityType =
     | Pommel
     | BladeType
     | Category
+    | Territory
     | Dolls
     | Epoha
     | GlobalType

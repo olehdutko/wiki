@@ -95,14 +95,6 @@ export function EntityDataGrid<T extends BaseEntity>({
     enableDelete = true
 }: EntityDataGridProps<T>) {
     // Логування пропсів для діагностики
-    console.log('🚀 EntityDataGrid рендериться з пропсами:', {
-        entityType,
-        title,
-        enableAdd,
-        enableEdit,
-        enableDelete,
-        height
-    });
 
     // Стан
     const [data, setData] = useState<T[]>([]);
@@ -173,22 +165,12 @@ export function EntityDataGrid<T extends BaseEntity>({
         const config = getEntityConfig(entityType);
         const result = config?.supportsInlineEditing || false;
 
-        console.log('🔍 supportsInlineEditing перевірка:', {
-            entityType,
-            config: config?.name,
-            supportsInlineEditing: config?.supportsInlineEditing,
-            result
-        });
 
         return result;
     };
 
     // Конфігурація
     const config: EntityConfig = getEntityConfig(entityType);
-    console.log('🔧 Конфігурація сутності:', config);
-    console.log('🔧 Тип сутності:', entityType);
-    console.log('🔧 Колонки конфігурації:', config.columns);
-    console.log('🔧 Підтримує inline редагування:', supportsInlineEditing(entityType));
 
     // Стан видимості колонок для MUI DataGrid (за замовчуванням приховані)
     const [columnVisibilityModel, setColumnVisibilityModel] = useState(() => {
@@ -213,7 +195,6 @@ export function EntityDataGrid<T extends BaseEntity>({
         setLoading({ loading: true, error: null });
 
         try {
-            console.log('📊 EntityDataGrid fetching data for:', entityType);
 
             let result;
 
@@ -263,14 +244,7 @@ export function EntityDataGrid<T extends BaseEntity>({
                 );
             }
 
-            console.log('📊 EntityDataGrid received data:', result);
-            console.log('📊 First item sample:', result.items[0]);
             const firstItem = result.items[0] as any;
-            console.log('📝 Description fields in first item:', {
-                description_ukr: firstItem?.description_ukr,
-                description_eng: firstItem?.description_eng,
-                description_rus: firstItem?.description_rus
-            });
 
             // Трансформуємо дані для weapons, щоб додати зручні поля для відображення
             let processedItems = result.items;
@@ -379,7 +353,6 @@ export function EntityDataGrid<T extends BaseEntity>({
                 setAllCategoryData(prev => prev.filter(row => row.id !== deletedId));
                 setData(prev => prev.filter(row => row.id !== deletedId));
                 setPagination(prev => ({ ...prev, total: Math.max(0, prev.total - 1) }));
-                console.log('✅ Запис успішно видалено');
             } else {
                 console.error('❌ Не вдалося видалити запис');
             }
@@ -478,7 +451,6 @@ export function EntityDataGrid<T extends BaseEntity>({
             setLoading({ loading: false, error: null });
             setSearchDialog(false);
 
-            console.log(`✅ Знайдено ${processedItems.length} результатів для "${trimmedQuery}"`);
         } catch (error: any) {
             console.error('Помилка пошуку:', error);
             setLoading({
@@ -500,6 +472,8 @@ export function EntityDataGrid<T extends BaseEntity>({
         switch (entityType) {
             case 'categories':
                 return ['ukr_name', 'eng_name', 'comments'];
+            case 'territories':
+                return ['ukr_name', 'eng_name', 'rus_name'];
             case 'weapons':
                 return ['ukr_name', 'eng_name', 'rus_name', 'category_ids'];
             case 'pommel':
@@ -513,7 +487,6 @@ export function EntityDataGrid<T extends BaseEntity>({
     const canSaveNewRow = (row?: any): boolean => {
         const targetRow = row || newRow;
         if (!targetRow) {
-            console.log('❌ canSaveNewRow: немає даних рядка');
             return false;
         }
 
@@ -528,9 +501,7 @@ export function EntityDataGrid<T extends BaseEntity>({
     // Функція для створення початкового стану нового рядка
     const createInitialNewRow = async () => {
         try {
-            console.log('🔄 Отримуємо максимальний ID для', entityType);
             const maxId = await apiService.getMaxId(entityType);
-            console.log('✅ Отримано максимальний ID:', maxId);
 
             const newId = maxId + 1;
             const fields = getNewRowFields(entityType);
@@ -545,7 +516,6 @@ export function EntityDataGrid<T extends BaseEntity>({
                 initialRow[field] = '';
             });
 
-            console.log('➕ Створення нового рядка:', initialRow);
             setNewRow(initialRow);
             setIsCreating(false);
         } catch (error) {
@@ -562,7 +532,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         }
 
         // При збереженні перевіряємо наявність української назви
-        const requiredField = entityType === 'categories' ? 'ukr_name' : 'ukr';
+        const requiredField = (entityType === 'categories' || entityType === 'territories') ? 'ukr_name' : 'ukr';
         const hasValidName = Boolean(newRow[requiredField]?.trim());
 
         if (!hasValidName) {
@@ -572,7 +542,6 @@ export function EntityDataGrid<T extends BaseEntity>({
 
         try {
             setIsCreating(true);
-            console.log('📤 Відправляємо дані для створення:', newRow);
 
             // Створюємо об'єкт з даними для створення і робимо trim() при збереженні
             const createData = Object.fromEntries(
@@ -581,7 +550,6 @@ export function EntityDataGrid<T extends BaseEntity>({
 
             // Використовуємо універсальний метод для створення
             const createdEntity = await apiService.createEntity(entityType, createData);
-            console.log('✅ Нова сутність створена:', createdEntity);
 
             // Додаємо новий рядок до таблиці
             setData((prev: any[]) => [createdEntity, ...prev.filter((item: any) => !item.isNew)] as any);
@@ -606,10 +574,6 @@ export function EntityDataGrid<T extends BaseEntity>({
 
     // Функція для обробки зміни значень в клітинках
     const handleCellEditCommit = async (params: { id: number; field: string; value: any; row: any }) => {
-        console.log('🔄 handleCellEditCommit викликано з параметрами:', params);
-        console.log('🔍 Тип сутності:', entityType);
-        console.log('✅ Підтримує inline редагування:', supportsInlineEditing(entityType));
-        console.log('📊 Поточні дані:', data);
 
         try {
             const { id, field, value } = params;
@@ -617,23 +581,16 @@ export function EntityDataGrid<T extends BaseEntity>({
 
             // Якщо це новий рядок, просто оновлюємо локальний стан
             if (isNewRow) {
-                console.log('📝 Оновлюємо дані нового рядка:', { field, value });
                 setNewRow((prev: any) => prev ? { ...prev, [field]: value } : null);
                 return;
             }
 
             // Для існуючих рядків використовуємо оновлення на сервері
             const updateData: any = { [field]: value };
-            console.log('🚀 Відправляємо оновлення на сервер:', {
-                entityType,
-                id,
-                updateData
-            });
 
             const result = await apiService.updateEntity(entityType, id, updateData);
 
             if (result) {
-                console.log(`✅ Поле ${field} успішно оновлено для ID ${id}`);
                 setData(prev => prev.map(item =>
                     item.id === id ? { ...item, [field]: value } : item
                 ));
@@ -672,13 +629,6 @@ export function EntityDataGrid<T extends BaseEntity>({
 
     // Функція для рендерингу текстового поля для нового рядка
     const renderNewRowTextField = (params: any, field: string) => {
-        console.log('📝 renderNewRowTextField:', {
-            field,
-            value: params.value,
-            rowData: params.row,
-            isNewRow: params.row.isNew,
-            canSave: canSaveNewRow(params.row)
-        });
 
         return (
             <TextField
@@ -698,12 +648,6 @@ export function EntityDataGrid<T extends BaseEntity>({
                 }}
                 onChange={(e) => {
                     const newValue = e.target.value;
-                    console.log(`✏️ TextField onChange:`, {
-                        field,
-                        oldValue: params.value,
-                        newValue,
-                        rowData: params.row
-                    });
 
                     // Оновлюємо значення в новому рядку
                     const updatedRow = {
@@ -720,7 +664,6 @@ export function EntityDataGrid<T extends BaseEntity>({
                         const newData = prev.map(item =>
                             item.id === updatedRow.id ? updatedRow : item
                         );
-                        console.log('📊 Оновлені дані:', newData);
                         return newData;
                     });
                 }}
@@ -756,6 +699,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         'dolls': 'dolls_name',
         'epoha': 'epoha_name',
         'categories': null,
+        'territories': 'territory_names',
         'weapons': null
     };
 
@@ -791,14 +735,6 @@ export function EntityDataGrid<T extends BaseEntity>({
             const canSave = canSaveNewRow(params.row);
             const requiredField = entityType === 'categories' ? 'ukr_name' : 'ukr';
 
-            console.log('🔄 Рендеринг кнопок для нового рядка:', {
-                canSave,
-                isCreating,
-                row: params.row,
-                entityType,
-                requiredField,
-                fieldValue: params.row[requiredField]
-            });
 
             return (
                 <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -956,12 +892,6 @@ renderCell: (params: any) => {
         const field = params.field;
         const supportsInline = supportsInlineEditing(entityType);
 
-        console.log('🔍 isCellEditable перевірка:', {
-            field,
-            isNew,
-            supportsInline,
-            row: params.row
-        });
 
         // Для нового рядка дозволяємо редагування основних полів
         if (isNew) {
@@ -1167,7 +1097,6 @@ renderCell: (params: any) => {
                             entityType={entityType}
                             onClose={() => setCreateDialogOpen(false)}
                             onSave={(newEntity: T) => {
-                                console.log('✅ Нову сутність створено:', newEntity);
                                 handleRefresh();
                                 setCreateDialogOpen(false);
                             }}
@@ -1213,7 +1142,6 @@ renderCell: (params: any) => {
                     onSortModelChange={(model) => setSortModel(model)}
                     onRowClick={onRowSelect ? (params: GridRowParams) => onRowSelect(params.row) : undefined}
                     processRowUpdate={async (newRow, oldRow) => {
-                        console.log('🔄 processRowUpdate:', { newRow, oldRow });
                         const field = Object.keys(newRow).find(key => newRow[key] !== oldRow[key]);
                         if (!field) return oldRow;
 
@@ -1228,13 +1156,10 @@ renderCell: (params: any) => {
                         return newRow;
                     }}
                     onCellEditStart={(params) => {
-                        console.log('🔓 onCellEditStart викликано:', params);
                     }}
                     onCellEditStop={(params) => {
-                        console.log('🛑 onCellEditStop викликано:', params);
                     }}
                     onCellClick={(params) => {
-                        console.log('🖱️ onCellClick викликано:', params);
                     }}
                     editMode="cell"
                     isCellEditable={isCellEditable}
