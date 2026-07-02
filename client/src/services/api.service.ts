@@ -677,6 +677,18 @@ class ApiService {
             throw error;
         }
     }
+
+    /**
+     * Змінити порядок зображень айтема
+     */
+    async reorderItemImages(itemId: number, orderedIds: number[]): Promise<void> {
+        try {
+            await this.api.patch<ApiResponse<void>>(`/items/${itemId}/images/reorder`, { orderedIds });
+        } catch (error: any) {
+            console.error('❌ Помилка зміни порядку зображень:', error);
+            throw error;
+        }
+    }
 }
 
 // Експорт singleton instance

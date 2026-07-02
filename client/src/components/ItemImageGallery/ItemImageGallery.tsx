@@ -41,6 +41,8 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId, open
     const [loading, setLoading] = useState(false);
     const [fullscreenIndex, setFullscreenIndex] = useState<number | null>(null);
     const [scale, setScale] = useState(1);
+    const [draggedId, setDraggedId] = useState<number | null>(null);
+    const [dragOverId, setDragOverId] = useState<number | null>(null);
 
     const loadImages = useCallback(async () => {
         const data = await apiService.getItemImages(itemId);
@@ -116,6 +118,62 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId, open
             console.error('Set show failed:', error);
             alert('Не вдалося змінити видимість зображення: ' + (error?.response?.data?.message || error.message));
         }
+    };
+
+    const handleDragStart = (e: React.DragEvent, imageId: number) => {
+        setDraggedId(imageId);
+        e.dataTransfer.effectAllowed = 'move';
+        // Make the drag image semi-transparent by setting a dummy image or rely on browser default
+        e.dataTransfer.setData('text/plain', String(imageId));
+    };
+
+    const handleDragOver = (e: React.DragEvent, imageId: number) => {
+        e.preventDefault();
+        if (draggedId !== null && draggedId !== imageId) {
+            setDragOverId(imageId);
+        }
+    };
+
+    const handleDragLeave = () => {
+        setDragOverId(null);
+    };
+
+    const handleDrop = async (e: React.DragEvent, targetId: number) => {
+        e.preventDefault();
+        setDragOverId(null);
+
+        if (draggedId === null || draggedId === targetId) {
+            setDraggedId(null);
+            return;
+        }
+
+        const sourceId = draggedId;
+        setDraggedId(null);
+
+        const newImages = [...images];
+        const sourceIndex = newImages.findIndex(img => img.id === sourceId);
+        const targetIndex = newImages.findIndex(img => img.id === targetId);
+
+        if (sourceIndex === -1 || targetIndex === -1) return;
+
+        const [moved] = newImages.splice(sourceIndex, 1);
+        newImages.splice(targetIndex, 0, moved);
+
+        setImages(newImages);
+
+        try {
+            await apiService.reorderItemImages(itemId, newImages.map(img => img.id));
+        } catch (error: any) {
+            console.error('Reorder failed:', error);
+            alert('Не вдалося змінити порядок зображень: ' + (error?.response?.data?.message || error.message));
+            // Revert on error
+            setImages(images);
+        }
+    };
+
+    const handleDragEnd = () => {
+        setDraggedId(null);
+        setDragOverId(null);
     };
 
     const openFullscreen = (index: number) => {
@@ -253,8 +311,30 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId, open
             ) : (
                 <Grid container spacing={2}>
                     {images.map((image, index) => (
-                        <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={image.id}>
-                            <Paper sx={{ p: 1, position: 'relative' }}>
+                        <Grid
+                            size={{ xs: 6, sm: 4, md: 3, lg: 2 }}
+                            key={image.id}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, image.id)}
+                            onDragOver={(e) => handleDragOver(e, image.id)}
+                            onDragLeave={handleDragLeave}
+                            onDrop={(e) => handleDrop(e, image.id)}
+                            onDragEnd={handleDragEnd}
+                            sx={{
+                                cursor: 'move',
+                                opacity: draggedId === image.id ? 0.4 : 1,
+                                transition: 'opacity 0.2s, transform 0.2s',
+                                transform: dragOverId === image.id ? 'scale(1.03)' : 'none'
+                            }}
+                        >
+                            <Paper
+                                sx={{
+                                    p: 1,
+                                    position: 'relative',
+                                    border: dragOverId === image.id ? '2px dashed #1976d2' : '2px solid transparent',
+                                    transition: 'border-color 0.2s'
+                                }}
+                            >
                                 <Box
                                     component="img"
                                     src={image.url}

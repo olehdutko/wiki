@@ -192,6 +192,45 @@ export class ItemImagesController {
     }
 
     /**
+     * Змінити порядок зображень
+     */
+    async reorderImages(req: Request, res: Response): Promise<void> {
+        try {
+            const itemId = parseInt(req.params.itemId);
+            const { orderedIds } = req.body;
+
+            if (isNaN(itemId)) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Invalid item ID'
+                });
+                return;
+            }
+
+            if (!Array.isArray(orderedIds) || orderedIds.length === 0 || !orderedIds.every(id => Number.isInteger(id))) {
+                res.status(400).json({
+                    success: false,
+                    message: 'orderedIds must be a non-empty array of integers'
+                });
+                return;
+            }
+
+            await this.itemImagesService.reorderImages(itemId, orderedIds);
+
+            res.status(200).json({
+                success: true,
+                message: 'Image order updated'
+            });
+        } catch (error: any) {
+            console.error('Error reordering item images:', error);
+            res.status(500).json({
+                success: false,
+                message: error.message || 'Failed to reorder images'
+            });
+        }
+    }
+
+    /**
      * Видалити зображення
      */
     async deleteImage(req: Request, res: Response): Promise<void> {

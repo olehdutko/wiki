@@ -20,6 +20,7 @@ export interface ItemImage {
     is_primary: boolean;
     show: boolean;
     created_at: string;
+    display_order?: number;
 }
 
 export interface ImageItemInfo {
@@ -67,10 +68,10 @@ export class ItemImagesService {
      */
     async getImagesByItemId(itemId: number): Promise<ItemImage[]> {
         const [rows] = await pool.execute(
-            `SELECT id, item_id, file_name, is_primary, \`show\`, created_at
+            `SELECT id, item_id, file_name, is_primary, \`show\`, created_at, display_order
              FROM item_images
              WHERE item_id = ?
-             ORDER BY is_primary DESC, created_at ASC`,
+             ORDER BY display_order ASC, is_primary DESC, created_at ASC`,
             [itemId]
         ) as any;
 
@@ -129,9 +130,10 @@ export class ItemImagesService {
             fs.writeFileSync(uniqueFilePath, file.buffer);
 
             // Додаємо запис в БД
+            const displayOrder = existingImages.length + i + 1;
             const [result] = await pool.execute(
-                `INSERT INTO item_images (item_id, file_name, is_primary, \`show\`) VALUES (?, ?, ?, ?)`,
-                [item.id, uniqueFileName, existingImages.length === 0 && i === 0 ? 1 : 0, 1]
+                `INSERT INTO item_images (item_id, file_name, is_primary, \`show\`, display_order) VALUES (?, ?, ?, ?, ?)`,
+                [item.id, uniqueFileName, existingImages.length === 0 && i === 0 ? 1 : 0, 1, displayOrder]
             ) as any;
 
             uploadedImages.push({
@@ -140,7 +142,8 @@ export class ItemImagesService {
                 file_name: uniqueFileName,
                 is_primary: existingImages.length === 0 && i === 0,
                 show: true,
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                display_order: displayOrder
             });
         }
 
@@ -201,6 +204,42 @@ export class ItemImagesService {
     }
 
     /**
+     * Змінити порядок зображень для айтема
+     */
+    async reorderImages(itemId: number, orderedIds: number[]): Promise<void> {
+        const connection = await pool.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            // Verify all images belong to this item
+            const placeholders = orderedIds.map(() => '?').join(',');
+            const [rows] = await connection.execute(
+                `SELECT id FROM item_images WHERE item_id = ? AND id IN (${placeholders})`,
+                [itemId, ...orderedIds]
+            ) as any;
+
+            if (rows.length !== orderedIds.length) {
+                throw new Error('Some images do not belong to this item');
+            }
+
+            // Update display_order for each image
+            for (let i = 0; i < orderedIds.length; i++) {
+                await connection.execute(
+                    `UPDATE item_images SET display_order = ? WHERE id = ? AND item_id = ?`,
+                    [i + 1, orderedIds[i], itemId]
+                );
+            }
+
+            await connection.commit();
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
+
+    /**
      * Видалити зображення
      */
     async deleteImage(itemId: number, imageId: number): Promise<void> {
@@ -243,7 +282,7 @@ export class ItemImagesService {
         // Якщо видалене було primary — обираємо нове primary
         if (is_primary) {
             const [remaining] = await pool.execute(
-                `SELECT id FROM item_images WHERE item_id = ? ORDER BY created_at ASC LIMIT 1`,
+                `SELECT id FROM item_images WHERE item_id = ? ORDER BY display_order ASC, created_at ASC LIMIT 1`,
                 [itemId]
             ) as any;
 

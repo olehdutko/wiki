@@ -33,6 +33,9 @@ router.patch('/:itemId/images/:imageId/primary', itemImagesController.setPrimary
 // PATCH /api/items/:itemId/images/:imageId/show — встановити флаг show
 router.patch('/:itemId/images/:imageId/show', itemImagesController.setShow.bind(itemImagesController));
 
+// PATCH /api/items/:itemId/images/reorder — змінити порядок зображень
+router.patch('/:itemId/images/reorder', itemImagesController.reorderImages.bind(itemImagesController));
+
 // DELETE /api/items/:itemId/images/:imageId — видалити зображення
 router.delete('/:itemId/images/:imageId', itemImagesController.deleteImage.bind(itemImagesController));
 
