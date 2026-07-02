@@ -817,10 +817,11 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
         try {
             const categoryIds = data.category_ids;
 
-            // Видаляємо масив категорій перед базовим create, бо в таблиці items немає такої колонки
+            // Видаляємо масиви категорій і територій перед базовим create, бо в таблиці items немає таких колонок
             const itemData = { ...data } as any;
             delete itemData.category_ids;
-            
+            delete itemData.territory_ids;
+
             // Автоматично додаємо імперські одиниці
             itemData.total_len_in = mmToInches(itemData.total_len);
             itemData.blade_len_in = mmToInches(itemData.blade_len);
