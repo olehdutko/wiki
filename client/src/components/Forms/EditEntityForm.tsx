@@ -79,6 +79,7 @@ interface EditEntityFormProps<T extends BaseEntity> {
   entityType: EntityType;
   onClose: () => void;
   onSave: (updatedEntity: T) => void;
+  onDelete?: (id: number) => void;
   mode?: 'edit' | 'create';
   headerColor?: string;
   saveButtonText?: string;
@@ -100,6 +101,7 @@ export function EditEntityForm<T extends BaseEntity>({
   entityType,
   onClose,
   onSave,
+  onDelete,
   mode = 'edit',
   headerColor,
   saveButtonText
@@ -137,10 +139,15 @@ export function EditEntityForm<T extends BaseEntity>({
   const [addLinkModalOpen, setAddLinkModalOpen] = useState(false);
 
   const loadLinkedObjects = useCallback(async () => {
-    if (entity && open && entityType === 'weapons') {
-      setLinkedObjectsLoading(true);
-      setLinkedObjectsError(null);
-      try {
+    // У режимі створення айтем ще не існує в БД, тому лінків бути не може.
+    // ID тут — це maxId+1, який ще не записаний, і getLinkedObjects поверне сторонні/пусті дані.
+    if (mode === 'create' || !entity || !open || entityType !== 'weapons') {
+      return;
+    }
+
+    setLinkedObjectsLoading(true);
+    setLinkedObjectsError(null);
+    try {
         const { apiService } = await import('../../services/api.service');
         const response = await apiService.getLinkedObjects(entity.id);
         console.log('📥 Отримано пов\'язані об\'єкти:', {
@@ -178,13 +185,16 @@ export function EditEntityForm<T extends BaseEntity>({
       } finally {
         setLinkedObjectsLoading(false);
       }
-    }
   }, [entity?.id, open, entityType]);
 
   // Стани для діалогу видалення
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [linkToDelete, setLinkToDelete] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Стани для діалогу видалення самого айтема
+  const [itemDeleteDialogOpen, setItemDeleteDialogOpen] = useState(false);
+  const [isDeletingItem, setIsDeletingItem] = useState(false);
 
   // Функції для обробки видалення
   const handleDeleteClick = (linkId: number) => {
@@ -217,6 +227,38 @@ export function EditEntityForm<T extends BaseEntity>({
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
     setLinkToDelete(null);
+  };
+
+  // Видалення самого айтема
+  const handleItemDeleteClick = () => {
+    setItemDeleteDialogOpen(true);
+  };
+
+  const handleItemDeleteCancel = () => {
+    setItemDeleteDialogOpen(false);
+  };
+
+  const handleItemDeleteConfirm = async () => {
+    if (!entity) return;
+
+    setIsDeletingItem(true);
+    try {
+      const { apiService } = await import('../../services/api.service');
+      const success = await apiService.deleteEntity(entityType, entity.id);
+
+      if (success) {
+        setItemDeleteDialogOpen(false);
+        onDelete?.(entity.id);
+        onClose();
+      } else {
+        setError('Не вдалося видалити запис');
+      }
+    } catch (err: any) {
+      console.error('Помилка видалення запису:', err);
+      setError(err?.response?.data?.message || 'Не вдалося видалити запис');
+    } finally {
+      setIsDeletingItem(false);
+    }
   };
 
   // Функція для завантаження доступних голосів
@@ -1798,6 +1840,39 @@ export function EditEntityForm<T extends BaseEntity>({
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Діалог підтвердження видалення айтема */}
+        <Dialog
+          open={itemDeleteDialogOpen}
+          onClose={handleItemDeleteCancel}
+          aria-labelledby="item-delete-dialog-title"
+          aria-describedby="item-delete-dialog-description"
+        >
+          <DialogTitle id="item-delete-dialog-title">
+            Підтвердження видалення
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="item-delete-dialog-description">
+              Ви дійсно хочете видалити цей запис? Цю дію неможливо відмінити.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={handleItemDeleteCancel}
+              disabled={isDeletingItem}
+            >
+              Скасувати
+            </Button>
+            <Button
+              onClick={handleItemDeleteConfirm}
+              color="error"
+              disabled={isDeletingItem}
+              startIcon={isDeletingItem ? <CircularProgress size={20} /> : null}
+            >
+              Видалити
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     );
   };
@@ -1991,6 +2066,30 @@ export function EditEntityForm<T extends BaseEntity>({
         borderRadius: '0 0 12px 12px',
         justifyContent: 'flex-end'
       }}>
+        {mode === 'edit' && (
+          <Button
+            onClick={handleItemDeleteClick}
+            disabled={loading || isDeletingItem}
+            variant="text"
+            size="small"
+            startIcon={<Delete />}
+            sx={{
+              textTransform: 'none',
+              fontSize: '0.875rem',
+              color: 'error.main',
+              minWidth: 'auto',
+              px: 1.5,
+              mr: 'auto',
+              '&:hover': {
+                backgroundColor: 'error.main',
+                color: '#fff'
+              }
+            }}
+          >
+            Видалити
+          </Button>
+        )}
+
         <Button
           onClick={handleCancel}
           disabled={loading}

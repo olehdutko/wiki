@@ -37,7 +37,6 @@ import {
     Add as AddIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
-    Search as SearchIcon,
     Refresh as RefreshIcon,
     Check as CheckIcon,
     Close as CloseIcon,
@@ -137,8 +136,8 @@ export function EntityDataGrid<T extends BaseEntity>({
         open: false,
         row: null
     });
-    const [searchDialog, setSearchDialog] = useState(false);
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
+    const [searchInput, setSearchInput] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearchActive, setIsSearchActive] = useState(false);
     const [imageUploadRow, setImageUploadRow] = useState<any>(null);
@@ -285,6 +284,24 @@ export function EntityDataGrid<T extends BaseEntity>({
         }
     }, [entityType, pagination.page, pagination.pageSize, selectedCategoryId, filterModel, isSearchActive, searchQuery, sortModel]);
 
+    // Live search: debounce searchInput into searchQuery
+    useEffect(() => {
+        if (entityType !== 'weapons') return;
+
+        const trimmed = searchInput.trim();
+        const timer = setTimeout(() => {
+            setSearchQuery(trimmed);
+            const active = trimmed.length >= 2;
+            setIsSearchActive(active);
+            if (active || (!active && isSearchActive)) {
+                // Скидаємо на першу сторінку при зміні активного пошукового запиту
+                setPagination(prev => ({ ...prev, page: 0 }));
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [searchInput, entityType, isSearchActive]);
+
     // Функція для завантаження категорій (тільки для weapons)
     const fetchCategories = useCallback(async () => {
         if (entityType !== 'weapons') return;
@@ -393,17 +410,22 @@ export function EntityDataGrid<T extends BaseEntity>({
 
 
     const handleSearch = async () => {
-        const trimmedQuery = searchQuery.trim();
+        const trimmedQuery = searchInput.trim();
         if (!trimmedQuery || trimmedQuery.length < 2) {
-            setSearchDialog(false);
             // Скидаємо до даних поточної категорії
             setIsSearchActive(false);
+            setSearchInput('');
             setSearchQuery('');
             setFilterModel({ items: [] });
             setPagination(prev => ({ ...prev, page: 0 }));
             fetchData();
             return;
         }
+
+        // Синхронізуємо одразу (без debounce), наприклад при Enter
+        setSearchQuery(trimmedQuery);
+        setIsSearchActive(true);
+        setPagination(prev => ({ ...prev, page: 0 }));
 
         setLoading({ loading: true, error: null });
 
@@ -449,7 +471,6 @@ export function EntityDataGrid<T extends BaseEntity>({
             setIsSearchActive(true);
             setFilterModel({ items: [] }); // Скидаємо фільтри колонок
             setLoading({ loading: false, error: null });
-            setSearchDialog(false);
 
         } catch (error: any) {
             console.error('Помилка пошуку:', error);
@@ -1054,20 +1075,29 @@ renderCell: (params: any) => {
                         })()}
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                        {/* Показуємо кнопку пошуку тільки для weapons */}
+                        {/* Пошукове поле для weapons */}
                         {entityType === 'weapons' && (
-                            <Button
-                                variant="outlined"
-                                startIcon={<SearchIcon />}
-                                onClick={() => setSearchDialog(true)}
-                            >
-                                Пошук
-                            </Button>
+                            <TextField
+                                size="small"
+                                placeholder="Пошуковий запит"
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                                sx={{
+                                    minWidth: 220,
+                                    height: 40,
+                                    '& .MuiOutlinedInput-root': {
+                                        height: 40
+                                    }
+                                }}
+                            />
                         )}
                         <Button
                             variant="outlined"
+                            size="small"
                             onClick={handleRefresh}
                             disabled={loading.loading}
+                            sx={{ height: 40, minWidth: 40, width: 40, p: 0 }}
                         >
                             <RefreshIcon />
                         </Button>
@@ -1227,42 +1257,6 @@ renderCell: (params: any) => {
             </Dialog>
 
             {/* Діалог пошуку */}
-            {entityType === 'weapons' && (
-                <Dialog
-                    open={searchDialog}
-                    onClose={() => setSearchDialog(false)}
-                    maxWidth="sm"
-                    fullWidth
-                >
-                    <DialogTitle>Пошук записів</DialogTitle>
-                    <DialogContent>
-                        <TextField
-                            autoFocus
-                            margin="dense"
-                            label="Пошуковий запит"
-                            fullWidth
-                            variant="outlined"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                            helperText="Мінімум 2 символи"
-                        />
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={() => setSearchDialog(false)}>
-                            Скасувати
-                        </Button>
-                        <Button
-                            onClick={handleSearch}
-                            variant="contained"
-                            disabled={searchQuery.length < 2}
-                        >
-                            Шукати
-                        </Button>
-                    </DialogActions>
-                </Dialog>
-            )}
-
             {/* Форма редагування */}
             <EditEntityForm<T>
                 open={editDialog.open}
@@ -1270,6 +1264,11 @@ renderCell: (params: any) => {
                 entityType={entityType}
                 onClose={() => setEditDialog({ open: false, row: null })}
                 onSave={handleEditSave}
+                onDelete={(deletedId) => {
+                    setAllCategoryData(prev => prev.filter(row => row.id !== deletedId));
+                    setData(prev => prev.filter(row => row.id !== deletedId));
+                    setPagination(prev => ({ ...prev, total: Math.max(0, prev.total - 1) }));
+                }}
             />
 
             {/* Діалог завантаження зображення */}
