@@ -982,6 +982,7 @@ renderCell: (params: any) => {
         if (isSearchActive) {
             setIsSearchActive(false);
             setSearchQuery('');
+            setSearchInput('');
         }
         setPagination(prev => ({ ...prev, page: 0 }));
     };

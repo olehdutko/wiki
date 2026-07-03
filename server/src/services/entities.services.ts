@@ -600,6 +600,7 @@ export class WeaponItemService extends BaseService<WeaponItem> {
             await connection.beginTransaction();
             await connection.execute('DELETE FROM item_categories WHERE item_id = ?', [id]);
             await connection.execute('DELETE FROM item_links WHERE item_id = ? OR other_item = ?', [id, id]);
+            await connection.execute('DELETE FROM item_images WHERE item_id = ?', [id]);
             await connection.execute('DELETE FROM items WHERE id = ?', [id]);
             await connection.commit();
             return true;
