@@ -1841,38 +1841,6 @@ export function EditEntityForm<T extends BaseEntity>({
           </DialogActions>
         </Dialog>
 
-        {/* Діалог підтвердження видалення айтема */}
-        <Dialog
-          open={itemDeleteDialogOpen}
-          onClose={handleItemDeleteCancel}
-          aria-labelledby="item-delete-dialog-title"
-          aria-describedby="item-delete-dialog-description"
-        >
-          <DialogTitle id="item-delete-dialog-title">
-            Підтвердження видалення
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText id="item-delete-dialog-description">
-              Ви дійсно хочете видалити цей запис? Цю дію неможливо відмінити.
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button
-              onClick={handleItemDeleteCancel}
-              disabled={isDeletingItem}
-            >
-              Скасувати
-            </Button>
-            <Button
-              onClick={handleItemDeleteConfirm}
-              color="error"
-              disabled={isDeletingItem}
-              startIcon={isDeletingItem ? <CircularProgress size={20} /> : null}
-            >
-              Видалити
-            </Button>
-          </DialogActions>
-        </Dialog>
       </Box>
     );
   };
@@ -2128,6 +2096,39 @@ export function EditEntityForm<T extends BaseEntity>({
           {isFormValid() ? (saveButtonText || 'Зберегти') : `${saveButtonText || 'Зберегти'} (${getFormErrors().length} помилок)`}
         </Button>
       </DialogActions>
+
+      {/* Діалог підтвердження видалення айтема */}
+      <Dialog
+        open={itemDeleteDialogOpen}
+        onClose={handleItemDeleteCancel}
+        aria-labelledby="item-delete-dialog-title"
+        aria-describedby="item-delete-dialog-description"
+      >
+        <DialogTitle id="item-delete-dialog-title">
+          Підтвердження видалення
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="item-delete-dialog-description">
+            Ви дійсно хочете видалити цей запис? Цю дію неможливо відмінити.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleItemDeleteCancel}
+            disabled={isDeletingItem}
+          >
+            Скасувати
+          </Button>
+          <Button
+            onClick={handleItemDeleteConfirm}
+            color="error"
+            disabled={isDeletingItem}
+            startIcon={isDeletingItem ? <CircularProgress size={20} /> : null}
+          >
+            Видалити
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Add Link Modal */}
       <AddLinkModal
