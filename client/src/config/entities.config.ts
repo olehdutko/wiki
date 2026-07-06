@@ -43,7 +43,8 @@ const namedEntityColumns: GridColumn[] = [
     { field: 'id', headerName: 'ID', width: 80, type: 'number', valueFormatter: (params) => String(params.value) },
     { field: 'ukr', headerName: 'Українська', width: 200, editable: true, type: 'string' },
     { field: 'eng', headerName: 'English', width: 200, editable: true, type: 'string' },
-    { field: 'rus', headerName: 'Москальська', width: 200, editable: true, type: 'string' }
+    { field: 'rus', headerName: 'Москальська', width: 200, editable: true, type: 'string' },
+    { field: 'item_count', headerName: 'Кількість айтемів', width: 150, type: 'number', editable: false }
 ];
 
 const pommelColumns: GridColumn[] = [
@@ -59,7 +60,8 @@ const categoryColumns: GridColumn[] = [
     { field: 'id', headerName: 'ID', width: 80, type: 'number', valueFormatter: (params) => String(params.value) },
     { field: 'ukr_name', headerName: 'Українська назва', width: 250, editable: true, type: 'string' },
     { field: 'eng_name', headerName: 'English name', width: 250, editable: true, type: 'string' },
-    { field: 'comments', headerName: 'Коментарі', width: 300, editable: true, type: 'string' }
+    { field: 'comments', headerName: 'Коментарі', width: 300, editable: true, type: 'string' },
+    { field: 'item_count', headerName: 'Кількість айтемів', width: 150, type: 'number', editable: false }
 ];
 
 const territoryColumns: GridColumn[] = [
@@ -355,7 +357,8 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
             { field: 'id', headerName: 'ID', width: 58, type: 'number', valueFormatter: (params: any) => String(params.value) },
             { field: 'ukr_name', headerName: 'Українська назва', width: 250, editable: true, type: 'string' },
             { field: 'eng_name', headerName: 'English name', width: 250, editable: true, type: 'string' },
-            { field: 'rus_name', headerName: 'Москальська назва', width: 250, editable: true, type: 'string' }
+            { field: 'rus_name', headerName: 'Москальська назва', width: 250, editable: true, type: 'string' },
+            { field: 'item_count', headerName: 'Кількість айтемів', width: 150, type: 'number', editable: false }
         ],
         formFields: [
             { name: 'ukr_name', label: 'Українська назва', type: 'text', maxLength: 300, required: true },
