@@ -213,6 +213,74 @@ export class Usage implements NamedEntity {
     rus?: string | null;
 }
 
+
+// ================= КЛАСИФІКАЦІЇ =================
+
+export class Classification implements BaseEntity {
+    @IsNumber()
+    id!: number;
+
+    @IsString()
+    @MaxLength(300)
+    ukr_name!: string;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(300)
+    eng_name?: string | null;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(300)
+    rus_name?: string | null;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(5000)
+    description?: string | null;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(500)
+    image_path?: string | null;
+}
+
+export class ClassificationItem implements BaseEntity {
+    @IsNumber()
+    id!: number;
+
+    @IsNumber()
+    classification_id!: number;
+
+    @IsString()
+    @MaxLength(300)
+    ukr_name!: string;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(300)
+    eng_name?: string | null;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(300)
+    rus_name?: string | null;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(5000)
+    description?: string | null;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(500)
+    image_path?: string | null;
+
+    @IsOptional()
+    @IsNumber()
+    display_order?: number | null;
+}
+
 // ================= КАТЕГОРІЇ =================
 
 export class Category implements BaseEntity {

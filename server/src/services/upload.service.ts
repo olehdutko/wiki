@@ -96,7 +96,7 @@ export class UploadService {
         const tableName = this.getTableName(entityType);
         
         await pool.execute(
-            `UPDATE \`${tableName}\` SET image_url = ? WHERE id = ?`,
+            `UPDATE \`${tableName}\` SET ${this.getImageColumnName(entityType)} = ? WHERE id = ?`,
             [imageUrl, entityId]
         );
     }
@@ -111,7 +111,7 @@ export class UploadService {
         const tableName = this.getTableName(entityType);
         
         const [rows] = await pool.execute(
-            `SELECT image_url FROM \`${tableName}\` WHERE id = ?`,
+            `SELECT ${this.getImageColumnName(entityType)} AS image_url FROM \`${tableName}\` WHERE id = ?`,
             [entityId]
         ) as any;
         
@@ -125,9 +125,23 @@ export class UploadService {
         const tableMap: Record<string, string> = {
             'guard-type': 'guard_type',
             'pommel': 'pommel',
-            'sharpening': 'sharpening'
+            'sharpening': 'sharpening',
+            'classifications': 'classifications',
+            'classification-items': 'classification_items'
         };
         
         return tableMap[entityType] || entityType;
+    }
+
+    /**
+     * Отримати назву колонки для зображення за типом сутності
+     */
+    private getImageColumnName(entityType: string): string {
+        const columnMap: Record<string, string> = {
+            'classifications': 'image_path',
+            'classification-items': 'image_path'
+        };
+        
+        return columnMap[entityType] || 'image_url';
     }
 }

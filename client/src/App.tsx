@@ -42,10 +42,12 @@ import {
   AutoFixHigh as SharpeningIcon,
   Handshake as UsageIcon,
   Straighten as DollsIcon,
-  Map as TerritoriesIcon
+  Map as TerritoriesIcon,
+  Layers as ClassificationsIcon
 } from '@mui/icons-material';
 
 import { EntityDataGrid } from './components/DataGrid/EntityDataGrid';
+import { ClassificationsDataGrid } from './components/DataGrid/ClassificationsDataGrid';
 import type { EntityType, BaseEntity } from './types/api.types';
 import { getEntityDisplayName } from './config/entities.config';
 import { apiService } from './services/api.service';
@@ -57,6 +59,7 @@ const DRAWER_WIDTH = 224;
 const ENTITY_ICONS: Record<EntityType, React.ReactElement> = {
   'weapons': <WeaponsIcon />,
   'categories': <CategoriesIcon />,
+  'classifications': <ClassificationsIcon />,
   'territories': <TerritoriesIcon />,
   'global-type': <GlobalTypeIcon />,
   'epoha': <EpohaIcon />,
@@ -65,14 +68,15 @@ const ENTITY_ICONS: Record<EntityType, React.ReactElement> = {
   'pommel': <PommelIcon />,
   'sharpening': <SharpeningIcon />,
   'usage': <UsageIcon />,
-  'dolls': <DollsIcon />
+  'dolls': <DollsIcon />,
+  'classification-items': <ClassificationsIcon />
 };
 
 // Групування сутностей
 const ENTITY_GROUPS: Array<{ title: string; entities: EntityType[] }> = [
   {
     title: 'Головні дані',
-    entities: ['weapons', 'categories']
+    entities: ['weapons', 'categories', 'classifications']
   },
   {
     title: 'Довідкові дані',
@@ -494,18 +498,22 @@ function App() {
         )}
 
         {/* Грід даних */}
-        <Container maxWidth={false} disableGutters>
-          <EntityDataGrid<BaseEntity>
-            key={currentEntity}
-            entityType={currentEntity}
-            onRowSelect={handleRowSelect}
-            onRowEdit={handleRowEdit}
-            onViewRelatedItems={handleViewRelatedItems}
-            initialFilterModel={currentEntity === 'weapons' ? weaponsInitialFilterModel : undefined}
-            initialCategoryId={currentEntity === 'weapons' ? weaponsInitialCategoryId : undefined}
-            initialFilterLabel={currentEntity === 'weapons' ? weaponsInitialFilterLabel : undefined}
-            height={700}
-          />
+        <Container maxWidth={false} disableGutters sx={{ height: 'calc(100vh - 180px)' }}>
+          {currentEntity === 'classifications' || currentEntity === 'classification-items' ? (
+            <ClassificationsDataGrid />
+          ) : (
+            <EntityDataGrid<BaseEntity>
+              key={currentEntity}
+              entityType={currentEntity}
+              onRowSelect={handleRowSelect}
+              onRowEdit={handleRowEdit}
+              onViewRelatedItems={handleViewRelatedItems}
+              initialFilterModel={currentEntity === 'weapons' ? weaponsInitialFilterModel : undefined}
+              initialCategoryId={currentEntity === 'weapons' ? weaponsInitialCategoryId : undefined}
+              initialFilterLabel={currentEntity === 'weapons' ? weaponsInitialFilterLabel : undefined}
+              height={700}
+            />
+          )}
         </Container>
       </Box>
 

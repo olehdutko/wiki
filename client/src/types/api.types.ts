@@ -142,6 +142,36 @@ export interface WeaponItemResponse extends WeaponItem {
     territory_ids?: number[];
 }
 
+
+
+// ================= КЛАСИФІКАЦІЇ =================
+
+export interface Classification extends BaseEntity {
+    ukr_name: string;
+    eng_name?: string | null;
+    rus_name?: string | null;
+    description?: string | null;
+    image_path?: string | null;
+}
+
+export interface ClassificationItem extends BaseEntity {
+    classification_id: number;
+    ukr_name: string;
+    eng_name?: string | null;
+    rus_name?: string | null;
+    description?: string | null;
+    image_path?: string | null;
+    display_order?: number | null;
+}
+
+export interface CreateClassificationDto extends Omit<Classification, 'id'> { }
+
+export interface UpdateClassificationDto extends Partial<CreateClassificationDto> { }
+
+export interface CreateClassificationItemDto extends Omit<ClassificationItem, 'id'> { }
+
+export interface UpdateClassificationItemDto extends Partial<CreateClassificationItemDto> { }
+
 // ================= DTO для створення/оновлення =================
 
 export interface CreateWeaponItemDto extends Omit<WeaponItem, 'id' | 'category_name'> { }

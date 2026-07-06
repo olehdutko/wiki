@@ -309,7 +309,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         setCategoriesLoading(true);
         try {
             const result = await apiService.getAllCategories();
-            setCategories(result.items);
+            setCategories(result.items.sort((a, b) => a.ukr_name.localeCompare(b.ukr_name, 'uk')));
         } catch (error) {
             console.error('❌ Помилка завантаження категорій:', error);
         } finally {

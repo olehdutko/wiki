@@ -145,7 +145,40 @@ export class UsageService extends BaseService<Usage> {
     }
 }
 
+
+
+// ================= СЕРВІСИ КЛАСИФІКАЦІЙ =================
+
+import { Classification, ClassificationItem } from '../types/base.types';
+
+export class ClassificationsService extends BaseService<Classification> {
+    constructor() {
+        super('classifications');
+    }
+}
+
+export class ClassificationItemsService extends BaseService<ClassificationItem> {
+    constructor() {
+        super('classification_items');
+    }
+
+    async getByClassificationId(classificationId: number): Promise<ClassificationItem[]> {
+        try {
+            const [rows] = await pool.execute(
+                `SELECT * FROM \`classification_items\` WHERE classification_id = ? ORDER BY display_order ASC, id ASC`,
+                [classificationId]
+            ) as [RowDataPacket[], any];
+
+            return rows.map(row => this.convertDatabaseValues(row)) as ClassificationItem[];
+        } catch (error) {
+            console.error(`Error getting classification items by classification ID ${classificationId}:`, error);
+            throw new Error('Failed to get classification items');
+        }
+    }
+}
+
 // ================= СЕРВІС КАТЕГОРІЙ =================
+
 
 export class CategoryService extends BaseService<Category> {
     constructor() {
