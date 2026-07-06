@@ -1206,6 +1206,173 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
             throw error;
         }
     }
+
+    /**
+     * Отримати записи зброї за категорією та територією одночасно
+     */
+    async findByCategoryAndTerritory(categoryId: number, territoryId: number, params: PaginationParams, filterParams?: any): Promise<PaginatedResponse<WeaponItemResponse>> {
+        const {
+            page = 1,
+            limit = 20,
+            sortBy = 'id',
+            sortOrder = 'DESC'
+        } = params;
+
+        const offset = (page - 1) * limit;
+
+        try {
+            let whereConditions: string[] = [];
+            let queryParams: any[] = [];
+            
+            whereConditions.push('i.id IN (SELECT item_id FROM item_categories WHERE category_id = ?)');
+            queryParams.push(categoryId);
+            whereConditions.push('i.id IN (SELECT item_id FROM item_territories WHERE territory_id = ?)');
+            queryParams.push(territoryId);
+            
+            const joins: string[] = [];
+            let forceEmptyResult = false;
+
+            if (filterParams) {
+                let filterIndex = 0;
+                while (filterParams[`filterField${filterIndex > 0 ? filterIndex : ''}`]) {
+                    const suffix = filterIndex > 0 ? `${filterIndex}` : '';
+                    const field = filterParams[`filterField${suffix}`];
+                    const operator = filterParams[`filterOperator${suffix}`];
+                    const value = filterParams[`filterValue${suffix}`];
+                    
+                    if (field && operator && value !== undefined) {
+                        if (field === 'id') {
+                            const numValue = parseInt(value);
+                            if (!isNaN(numValue)) {
+                                switch (operator) {
+                                    case '=':
+                                    case 'eq':
+                                    case 'equals':
+                                        whereConditions.push(`i.id = ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '!=':
+                                    case 'notEq':
+                                    case 'notEquals':
+                                        whereConditions.push(`i.id != ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '>':
+                                    case 'gt':
+                                        whereConditions.push(`i.id > ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '>=':
+                                    case 'gte':
+                                        whereConditions.push(`i.id >= ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '<':
+                                    case 'lt':
+                                        whereConditions.push(`i.id < ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '<=':
+                                    case 'lte':
+                                        whereConditions.push(`i.id <= ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                }
+                            }
+                        } else if (WeaponItemService.REFERENCE_NAME_FIELDS[field]) {
+                            const mapping = WeaponItemService.REFERENCE_NAME_FIELDS[field];
+                            const alias = `ref_${mapping.itemField}`;
+                            if (!joins.some(j => j.includes(` ${alias} `) || j.endsWith(` ${alias}`))) {
+                                joins.push(`LEFT JOIN ${WeaponItemService.escapeIdentifier(mapping.refTable)} ${alias} ON i.${mapping.itemField} = ${alias}.id`);
+                            }
+                            const strValue = `%${value}%`;
+                            whereConditions.push(`${alias}.ukr LIKE ?`);
+                            queryParams.push(strValue);
+                        } else {
+                            if (operator === '=' || operator === 'eq' || operator === 'equals') {
+                                whereConditions.push(`i.${field} = ?`);
+                                queryParams.push(value);
+                            } else {
+                                const strValue = `%${value}%`;
+                                whereConditions.push(`i.${field} LIKE ?`);
+                                queryParams.push(strValue);
+                            }
+                        }
+                    }
+                    filterIndex++;
+                }
+            }
+
+            if (forceEmptyResult) {
+                return {
+                    items: [],
+                    total: 0,
+                    page,
+                    limit,
+                    totalPages: 0
+                };
+            }
+            
+            const whereClause = whereConditions.join(' AND ');
+            const joinClause = joins.length > 0 ? ' ' + joins.join(' ') : '';
+
+            const [countResult] = await pool.execute(
+                `SELECT COUNT(DISTINCT ic.item_id) as total FROM item_categories ic 
+                 JOIN items i ON i.id = ic.item_id${joinClause} 
+                 WHERE ${whereClause}`,
+                queryParams
+            ) as [RowDataPacket[], any];
+
+            const total = countResult[0].total;
+
+            const [rows] = await pool.query(
+                this.buildItemWithCategoriesQuery(
+                    whereClause,
+                    `i.${sortBy} ${sortOrder}`,
+                    joins,
+                    limit,
+                    offset
+                ),
+                queryParams
+            );
+
+            const items = (rows as any[]).map(row => {
+                const converted = this.convertDatabaseValues(row);
+                converted.category_ids = [];
+                return converted;
+            });
+
+            const itemIds = items.map(item => item.id);
+            const categoriesMap = await this.loadCategoriesForItems(itemIds);
+            const territoriesMap = await this.loadTerritoriesForItems(itemIds);
+            const primaryImagesMap = await this.loadPrimaryImagesForItems(itemIds);
+            for (const item of items) {
+                item.categories_data = categoriesMap.get(item.id) || [];
+                item.category_ids = (item.categories_data as any[]).map((c: any) => c.id);
+                (item as any).category_names = (item.categories_data as any[]).map((c: any) => c.ukr_name).join(', ');
+                if (item.categories_data.length > 0 && !item.category_name) {
+                    item.category_name = item.categories_data[0].ukr_name;
+                }
+                item.territories_data = territoriesMap.get(item.id) || [];
+                item.territory_ids = (item.territories_data as any[]).map((t: any) => t.id);
+                const primaryFileName = primaryImagesMap.get(item.id);
+                if (primaryFileName) {
+                    (item as any).primary_image_url = getItemImageUrl(item, primaryFileName);
+                }
+            }
+
+            return {
+                items: items as WeaponItemResponse[],
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            };
+        } catch (error) {
+            console.error('Error in findByCategoryAndTerritory:', error);
+            throw error;
+        }
+    }
 }
 
 // ================= ФАБРИКА СЕРВІСІВ =================
