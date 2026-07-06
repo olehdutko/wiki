@@ -362,6 +362,7 @@ router.get('/weapons', weaponItemController.getAllWithCategory.bind(weaponItemCo
 router.get('/weapons/search', weaponItemController.searchWeapons.bind(weaponItemController));
 router.get('/weapons/count', weaponItemController.getCount.bind(weaponItemController));
 router.get('/weapons/max-id', weaponItemController.getMaxId.bind(weaponItemController));
+router.get('/weapons/category/:categoryId/territory/:territoryId', weaponItemController.getByCategoryAndTerritory.bind(weaponItemController));
 router.get('/weapons/category/:categoryId', weaponItemController.getByCategory.bind(weaponItemController));
 router.get('/weapons/:id', weaponItemController.getByIdWithCategory.bind(weaponItemController));
 router.post('/weapons', weaponItemValidation, weaponItemController.createWeapon.bind(weaponItemController));

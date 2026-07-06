@@ -158,6 +158,11 @@ export function EntityDataGrid<T extends BaseEntity>({
     });
     const [categoriesLoading, setCategoriesLoading] = useState(false);
 
+    // Стан для фільтрування по територіях (тільки для weapons)
+    const [territories, setTerritories] = useState<Array<{ id: number, ukr_name: string }>>([]);
+    const [selectedTerritoryId, setSelectedTerritoryId] = useState<number | null>(null);
+    const [territoriesLoading, setTerritoriesLoading] = useState(false);
+
     // ================= ФУНКЦІЇ =================
 
     const supportsInlineEditing = (entityType: EntityType): boolean => {
@@ -231,9 +236,21 @@ export function EntityDataGrid<T extends BaseEntity>({
                     entityType,
                     { page: currentPage, limit: pageSize, sortBy, sortOrder, ...filterParams }
                 );
+            } else if (entityType === 'weapons' && selectedCategoryId && selectedTerritoryId) {
+                result = await apiService.getWeaponsByCategoryAndTerritory(
+                    selectedCategoryId,
+                    selectedTerritoryId,
+                    { page: currentPage, limit: pageSize, sortBy, sortOrder, ...filterParams }
+                );
             } else if (entityType === 'weapons' && selectedCategoryId) {
                 result = await apiService.getWeaponsByCategory(
                     selectedCategoryId,
+                    { page: currentPage, limit: pageSize, sortBy, sortOrder, ...filterParams }
+                );
+            } else if (entityType === 'weapons' && selectedTerritoryId) {
+                // TODO: can add getWeaponsByTerritory later if needed
+                result = await apiService.getEntityData(
+                    entityType,
                     { page: currentPage, limit: pageSize, sortBy, sortOrder, ...filterParams }
                 );
             } else {
@@ -282,7 +299,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         } finally {
             setLoading(prev => ({ ...prev, loading: false }));
         }
-    }, [entityType, pagination.page, pagination.pageSize, selectedCategoryId, filterModel, isSearchActive, searchQuery, sortModel]);
+    }, [entityType, pagination.page, pagination.pageSize, selectedCategoryId, selectedTerritoryId, filterModel, isSearchActive, searchQuery, sortModel]);
 
     // Live search: debounce searchInput into searchQuery
     useEffect(() => {
@@ -317,11 +334,27 @@ export function EntityDataGrid<T extends BaseEntity>({
         }
     }, [entityType]);
 
+    // Функція для завантаження територій (тільки для weapons)
+    const fetchTerritories = useCallback(async () => {
+        if (entityType !== 'weapons') return;
+
+        setTerritoriesLoading(true);
+        try {
+            const result = await apiService.getAllTerritories();
+            setTerritories(result.items.sort((a, b) => a.ukr_name.localeCompare(b.ukr_name, 'uk')));
+        } catch (error) {
+            console.error('❌ Помилка завантаження територій:', error);
+        } finally {
+            setTerritoriesLoading(false);
+        }
+    }, [entityType]);
+
     // Початкове завантаження
     useEffect(() => {
         fetchData();
         fetchCategories();
-    }, [fetchData, fetchCategories]);
+        fetchTerritories();
+    }, [fetchData, fetchCategories, fetchTerritories]);
 
     // ================= ОБРОБНИКИ ПОДІЙ =================
 
@@ -348,6 +381,14 @@ export function EntityDataGrid<T extends BaseEntity>({
         setPagination(prev => ({ ...prev, page: 0 })); // Скидаємо на першу сторінку
         setFilterModel({ items: [] }); // Скидаємо фільтри колонок
          // Скидаємо швидкий фільтр
+    };
+
+    const handleTerritoryChange = (territoryId: number | null) => {
+        setSelectedTerritoryId(territoryId);
+        setIsSearchActive(false);
+        setSearchQuery('');
+        setPagination(prev => ({ ...prev, page: 0 })); // Скидаємо на першу сторінку
+        setFilterModel({ items: [] }); // Скидаємо фільтри колонок
     };
 
 
@@ -949,6 +990,11 @@ renderCell: (params: any) => {
             parts.push(`Категорія: ${category?.ukr_name || selectedCategoryId}`);
         }
 
+        if (selectedTerritoryId) {
+            const territory = territories.find(t => t.id === selectedTerritoryId);
+            parts.push(`Територія: ${territory?.ukr_name || selectedTerritoryId}`);
+        }
+
         if (filterModel.items?.length > 0) {
             filterModel.items.forEach(item => {
                 if (item.value === undefined || item.value === null || item.value === '') return;
@@ -978,6 +1024,9 @@ renderCell: (params: any) => {
         setFilterModel({ items: [] });
         if (selectedCategoryId) {
             handleCategoryChange(null);
+        }
+        if (selectedTerritoryId) {
+            handleTerritoryChange(null);
         }
         if (isSearchActive) {
             setIsSearchActive(false);
@@ -1032,6 +1081,36 @@ renderCell: (params: any) => {
                                     categories.map((category) => (
                                         <MenuItem key={category.id} value={category.id}>
                                             {category.ukr_name}
+                                        </MenuItem>
+                                    ))
+                                )}
+                            </Select>
+                        </FormControl>
+                    )}
+
+                    {/* Dropdown для фільтрування по територіях (тільки для weapons) */}
+                    {entityType === 'weapons' && (
+                        <FormControl size="small" sx={{ minWidth: 200 }}>
+                            <InputLabel id="territory-filter-label">Фільтр по території</InputLabel>
+                            <Select
+                                labelId="territory-filter-label"
+                                value={String(selectedTerritoryId || '')}
+                                label="Фільтр по території"
+                                onChange={(e) => handleTerritoryChange(e.target.value === '' ? null : Number(e.target.value))}
+                                disabled={territoriesLoading}
+                            >
+                                <MenuItem value="">
+                                    <em>Всі території</em>
+                                </MenuItem>
+                                {territoriesLoading ? (
+                                    <MenuItem disabled>
+                                        <CircularProgress size={16} sx={{ mr: 1 }} />
+                                        Завантаження...
+                                    </MenuItem>
+                                ) : (
+                                    territories.map((territory) => (
+                                        <MenuItem key={territory.id} value={territory.id}>
+                                            {territory.ukr_name}
                                         </MenuItem>
                                     ))
                                 )}

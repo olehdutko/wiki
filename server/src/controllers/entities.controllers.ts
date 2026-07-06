@@ -331,6 +331,53 @@ export class WeaponItemController {
         }
     }
 
+    async getByCategoryAndTerritory(req: Request, res: Response): Promise<void> {
+        try {
+            const categoryId = parseInt(req.params.categoryId);
+            const territoryId = parseInt(req.params.territoryId);
+            if (isNaN(categoryId) || isNaN(territoryId)) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Невірний формат ID категорії або території'
+                });
+                return;
+            }
+
+            const params: PaginationParams = {
+                page: parseInt(req.query.page as string) || 1,
+                limit: Math.min(parseInt(req.query.limit as string) || 20, 100),
+                sortBy: req.query.sortBy as string || 'id',
+                sortOrder: (req.query.sortOrder as 'ASC' | 'DESC') || 'DESC'
+            };
+
+            // Extract filter parameters
+            const filterParams: any = {};
+            let filterIndex = 0;
+            while (req.query[`filterField${filterIndex > 0 ? filterIndex : ''}`]) {
+                const suffix = filterIndex > 0 ? `${filterIndex}` : '';
+                filterParams[`filterField${suffix}`] = req.query[`filterField${suffix}`];
+                filterParams[`filterOperator${suffix}`] = req.query[`filterOperator${suffix}`];
+                filterParams[`filterValue${suffix}`] = req.query[`filterValue${suffix}`];
+                filterIndex++;
+            }
+
+            const result = await this.weaponService.findByCategoryAndTerritory(categoryId, territoryId, params, filterParams);
+
+            res.status(200).json({
+                success: true,
+                data: result,
+                message: `Записи успішно отримано. Всього: ${result.total}`
+            });
+        } catch (error) {
+            console.error('Помилка при отриманні записів за категорією та територією:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Не вдалося отримати записи',
+                error: error instanceof Error ? error.message : 'Невідома помилка'
+            });
+        }
+    }
+
     async searchWeapons(req: Request, res: Response): Promise<void> {
         try {
             const searchTerm = req.query.q as string;
