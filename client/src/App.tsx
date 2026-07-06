@@ -104,6 +104,7 @@ function App() {
   const [dumpMessage, setDumpMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [weaponsInitialFilterModel, setWeaponsInitialFilterModel] = useState<any>(undefined);
   const [weaponsInitialCategoryId, setWeaponsInitialCategoryId] = useState<number | null>(null);
+  const [weaponsInitialTerritoryId, setWeaponsInitialTerritoryId] = useState<number | null>(null);
   const [weaponsInitialFilterLabel, setWeaponsInitialFilterLabel] = useState<string | undefined>(undefined);
 
   const theme = useTheme();
@@ -133,6 +134,7 @@ function App() {
     if (entityType !== 'weapons') {
       setWeaponsInitialFilterModel(undefined);
       setWeaponsInitialCategoryId(null);
+      setWeaponsInitialTerritoryId(null);
       setWeaponsInitialFilterLabel(undefined);
     }
     if (isMobile) {
@@ -150,13 +152,20 @@ function App() {
     // TODO: Відкрити форму редагування
   };
 
-  const handleViewRelatedItems = (payload: { entityType: 'weapons'; filterModel?: any; categoryId?: number; filterLabel?: string }) => {
+  const handleViewRelatedItems = (payload: { entityType: 'weapons'; filterModel?: any; categoryId?: number; territoryId?: number; filterLabel?: string }) => {
     if (payload.filterModel) {
       setWeaponsInitialFilterModel(payload.filterModel);
       setWeaponsInitialCategoryId(null);
+      setWeaponsInitialTerritoryId(null);
       setWeaponsInitialFilterLabel(payload.filterLabel);
     } else if (payload.categoryId) {
       setWeaponsInitialCategoryId(payload.categoryId);
+      setWeaponsInitialTerritoryId(null);
+      setWeaponsInitialFilterModel(undefined);
+      setWeaponsInitialFilterLabel(payload.filterLabel);
+    } else if (payload.territoryId) {
+      setWeaponsInitialTerritoryId(payload.territoryId);
+      setWeaponsInitialCategoryId(null);
       setWeaponsInitialFilterModel(undefined);
       setWeaponsInitialFilterLabel(payload.filterLabel);
     }
@@ -510,6 +519,7 @@ function App() {
               onViewRelatedItems={handleViewRelatedItems}
               initialFilterModel={currentEntity === 'weapons' ? weaponsInitialFilterModel : undefined}
               initialCategoryId={currentEntity === 'weapons' ? weaponsInitialCategoryId : undefined}
+              initialTerritoryId={currentEntity === 'weapons' ? weaponsInitialTerritoryId : undefined}
               initialFilterLabel={currentEntity === 'weapons' ? weaponsInitialFilterLabel : undefined}
               height={700}
             />

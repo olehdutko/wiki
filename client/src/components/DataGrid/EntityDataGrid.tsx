@@ -61,7 +61,7 @@ interface EntityDataGridProps<T extends BaseEntity> {
     title?: string;
     onRowSelect?: (row: T) => void;
     onRowEdit?: (row: T) => void;
-    onViewRelatedItems?: (payload: { entityType: 'weapons'; filterModel?: GridFilterModel; categoryId?: number; filterLabel?: string }) => void;
+    onViewRelatedItems?: (payload: { entityType: 'weapons'; filterModel?: GridFilterModel; categoryId?: number; territoryId?: number; filterLabel?: string }) => void;
     initialFilterModel?: GridFilterModel;
     initialCategoryId?: number | null;
     initialFilterLabel?: string;
@@ -87,6 +87,7 @@ export function EntityDataGrid<T extends BaseEntity>({
     onViewRelatedItems,
     initialFilterModel,
     initialCategoryId,
+    initialTerritoryId,
     initialFilterLabel,
     height = 600,
     enableAdd = true,
@@ -129,7 +130,12 @@ export function EntityDataGrid<T extends BaseEntity>({
         } else {
             setSelectedCategoryId(entityType === 'weapons' ? 1 : null);
         }
-    }, [entityType, entityConfig.defaultPageSize, initialFilterModel, initialCategoryId, initialFilterLabel]);
+        if (initialTerritoryId !== undefined) {
+            setSelectedTerritoryId(initialTerritoryId);
+        } else {
+            setSelectedTerritoryId(null);
+        }
+    }, [entityType, entityConfig.defaultPageSize, initialFilterModel, initialCategoryId, initialTerritoryId, initialFilterLabel]);
 
     // Діалоги
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; row: T | null }>({
@@ -160,7 +166,12 @@ export function EntityDataGrid<T extends BaseEntity>({
 
     // Стан для фільтрування по територіях (тільки для weapons)
     const [territories, setTerritories] = useState<Array<{ id: number, ukr_name: string }>>([]);
-    const [selectedTerritoryId, setSelectedTerritoryId] = useState<number | null>(null);
+    const [selectedTerritoryId, setSelectedTerritoryId] = useState<number | null>(() => {
+        if (initialTerritoryId !== undefined) {
+            return initialTerritoryId;
+        }
+        return null;
+    });
     const [territoriesLoading, setTerritoriesLoading] = useState(false);
 
     // ================= ФУНКЦІЇ =================
@@ -774,6 +785,11 @@ export function EntityDataGrid<T extends BaseEntity>({
             return;
         }
 
+        if (entityType === 'territories') {
+            onViewRelatedItems({ entityType: 'weapons', territoryId: row.id, filterLabel });
+            return;
+        }
+
         const filterField = REFERENCE_ENTITY_FILTER_FIELDS[entityType];
         if (!filterField) return;
 
@@ -851,7 +867,8 @@ export function EntityDataGrid<T extends BaseEntity>({
                     entityType === 'usage' ||
                     entityType === 'dolls' ||
                     entityType === 'epoha' ||
-                    entityType === 'categories'
+                    entityType === 'categories' ||
+                    entityType === 'territories'
                 ) && onViewRelatedItems && (
                     <Tooltip title="Показати пов'язану зброю">
                         <IconButton
