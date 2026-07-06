@@ -246,45 +246,23 @@ export function ClassificationsDataGrid({ initialClassificationId }: Classificat
         </Alert>
       )}
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {mode === 'items' && (
-            <Button
-              startIcon={<ArrowBackIcon />}
-              onClick={handleBackToClassifications}
-              color="inherit"
-            >
-              Назад до класифікацій
-            </Button>
-          )}
-          <Typography variant="h6">
-            {mode === 'classifications'
-              ? 'Класифікації'
-              : selectedClassification
-                ? `Пункти класифікації: ${selectedClassification.ukr_name}`
-                : 'Пункти класифікації'}
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        {mode === 'items' && (
           <Button
-            variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={() => {
-              if (mode === 'classifications') fetchClassifications();
-              else if (selectedClassification) fetchClassificationItems(selectedClassification.id);
-            }}
-            disabled={loading}
+            startIcon={<ArrowBackIcon />}
+            onClick={handleBackToClassifications}
+            color="inherit"
           >
-            Оновити
+            Назад до класифікацій
           </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={mode === 'classifications' ? handleAddClassification : handleAddItem}
-          >
-            {mode === 'classifications' ? 'Додати класифікацію' : 'Додати пункт'}
-          </Button>
-        </Box>
+        )}
+        <Typography variant="h6">
+          {mode === 'classifications'
+            ? 'Класифікації'
+            : selectedClassification
+              ? `Пункти класифікації: ${selectedClassification.ukr_name}`
+              : 'Пункти класифікації'}
+        </Typography>
       </Box>
 
       {mode === 'items' && selectedClassification && (
@@ -310,6 +288,27 @@ export function ClassificationsDataGrid({ initialClassificationId }: Classificat
           )}
         </Paper>
       )}
+
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mb: 2 }}>
+        <Button
+          variant="outlined"
+          startIcon={<RefreshIcon />}
+          onClick={() => {
+            if (mode === 'classifications') fetchClassifications();
+            else if (selectedClassification) fetchClassificationItems(selectedClassification.id);
+          }}
+          disabled={loading}
+        >
+          Оновити
+        </Button>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={mode === 'classifications' ? handleAddClassification : handleAddItem}
+        >
+          {mode === 'classifications' ? 'Додати класифікацію' : 'Додати пункт'}
+        </Button>
+      </Box>
 
       <Box sx={{ flex: 1, minHeight: 500 }}>
         {mode === 'classifications' ? (
