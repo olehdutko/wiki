@@ -1746,7 +1746,7 @@ export function EditEntityForm<T extends BaseEntity>({
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setAddLinkModalOpen(true)}
-            disabled={!entity || !entity.id}
+            disabled={mode === 'create' || !entity || !entity.id}
             size="small"
           >
             Додати зв'язок
@@ -1997,7 +1997,7 @@ export function EditEntityForm<T extends BaseEntity>({
           <Tab label="Опис українською" />
           <Tab label="Опис англійською" />
           <Tab label="Опис москальською" />
-          <Tab label="Схожі об'єкти" />
+          {mode !== 'create' && <Tab label="Схожі об'єкти" />}
           <Tab label="Зображення" />
         </Tabs>
       </DialogTitle>
@@ -2027,8 +2027,8 @@ export function EditEntityForm<T extends BaseEntity>({
           {activeTab === 1 && renderDescriptionTab('description_ukr')}
           {activeTab === 2 && renderDescriptionTab('description_eng')}
           {activeTab === 3 && renderDescriptionTab('description_rus')}
-          {activeTab === 4 && renderSimilarObjectsTab()}
-          {activeTab === 5 && <ItemImageGallery itemId={entity?.id || 0} open={open} />}
+          {mode !== 'create' && activeTab === 4 && renderSimilarObjectsTab()}
+          {activeTab === (mode === 'create' ? 4 : 5) && <ItemImageGallery itemId={entity?.id || 0} open={open} />}
         </Box>
       </DialogContent>
 
