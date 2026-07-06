@@ -125,6 +125,50 @@ export class GlobalTypeService extends BaseService<GlobalType> {
     constructor() {
         super('global_type');
     }
+
+    /**
+     * Отримати всі записи з кількістю пов'язаних айтемів
+     */
+    override async findAll(params: PaginationParams = {}): Promise<PaginatedResponse<GlobalType>> {
+        const {
+            page = 1,
+            limit = 20,
+            sortBy = 'id',
+            sortOrder = 'DESC'
+        } = params;
+
+        const offset = (page - 1) * limit;
+
+        try {
+            const [countResult] = await pool.execute(
+                `SELECT COUNT(*) as total FROM \`${this.tableName}\``
+            ) as [RowDataPacket[], any];
+
+            const total = countResult[0].total;
+
+            const [rows] = await pool.execute(
+                `SELECT t.*, (
+                    SELECT COUNT(DISTINCT item_id) FROM items WHERE global_type = t.id
+                ) as item_count
+                FROM \`${this.tableName}\` t
+                ORDER BY t.${sortBy} ${sortOrder}
+                LIMIT ${limit} OFFSET ${offset}`
+            ) as [RowDataPacket[], any];
+
+            const convertedRows = rows.map(row => this.convertDatabaseValues(row));
+
+            return {
+                items: convertedRows as GlobalType[],
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            };
+        } catch (error) {
+            console.error(`Помилка при отриманні записів з ${this.tableName}:`, error);
+            throw new Error(`Не вдалося отримати записи з ${this.tableName}`);
+        }
+    }
 }
 
 export class GuardTypeService extends BaseService<GuardType> {
@@ -186,6 +230,50 @@ export class CategoryService extends BaseService<Category> {
     }
 
     /**
+     * Отримати всі категорії з кількістю пов'язаних айтемів
+     */
+    override async findAll(params: PaginationParams = {}): Promise<PaginatedResponse<Category>> {
+        const {
+            page = 1,
+            limit = 20,
+            sortBy = 'id',
+            sortOrder = 'DESC'
+        } = params;
+
+        const offset = (page - 1) * limit;
+
+        try {
+            const [countResult] = await pool.execute(
+                `SELECT COUNT(*) as total FROM \`${this.tableName}\``
+            ) as [RowDataPacket[], any];
+
+            const total = countResult[0].total;
+
+            const [rows] = await pool.execute(
+                `SELECT c.*, (
+                    SELECT COUNT(DISTINCT item_id) FROM item_categories WHERE category_id = c.id
+                ) as item_count
+                FROM \`${this.tableName}\` c
+                ORDER BY c.${sortBy} ${sortOrder}
+                LIMIT ${limit} OFFSET ${offset}`
+            ) as [RowDataPacket[], any];
+
+            const convertedRows = rows.map(row => this.convertDatabaseValues(row));
+
+            return {
+                items: convertedRows as Category[],
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            };
+        } catch (error) {
+            console.error(`Помилка при отриманні записів з ${this.tableName}:`, error);
+            throw new Error(`Не вдалося отримати записи з ${this.tableName}`);
+        }
+    }
+
+    /**
      * Пошук категорій за назвою
      */
     async search(searchTerm: string): Promise<Category[]> {
@@ -210,6 +298,50 @@ export class CategoryService extends BaseService<Category> {
 export class TerritoryService extends BaseService<Territory> {
     constructor() {
         super('territory');
+    }
+
+    /**
+     * Отримати всі території з кількістю пов'язаних айтемів
+     */
+    override async findAll(params: PaginationParams = {}): Promise<PaginatedResponse<Territory>> {
+        const {
+            page = 1,
+            limit = 20,
+            sortBy = 'id',
+            sortOrder = 'DESC'
+        } = params;
+
+        const offset = (page - 1) * limit;
+
+        try {
+            const [countResult] = await pool.execute(
+                `SELECT COUNT(*) as total FROM \`${this.tableName}\``
+            ) as [RowDataPacket[], any];
+
+            const total = countResult[0].total;
+
+            const [rows] = await pool.execute(
+                `SELECT t.*, (
+                    SELECT COUNT(DISTINCT item_id) FROM item_territories WHERE territory_id = t.id
+                ) as item_count
+                FROM \`${this.tableName}\` t
+                ORDER BY t.${sortBy} ${sortOrder}
+                LIMIT ${limit} OFFSET ${offset}`
+            ) as [RowDataPacket[], any];
+
+            const convertedRows = rows.map(row => this.convertDatabaseValues(row));
+
+            return {
+                items: convertedRows as Territory[],
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            };
+        } catch (error) {
+            console.error(`Помилка при отриманні записів з ${this.tableName}:`, error);
+            throw new Error(`Не вдалося отримати записи з ${this.tableName}`);
+        }
     }
 
     /**
