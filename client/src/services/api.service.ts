@@ -21,7 +21,13 @@ import type {
     CreateTerritoryDto,
     UpdateTerritoryDto,
     CreateNamedEntityDto,
-    UpdateNamedEntityDto
+    UpdateNamedEntityDto,
+    Classification,
+    ClassificationItem,
+    CreateClassificationDto,
+    UpdateClassificationDto,
+    CreateClassificationItemDto,
+    UpdateClassificationItemDto
 } from '../types/api.types';
 
 // ================= КОНФІГУРАЦІЯ API =================
@@ -365,7 +371,61 @@ class ApiService {
         return this.getAll<WeaponItemResponse>(`/weapons/category/${categoryId}`, params);
     }
 
-    // ================= УНІВЕРСАЛЬНІ МЕТОДИ ДЛЯ ДОВІДКОВИХ СУТНОСТЕЙ =================
+    
+    // ================= КЛАСИФІКАЦІЇ =================
+
+    async getClassifications(params?: PaginationParams) {
+        return this.getAll<Classification>('/classifications', params);
+    }
+
+    async getClassificationById(id: number) {
+        return this.getById<Classification>('/classifications', id);
+    }
+
+    async createClassification(data: CreateClassificationDto) {
+        return this.create<Classification, CreateClassificationDto>('/classifications', data);
+    }
+
+    async updateClassification(id: number, data: UpdateClassificationDto) {
+        return this.update<Classification, UpdateClassificationDto>('/classifications', id, data);
+    }
+
+    async deleteClassification(id: number) {
+        return this.delete('/classifications', id);
+    }
+
+    async searchClassifications(query: string) {
+        return this.search<Classification>('/classifications', query);
+    }
+
+    async getClassificationItems(params?: PaginationParams) {
+        return this.getAll<ClassificationItem>('/classification-items', params);
+    }
+
+    async getClassificationItemsByClassification(classificationId: number) {
+        const response = await this.api.get<ApiResponse<ClassificationItem[]>>(
+            `/classification-items/by-classification/${classificationId}`
+        );
+        return response.data.data || [];
+    }
+
+    async getClassificationItemById(id: number) {
+        return this.getById<ClassificationItem>('/classification-items', id);
+    }
+
+    async createClassificationItem(data: CreateClassificationItemDto) {
+        return this.create<ClassificationItem, CreateClassificationItemDto>('/classification-items', data);
+    }
+
+    async updateClassificationItem(id: number, data: UpdateClassificationItemDto) {
+        return this.update<ClassificationItem, UpdateClassificationItemDto>('/classification-items', id, data);
+    }
+
+    async deleteClassificationItem(id: number) {
+        return this.delete('/classification-items', id);
+    }
+
+// ================= УНІВЕРСАЛЬНІ МЕТОДИ ДЛЯ ДОВІДКОВИХ СУТНОСТЕЙ =================
 
     /**
      * Універсальний метод для роботи з довідковими сутностями
@@ -416,7 +476,9 @@ class ApiService {
             'guard-type': '/guard-type',
             'sharpening': '/sharpening',
             'usage': '/usage',
-            'weapons': '/weapons'
+            'weapons': '/weapons',
+            'classifications': '/classifications',
+            'classification-items': '/classification-items'
         };
 
         return endpointMap[entityType];
