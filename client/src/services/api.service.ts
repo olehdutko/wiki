@@ -375,6 +375,10 @@ class ApiService {
         return this.getAll<WeaponItemResponse>(`/weapons/category/${categoryId}/territory/${territoryId}`, params);
     }
 
+    async getWeaponsByTerritory(territoryId: number, params?: PaginationParams) {
+        return this.getAll<WeaponItemResponse>(`/weapons/territory/${territoryId}`, params);
+    }
+
     
     // ================= КЛАСИФІКАЦІЇ =================
 

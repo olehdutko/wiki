@@ -248,9 +248,8 @@ export function EntityDataGrid<T extends BaseEntity>({
                     { page: currentPage, limit: pageSize, sortBy, sortOrder, ...filterParams }
                 );
             } else if (entityType === 'weapons' && selectedTerritoryId) {
-                // TODO: can add getWeaponsByTerritory later if needed
-                result = await apiService.getEntityData(
-                    entityType,
+                result = await apiService.getWeaponsByTerritory(
+                    selectedTerritoryId,
                     { page: currentPage, limit: pageSize, sortBy, sortOrder, ...filterParams }
                 );
             } else {
