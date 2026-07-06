@@ -781,6 +781,10 @@ export function EditEntityForm<T extends BaseEntity>({
       field.name !== 'territory_ids'
     );
 
+    // Перевіряємо, чи вибрано категорію "Міфічна Зброя" (id = 44)
+    const selectedCategoryIds = Array.isArray(formData.category_ids) ? formData.category_ids : [];
+    const isMythicalWeapon = selectedCategoryIds.some((id: any) => Number(id) === 44);
+
     // Функція для групування полів по 3 в ряд
     const groupFieldsByThree = (fields: FormField[]) => {
       const groups = [];
@@ -875,6 +879,7 @@ export function EditEntityForm<T extends BaseEntity>({
         </Box>
 
         {/* Розміри */}
+        {!isMythicalWeapon && (
         <Box sx={{ mb: 2 }}>
           <Typography variant="h6" sx={{
             mb: 2,
@@ -948,8 +953,10 @@ export function EditEntityForm<T extends BaseEntity>({
             </>
           )}
         </Box>
+        )}
 
         {/* Інше */}
+        {!isMythicalWeapon && (
         <Box sx={{ mb: 4 }}>
           <Typography variant="h6" sx={{
             mb: 2,
@@ -970,6 +977,7 @@ export function EditEntityForm<T extends BaseEntity>({
             </Grid>
           ))}
         </Box>
+        )}
 
         {/* Додаткова інформація внизу */}
         <Box sx={{ mb: 4 }}>
