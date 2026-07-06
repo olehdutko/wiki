@@ -61,7 +61,7 @@ interface EntityDataGridProps<T extends BaseEntity> {
     title?: string;
     onRowSelect?: (row: T) => void;
     onRowEdit?: (row: T) => void;
-    onViewRelatedItems?: (payload: { entityType: 'weapons'; filterModel?: GridFilterModel; categoryId?: number; filterLabel?: string }) => void;
+    onViewRelatedItems?: (payload: { entityType: 'weapons' | 'classification-items'; filterModel?: GridFilterModel; categoryId?: number; classificationId?: number; filterLabel?: string }) => void;
     initialFilterModel?: GridFilterModel;
     initialCategoryId?: number | null;
     initialFilterLabel?: string;
@@ -138,6 +138,7 @@ export function EntityDataGrid<T extends BaseEntity>({
     });
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [searchInput, setSearchInput] = useState('');
+    const [classificationHeader, setClassificationHeader] = useState<{ ukr_name?: string; description?: string; image_path?: string } | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearchActive, setIsSearchActive] = useState(false);
     const [imageUploadRow, setImageUploadRow] = useState<any>(null);
@@ -283,6 +284,37 @@ export function EntityDataGrid<T extends BaseEntity>({
             setLoading(prev => ({ ...prev, loading: false }));
         }
     }, [entityType, pagination.page, pagination.pageSize, selectedCategoryId, filterModel, isSearchActive, searchQuery, sortModel]);
+
+    // Load classification header when viewing classification-items filtered by classification_id
+    useEffect(() => {
+        const loadClassificationHeader = async () => {
+            if (entityType !== 'classification-items') {
+                setClassificationHeader(null);
+                return;
+            }
+
+            const classificationFilter = filterModel?.items?.find(item => item.field === 'classification_id');
+            if (!classificationFilter || !classificationFilter.value) {
+                setClassificationHeader(null);
+                return;
+            }
+
+            try {
+                const classificationId = Number(classificationFilter.value);
+                const classification = await apiService.getClassificationById(classificationId);
+                setClassificationHeader(classification ? {
+                    ukr_name: (classification as any).ukr_name,
+                    description: (classification as any).description,
+                    image_path: (classification as any).image_path
+                } : null);
+            } catch (error) {
+                console.error('❌ Помилка завантаження класифікації:', error);
+                setClassificationHeader(null);
+            }
+        };
+
+        loadClassificationHeader();
+    }, [entityType, filterModel]);
 
     // Live search: debounce searchInput into searchQuery
     useEffect(() => {
@@ -495,6 +527,10 @@ export function EntityDataGrid<T extends BaseEntity>({
                 return ['ukr_name', 'eng_name', 'comments'];
             case 'territories':
                 return ['ukr_name', 'eng_name', 'rus_name'];
+            case 'classifications':
+                return ['ukr_name', 'eng_name', 'rus_name', 'comments'];
+            case 'classification-items':
+                return ['classification_id', 'ukr_name', 'eng_name', 'rus_name', 'description', 'display_order'];
             case 'weapons':
                 return ['ukr_name', 'eng_name', 'rus_name', 'category_ids'];
             case 'pommel':
@@ -553,7 +589,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         }
 
         // При збереженні перевіряємо наявність української назви
-        const requiredField = (entityType === 'categories' || entityType === 'territories') ? 'ukr_name' : 'ukr';
+        const requiredField = (entityType === 'categories' || entityType === 'territories' || entityType === 'classifications' || entityType === 'classification-items') ? 'ukr_name' : 'ukr';
         const hasValidName = Boolean(newRow[requiredField]?.trim());
 
         if (!hasValidName) {
@@ -564,21 +600,26 @@ export function EntityDataGrid<T extends BaseEntity>({
         try {
             setIsCreating(true);
 
-            // Створюємо об'єкт з даними для створення і робимо trim() при збереженні
+            // Створюємо об'єкт з даними для створення
             const createData = Object.fromEntries(
-                getNewRowFields(entityType).map(field => [field, newRow[field]?.trim() || ''])
+                getNewRowFields(entityType).map(field => {
+                    const value = newRow[field];
+                    if (typeof value === 'string') {
+                        return [field, value.trim()];
+                    }
+                    return [field, value ?? ''];
+                })
             );
 
             // Використовуємо універсальний метод для створення
-            const createdEntity = await apiService.createEntity(entityType, createData);
+            await apiService.createEntity(entityType, createData);
 
-            // Додаємо новий рядок до таблиці
-            setData((prev: any[]) => [createdEntity, ...prev.filter((item: any) => !item.isNew)] as any);
-            setPagination(prev => ({ ...prev, total: prev.total + 1 }));
-
-            // Очищаємо стан
+            // Очищаємо стан нового рядка
             setNewRow(null);
             setIsCreating(false);
+
+            // Рефрешимо грід з сервера, щоб новий запис відобразився
+            await fetchData();
         } catch (error: any) {
             console.error('❌ Помилка створення:', error);
             alert(`Помилка створення: ${error?.response?.data?.message || error?.message || 'Невідома помилка'}`);
@@ -734,6 +775,11 @@ export function EntityDataGrid<T extends BaseEntity>({
             return;
         }
 
+        if (entityType === 'classifications') {
+            onViewRelatedItems({ entityType: 'classification-items', classificationId: row.id, filterLabel });
+            return;
+        }
+
         const filterField = REFERENCE_ENTITY_FILTER_FIELDS[entityType];
         if (!filterField) return;
 
@@ -754,7 +800,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         // Спеціальна обробка для нового рядка
         if (params.row.isNew) {
             const canSave = canSaveNewRow(params.row);
-            const requiredField = entityType === 'categories' ? 'ukr_name' : 'ukr';
+            const requiredField = (entityType === 'categories' || entityType === 'territories' || entityType === 'classifications' || entityType === 'classification-items') ? 'ukr_name' : 'ukr';
 
 
             return (
@@ -811,9 +857,10 @@ export function EntityDataGrid<T extends BaseEntity>({
                     entityType === 'usage' ||
                     entityType === 'dolls' ||
                     entityType === 'epoha' ||
-                    entityType === 'categories'
+                    entityType === 'categories' ||
+                    entityType === 'classifications'
                 ) && onViewRelatedItems && (
-                    <Tooltip title="Показати пов'язану зброю">
+                    <Tooltip title={entityType === 'classifications' ? "Показати пункти класифікації" : "Показати пов'язану зброю"}>
                         <IconButton
                             size="small"
                             onClick={() => handleViewRelatedItems(params.row)}
@@ -1004,6 +1051,36 @@ renderCell: (params: any) => {
 
     return (
         <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+            {/* Заголовок класифікації над грідом пунктів */}
+            {entityType === 'classification-items' && classificationHeader && (
+                <Box sx={{ mb: 2, p: 2, backgroundColor: '#f8fafc', borderRadius: 1, flexShrink: 0 }}>
+                    {classificationHeader.image_path && (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                            <img
+                                src={classificationHeader.image_path}
+                                alt={classificationHeader.ukr_name || ''}
+                                style={{
+                                    maxWidth: '100%',
+                                    maxHeight: '500px',
+                                    objectFit: 'contain',
+                                    display: 'block'
+                                }}
+                            />
+                        </Box>
+                    )}
+                    {classificationHeader.ukr_name && (
+                        <Typography variant="h5" sx={{ mb: 1, fontWeight: 600, textAlign: 'center' }}>
+                            {classificationHeader.ukr_name}
+                        </Typography>
+                    )}
+                    {classificationHeader.description && (
+                        <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', textAlign: 'center' }}>
+                            {classificationHeader.description}
+                        </Typography>
+                    )}
+                </Box>
+            )}
+
             {/* Кнопки */}
             <Box sx={{ mb: 2, flexShrink: 0 }}>
 

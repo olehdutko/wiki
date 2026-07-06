@@ -12,6 +12,29 @@ export interface NamedEntity extends BaseEntity {
     rus?: string | null;
 }
 
+export interface Classification extends BaseEntity {
+    ukr_name: string;
+    eng_name?: string | null;
+    rus_name?: string | null;
+    comments?: string | null;
+    description?: string | null;
+    image_path?: string | null;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface ClassificationItem extends BaseEntity {
+    classification_id: number;
+    ukr_name: string;
+    eng_name?: string | null;
+    rus_name?: string | null;
+    description?: string | null;
+    image_path?: string | null;
+    display_order?: number;
+    created_at?: string;
+    updated_at?: string;
+}
+
 export interface ApiResponse<T = any> {
     success: boolean;
     data?: T;

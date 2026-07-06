@@ -9,13 +9,14 @@ import type { RowDataPacket } from 'mysql2';
 import {
     PommelService, BladeTypeService, CategoryService, TerritoryService, DollsService, EpohaService,
     GlobalTypeService, GuardTypeService, SharpeningService, UsageService,
-    WeaponItemService
+    WeaponItemService, ClassificationService, ClassificationItemService
 } from '../services/entities.services';
 import { PaginationParams } from '../types/base.types';
 import {
     Pommel, BladeType, Category, Territory, Dolls, Epoha, GlobalType, GuardType,
     Sharpening, Usage
 } from '../models/entities.models';
+import type { Classification, ClassificationItem } from '../types/base.types';
 
 interface LinkedObject extends RowDataPacket {
     id: number;
@@ -152,6 +153,47 @@ export class SharpeningController extends BaseController<Sharpening> {
 export class UsageController extends BaseController<Usage> {
     constructor() {
         super(new UsageService());
+    }
+}
+
+export class ClassificationController extends BaseController<Classification> {
+    constructor() {
+        super(new ClassificationService());
+    }
+}
+
+export class ClassificationItemController extends BaseController<ClassificationItem> {
+    private classificationItemService: ClassificationItemService;
+
+    constructor() {
+        super(new ClassificationItemService());
+        this.classificationItemService = new ClassificationItemService();
+    }
+
+    async getByClassificationId(req: Request, res: Response): Promise<void> {
+        try {
+            const classificationId = parseInt(req.params.classificationId);
+            if (isNaN(classificationId) || classificationId <= 0) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Невірний формат ID класифікації'
+                });
+                return;
+            }
+
+            const items = await this.classificationItemService.findByClassificationId(classificationId);
+
+            res.json({
+                success: true,
+                data: items
+            });
+        } catch (error) {
+            console.error(`Помилка при отриманні пунктів класифікації:`, error);
+            res.status(500).json({
+                success: false,
+                message: 'Не вдалося отримати пункти класифікації'
+            });
+        }
     }
 }
 

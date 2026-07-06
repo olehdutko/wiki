@@ -753,9 +753,11 @@ export function EditEntityForm<T extends BaseEntity>({
   const renderMainInfoTab = () => {
     if (!config) return null;
 
+    const isClassificationEntity = entityType === 'classifications' || entityType === 'classification-items';
     const mainFields = config.formFields.filter(field =>
       !field.name.includes('description_') &&
-      field.name !== 'id'
+      field.name !== 'id' &&
+      !(isClassificationEntity && (field.name === 'description' || field.name === 'image_path'))
     );
 
     // Групуємо поля по категоріях
@@ -827,7 +829,7 @@ export function EditEntityForm<T extends BaseEntity>({
           </Typography>
 
           {/* Зображення для довідкових сутностей */}
-          {['guard-type', 'pommel', 'sharpening'].includes(entityType) && entity && (
+          {(['guard-type', 'pommel', 'sharpening'].includes(entityType)) && entity && entity.id && (
             <ImageUploadField
               entityType={entityType}
               entityId={entity.id}
@@ -980,6 +982,7 @@ export function EditEntityForm<T extends BaseEntity>({
         )}
 
         {/* Додаткова інформація внизу */}
+        {entityType !== 'classifications' && entityType !== 'classification-items' && (
         <Box sx={{ mb: 4 }}>
           <Typography variant="h6" sx={{
             mb: 2,
@@ -1005,6 +1008,7 @@ export function EditEntityForm<T extends BaseEntity>({
             </Grid>
           </Grid>
         </Box>
+        )}
       </Box>
     );
   };
@@ -1051,7 +1055,69 @@ export function EditEntityForm<T extends BaseEntity>({
     );
   };
 
-  
+  // Спеціальний таб опису для класифікацій та пунктів класифікацій
+  const renderClassificationDescriptionTab = () => {
+    if (!config) return null;
+
+    const field = config.formFields.find(f => f.name === 'description');
+    if (!field) return null;
+
+    const textToRead = formData['description'] || '';
+
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+          <Tooltip title={isSpeaking ? "Зупинити озвучування" : "Озвучити текст українською"}>
+            <IconButton
+              onClick={() => isSpeaking ? stopSpeaking() : speakText(textToRead, 'uk-UA')}
+              size="small"
+              sx={{
+                color: isSpeaking ? '#dc2626' : '#0369a1',
+                background: isSpeaking ? '#fef2f2' : '#f0f9ff',
+                '&:hover': {
+                  background: isSpeaking ? '#fee2e2' : '#e0f2fe',
+                  transform: 'scale(1.05)'
+                },
+                transition: 'all 0.2s ease-in-out'
+              }}
+            >
+              <VolumeUp />
+            </IconButton>
+          </Tooltip>
+        </Box>
+
+        <Box sx={{ flex: 1, minHeight: 0 }}>
+          {renderField(field)}
+        </Box>
+      </Box>
+    );
+  };
+
+  // Спеціальний таб зображення для класифікацій та пунктів класифікацій
+  const renderClassificationImageTab = () => {
+    if (!entity || !entity.id) {
+      return (
+        <Box sx={{ p: 3, textAlign: 'center' }}>
+          <Typography color="textSecondary">
+            Збережіть запис, щоб мати можливість додати зображення
+          </Typography>
+        </Box>
+      );
+    }
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 2 }}>
+        <ImageUploadField
+          entityType={entityType}
+          entityId={entity.id}
+          currentImageUrl={formData.image_path || null}
+          onImageUpload={(imageUrl) => handleInputChange('image_path', imageUrl)}
+          onImageDelete={() => handleInputChange('image_path', null)}
+        />
+      </Box>
+    );
+  };
+
+
   // Форматування значення з одиницями виміру
   
     // Отримання одиниці виміру для поля
@@ -1139,11 +1205,12 @@ export function EditEntityForm<T extends BaseEntity>({
           );
         }
         
+        const isLargeDescription = field.name.includes('description_') || field.name === 'description';
         return (
           <TextField
             fullWidth
             multiline
-            rows={field.name.includes('description_') ? 12 : 2}
+            rows={isLargeDescription ? 12 : 2}
             label={getLabel()}
             value={value || ''}
             onChange={(e) => handleInputChange(field.name, e.target.value)}
@@ -1164,7 +1231,7 @@ export function EditEntityForm<T extends BaseEntity>({
               ) : undefined
             }}
             sx={{
-              ...(field.name.includes('description_') ? {
+              ...(isLargeDescription ? {
                 height: '100%',
                 '& .MuiInputBase-root': {
                   height: '100%',
@@ -1180,8 +1247,8 @@ export function EditEntityForm<T extends BaseEntity>({
               '& .MuiOutlinedInput-root': {
                 borderRadius: 1,
                 background: isReadOnly ? '#f8fafc' : 'white',
-                height: field.name.includes('description_') ? '100%' : COMPACT_FIELD_HEIGHT,
-                minHeight: field.name.includes('description_') ? '500px' : COMPACT_FIELD_HEIGHT,
+                height: isLargeDescription ? '100%' : COMPACT_FIELD_HEIGHT,
+                minHeight: isLargeDescription ? '500px' : COMPACT_FIELD_HEIGHT,
                 '&:hover': {
                   '& .MuiOutlinedInput-notchedOutline': {
                     borderColor: fieldError ? '#d32f2f' : '#1976d2'
@@ -1432,6 +1499,17 @@ export function EditEntityForm<T extends BaseEntity>({
           />
         );
       }
+
+      case 'image':
+        return (
+          <ImageUploadField
+            entityType={entityType}
+            entityId={entity?.id}
+            currentImageUrl={value || null}
+            onImageUpload={(imageUrl) => handleInputChange(field.name, imageUrl)}
+            onImageDelete={() => handleInputChange(field.name, null)}
+          />
+        );
 
       case 'select':
         // Обробка select полів
@@ -1994,10 +2072,15 @@ export function EditEntityForm<T extends BaseEntity>({
           }}
         >
           <Tab label="Основна інформація" />
-          <Tab label="Опис українською" />
-          <Tab label="Опис англійською" />
-          <Tab label="Опис москальською" />
-          {mode !== 'create' && <Tab label="Схожі об'єкти" />}
+          {entityType !== 'classifications' && entityType !== 'classification-items' && (
+            <>
+              <Tab label="Опис українською" />
+              <Tab label="Опис англійською" />
+              <Tab label="Опис москальською" />
+            </>
+          )}
+          {(entityType === 'classifications' || entityType === 'classification-items') && <Tab label="Опис" />}
+          {mode !== 'create' && entityType !== 'classifications' && entityType !== 'classification-items' && <Tab label="Схожі об'єкти" />}
           <Tab label="Зображення" />
         </Tabs>
       </DialogTitle>
@@ -2024,11 +2107,13 @@ export function EditEntityForm<T extends BaseEntity>({
           overflow: 'auto'
         }}>
           {activeTab === 0 && renderMainInfoTab()}
-          {activeTab === 1 && renderDescriptionTab('description_ukr')}
-          {activeTab === 2 && renderDescriptionTab('description_eng')}
-          {activeTab === 3 && renderDescriptionTab('description_rus')}
-          {mode !== 'create' && activeTab === 4 && renderSimilarObjectsTab()}
-          {activeTab === (mode === 'create' ? 4 : 5) && <ItemImageGallery itemId={entity?.id || 0} open={open} />}
+          {(entityType === 'classifications' || entityType === 'classification-items') && activeTab === 1 && renderClassificationDescriptionTab()}
+          {(entityType === 'classifications' || entityType === 'classification-items') && activeTab === 2 && renderClassificationImageTab()}
+          {entityType !== 'classifications' && entityType !== 'classification-items' && activeTab === 1 && renderDescriptionTab('description_ukr')}
+          {entityType !== 'classifications' && entityType !== 'classification-items' && activeTab === 2 && renderDescriptionTab('description_eng')}
+          {entityType !== 'classifications' && entityType !== 'classification-items' && activeTab === 3 && renderDescriptionTab('description_rus')}
+          {mode !== 'create' && entityType !== 'classifications' && entityType !== 'classification-items' && activeTab === 4 && renderSimilarObjectsTab()}
+          {entityType !== 'classifications' && entityType !== 'classification-items' && activeTab === (mode === 'create' ? 4 : 5) && <ItemImageGallery itemId={entity?.id || 0} open={open} />}
         </Box>
       </DialogContent>
 

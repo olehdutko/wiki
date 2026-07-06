@@ -42,7 +42,8 @@ import {
   AutoFixHigh as SharpeningIcon,
   Handshake as UsageIcon,
   Straighten as DollsIcon,
-  Map as TerritoriesIcon
+  Map as TerritoriesIcon,
+  FormatListBulleted as ClassificationIcon
 } from '@mui/icons-material';
 
 import { EntityDataGrid } from './components/DataGrid/EntityDataGrid';
@@ -65,7 +66,9 @@ const ENTITY_ICONS: Record<EntityType, React.ReactElement> = {
   'pommel': <PommelIcon />,
   'sharpening': <SharpeningIcon />,
   'usage': <UsageIcon />,
-  'dolls': <DollsIcon />
+  'dolls': <DollsIcon />,
+  'classifications': <ClassificationIcon />,
+  'classification-items': <ClassificationIcon />
 };
 
 // Групування сутностей
@@ -87,6 +90,10 @@ const ENTITY_GROUPS: Array<{ title: string; entities: EntityType[] }> = [
       'epoha',
       'territories'
     ]
+  },
+  {
+    title: 'Класифікації',
+    entities: ['classifications']
   }
 ];
 
@@ -101,6 +108,8 @@ function App() {
   const [weaponsInitialFilterModel, setWeaponsInitialFilterModel] = useState<any>(undefined);
   const [weaponsInitialCategoryId, setWeaponsInitialCategoryId] = useState<number | null>(null);
   const [weaponsInitialFilterLabel, setWeaponsInitialFilterLabel] = useState<string | undefined>(undefined);
+  const [classificationItemsInitialFilterModel, setClassificationItemsInitialFilterModel] = useState<any>(undefined);
+  const [classificationItemsInitialFilterLabel, setClassificationItemsInitialFilterLabel] = useState<string | undefined>(undefined);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -131,6 +140,10 @@ function App() {
       setWeaponsInitialCategoryId(null);
       setWeaponsInitialFilterLabel(undefined);
     }
+    if (entityType !== 'classification-items') {
+      setClassificationItemsInitialFilterModel(undefined);
+      setClassificationItemsInitialFilterLabel(undefined);
+    }
     if (isMobile) {
       setMobileOpen(false);
     }
@@ -146,7 +159,19 @@ function App() {
     // TODO: Відкрити форму редагування
   };
 
-  const handleViewRelatedItems = (payload: { entityType: 'weapons'; filterModel?: any; categoryId?: number; filterLabel?: string }) => {
+  const handleViewRelatedItems = (payload: { entityType: 'weapons' | 'classification-items'; filterModel?: any; categoryId?: number; classificationId?: number; filterLabel?: string }) => {
+    if (payload.entityType === 'classification-items' && payload.classificationId) {
+      setClassificationItemsInitialFilterModel({
+        items: [{ field: 'classification_id', operator: 'equals', value: payload.classificationId }]
+      });
+      setClassificationItemsInitialFilterLabel(payload.filterLabel);
+      setCurrentEntity('classification-items');
+      if (isMobile) {
+        setMobileOpen(false);
+      }
+      return;
+    }
+
     if (payload.filterModel) {
       setWeaponsInitialFilterModel(payload.filterModel);
       setWeaponsInitialCategoryId(null);
@@ -501,9 +526,9 @@ function App() {
             onRowSelect={handleRowSelect}
             onRowEdit={handleRowEdit}
             onViewRelatedItems={handleViewRelatedItems}
-            initialFilterModel={currentEntity === 'weapons' ? weaponsInitialFilterModel : undefined}
+            initialFilterModel={currentEntity === 'weapons' ? weaponsInitialFilterModel : currentEntity === 'classification-items' ? classificationItemsInitialFilterModel : undefined}
             initialCategoryId={currentEntity === 'weapons' ? weaponsInitialCategoryId : undefined}
-            initialFilterLabel={currentEntity === 'weapons' ? weaponsInitialFilterLabel : undefined}
+            initialFilterLabel={currentEntity === 'weapons' ? weaponsInitialFilterLabel : currentEntity === 'classification-items' ? classificationItemsInitialFilterLabel : undefined}
             height={700}
           />
         </Container>

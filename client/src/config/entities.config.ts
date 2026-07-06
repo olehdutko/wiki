@@ -149,6 +149,24 @@ const namedEntityFormFields: FormField[] = [
     { name: 'rus', label: 'Москальська назва', type: 'text', maxLength: 100 }
 ];
 
+const classificationFormFields: FormField[] = [
+    { name: 'ukr_name', label: 'Українська назва', type: 'text', required: true, maxLength: 300 },
+    { name: 'eng_name', label: 'English name', type: 'text', maxLength: 300 },
+    { name: 'rus_name', label: 'Москальська назва', type: 'text', maxLength: 300 },
+    { name: 'description', label: 'Опис класифікації', type: 'textarea', maxLength: 5000 },
+    { name: 'image_path', label: 'Зображення', type: 'image' }
+];
+
+const classificationItemFormFields: FormField[] = [
+    { name: 'classification_id', label: 'Класифікація', type: 'select', required: true },
+    { name: 'ukr_name', label: 'Українська назва', type: 'text', required: true, maxLength: 300 },
+    { name: 'eng_name', label: 'English name', type: 'text', maxLength: 300 },
+    { name: 'rus_name', label: 'Москальська назва', type: 'text', maxLength: 300 },
+    { name: 'description', label: 'Опис', type: 'textarea', maxLength: 5000 },
+    { name: 'image_path', label: 'Зображення', type: 'image' },
+    { name: 'display_order', label: 'Порядок', type: 'number' }
+];
+
 const pommelFormFields: FormField[] = [
     { name: 'ukr', label: 'Українська назва', type: 'text', maxLength: 100 },
     { name: 'eng', label: 'English name', type: 'text', maxLength: 100 },
@@ -327,6 +345,41 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
         columns: weaponColumns,
         formFields: weaponFormFields,
         useForm: true // Для зброї використовуємо форми замість грід-редагування
+    },
+
+    'classifications': {
+        name: 'classifications',
+        displayName: 'Класифікації',
+        apiEndpoint: '/classifications',
+        columns: [
+            { field: 'id', headerName: 'ID', width: 80, type: 'number', valueFormatter: (params: any) => String(params.value) },
+            { field: 'ukr_name', headerName: 'Українська назва', width: 250, editable: false, type: 'string' },
+            { field: 'eng_name', headerName: 'English name', width: 250, editable: false, type: 'string' },
+            { field: 'rus_name', headerName: 'Москальська назва', width: 250, editable: false, type: 'string' },
+            { field: 'comments', headerName: 'Коментарі', width: 300, editable: false, type: 'string' },
+            { field: 'description', headerName: 'Опис', width: 300, editable: false, type: 'string' }
+        ],
+        formFields: classificationFormFields,
+        useForm: true,
+        supportsInlineEditing: false
+    },
+
+    'classification-items': {
+        name: 'classification-items',
+        displayName: 'Пункти класифікації',
+        apiEndpoint: '/classification-items',
+        columns: [
+            { field: 'id', headerName: 'ID', width: 80, type: 'number', valueFormatter: (params: any) => String(params.value) },
+            { field: 'classification_id', headerName: 'ID класифікації', width: 130, editable: false, type: 'number' },
+            { field: 'ukr_name', headerName: 'Українська назва', width: 250, editable: false, type: 'string' },
+            { field: 'eng_name', headerName: 'English name', width: 250, editable: false, type: 'string' },
+            { field: 'rus_name', headerName: 'Москальська назва', width: 250, editable: false, type: 'string' },
+            { field: 'description', headerName: 'Опис', width: 300, editable: false, type: 'string' },
+            { field: 'display_order', headerName: 'Порядок', width: 100, editable: false, type: 'number' }
+        ],
+        formFields: classificationItemFormFields,
+        useForm: true,
+        supportsInlineEditing: false
     }
 };
 

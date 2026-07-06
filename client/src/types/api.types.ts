@@ -173,7 +173,9 @@ export type EntityType =
     | 'guard-type'
     | 'sharpening'
     | 'usage'
-    | 'weapons';
+    | 'weapons'
+    | 'classifications'
+    | 'classification-items';
 
 // ================= НАЛАШТУВАННЯ ЗАСТОСУНКУ =================
 

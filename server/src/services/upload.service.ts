@@ -94,9 +94,10 @@ export class UploadService {
         imageUrl: string | null
     ): Promise<void> {
         const tableName = this.getTableName(entityType);
-        
+        const imageColumn = this.getImageColumn(entityType);
+
         await pool.execute(
-            `UPDATE \`${tableName}\` SET image_url = ? WHERE id = ?`,
+            `UPDATE \`${tableName}\` SET \`${imageColumn}\` = ? WHERE id = ?`,
             [imageUrl, entityId]
         );
     }
@@ -109,12 +110,13 @@ export class UploadService {
         entityId: number
     ): Promise<string | null> {
         const tableName = this.getTableName(entityType);
-        
+        const imageColumn = this.getImageColumn(entityType);
+
         const [rows] = await pool.execute(
-            `SELECT image_url FROM \`${tableName}\` WHERE id = ?`,
+            `SELECT \`${imageColumn}\` AS image_url FROM \`${tableName}\` WHERE id = ?`,
             [entityId]
         ) as any;
-        
+
         return rows[0]?.image_url || null;
     }
     
@@ -125,9 +127,20 @@ export class UploadService {
         const tableMap: Record<string, string> = {
             'guard-type': 'guard_type',
             'pommel': 'pommel',
-            'sharpening': 'sharpening'
+            'sharpening': 'sharpening',
+            'classifications': 'classifications',
+            'classification-items': 'classification_items'
         };
-        
+
         return tableMap[entityType] || entityType;
+    }
+
+    private getImageColumn(entityType: string): string {
+        const columnMap: Record<string, string> = {
+            'classifications': 'image_path',
+            'classification-items': 'image_path'
+        };
+
+        return columnMap[entityType] || 'image_url';
     }
 }

@@ -416,7 +416,9 @@ class ApiService {
             'guard-type': '/guard-type',
             'sharpening': '/sharpening',
             'usage': '/usage',
-            'weapons': '/weapons'
+            'weapons': '/weapons',
+            'classifications': '/classifications',
+            'classification-items': '/classification-items'
         };
 
         return endpointMap[entityType];
@@ -461,6 +463,17 @@ class ApiService {
             console.error('❌ Помилка видалення лінка:', error);
             return false;
         }
+    }
+
+    // ================= МЕТОДИ КЛАСИФІКАЦІЙ =================
+
+    async getClassificationById(id: number) {
+        return this.getById<any>('/classifications', id);
+    }
+
+    async getClassificationItemsByClassificationId(classificationId: number) {
+        const response = await this.api.get<ApiResponse>(`/classification-items/by-classification/${classificationId}`);
+        return response.data;
     }
 
     // ================= ЗДОРОВ'Я API =================

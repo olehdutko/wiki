@@ -7,7 +7,7 @@ import { body } from 'express-validator';
 import {
     PommelController, BladeTypeController, CategoryController, TerritoryController, DollsController,
     EpohaController, GlobalTypeController, GuardTypeController, SharpeningController,
-    UsageController, WeaponItemController
+    UsageController, WeaponItemController, ClassificationController, ClassificationItemController
 } from '../controllers/entities.controllers';
 import { LinksController } from '../controllers/links.controller';
 import { exportDatabaseDump } from '../controllers/database.controller';
@@ -29,6 +29,8 @@ const globalTypeController = new GlobalTypeController();
 const guardTypeController = new GuardTypeController();
 const sharpeningController = new SharpeningController();
 const usageController = new UsageController();
+const classificationController = new ClassificationController();
+const classificationItemController = new ClassificationItemController();
 const weaponItemController = new WeaponItemController();
 const linksController = new LinksController();
 
@@ -66,27 +68,65 @@ const pommelUpdateValidation = [
 
 const categoryValidation = [
     body('ukr_name').notEmpty().withMessage('Українська назва обов\'язкова').isString().isLength({ max: 300 }),
-    body('eng_name').optional().isString().isLength({ max: 300 }),
-    body('comments').optional().isString().isLength({ max: 800 })
+    body('eng_name').optional({ values: 'null' }).isString().isLength({ max: 300 }),
+    body('comments').optional({ values: 'null' }).isString().isLength({ max: 800 })
 ];
 
 const territoryValidation = [
     body('ukr_name').notEmpty().withMessage('Українська назва обов\'язкова').isString().isLength({ max: 300 }),
-    body('eng_name').optional().isString().isLength({ max: 300 }),
-    body('rus_name').optional().isString().isLength({ max: 300 })
+    body('eng_name').optional({ values: 'null' }).isString().isLength({ max: 300 }),
+    body('rus_name').optional({ values: 'null' }).isString().isLength({ max: 300 })
 ];
 
 // Валідація для часткового оновлення категорій
 const categoryUpdateValidation = [
     body('ukr_name').optional().isString().isLength({ max: 300 }),
-    body('eng_name').optional().isString().isLength({ max: 300 }),
-    body('comments').optional().isString().isLength({ max: 800 })
+    body('eng_name').optional({ values: 'null' }).isString().isLength({ max: 300 }),
+    body('comments').optional({ values: 'null' }).isString().isLength({ max: 800 })
 ];
 
 const territoryUpdateValidation = [
     body('ukr_name').optional().isString().isLength({ max: 300 }),
-    body('eng_name').optional().isString().isLength({ max: 300 }),
-    body('rus_name').optional().isString().isLength({ max: 300 })
+    body('eng_name').optional({ values: 'null' }).isString().isLength({ max: 300 }),
+    body('rus_name').optional({ values: 'null' }).isString().isLength({ max: 300 })
+];
+
+const classificationValidation = [
+    body('ukr_name').notEmpty().withMessage('Українська назва обов\'язкова').isString().isLength({ max: 300 }),
+    body('eng_name').optional({ values: 'null' }).isString().isLength({ max: 300 }),
+    body('rus_name').optional({ values: 'null' }).isString().isLength({ max: 300 }),
+    body('comments').optional({ values: 'null' }).isString().isLength({ max: 800 }),
+    body('description').optional({ values: 'null' }).isString().isLength({ max: 5000 }),
+    body('image_path').optional({ values: 'null' }).isString().isLength({ max: 500 })
+];
+
+const classificationUpdateValidation = [
+    body('ukr_name').optional().isString().isLength({ max: 300 }),
+    body('eng_name').optional({ values: 'null' }).isString().isLength({ max: 300 }),
+    body('rus_name').optional({ values: 'null' }).isString().isLength({ max: 300 }),
+    body('comments').optional({ values: 'null' }).isString().isLength({ max: 800 }),
+    body('description').optional({ values: 'null' }).isString().isLength({ max: 5000 }),
+    body('image_path').optional({ values: 'null' }).isString().isLength({ max: 500 })
+];
+
+const classificationItemValidation = [
+    body('classification_id').notEmpty().isInt({ min: 1 }),
+    body('ukr_name').notEmpty().withMessage('Українська назва обов\'язкова').isString().isLength({ max: 300 }),
+    body('eng_name').optional({ values: 'null' }).isString().isLength({ max: 300 }),
+    body('rus_name').optional({ values: 'null' }).isString().isLength({ max: 300 }),
+    body('description').optional({ values: 'null' }).isString().isLength({ max: 5000 }),
+    body('image_path').optional({ values: 'null' }).isString().isLength({ max: 500 }),
+    body('display_order').optional({ values: 'null' }).isInt({ min: 0 })
+];
+
+const classificationItemUpdateValidation = [
+    body('classification_id').optional().isInt({ min: 1 }),
+    body('ukr_name').optional().isString().isLength({ max: 300 }),
+    body('eng_name').optional({ values: 'null' }).isString().isLength({ max: 300 }),
+    body('rus_name').optional({ values: 'null' }).isString().isLength({ max: 300 }),
+    body('description').optional({ values: 'null' }).isString().isLength({ max: 5000 }),
+    body('image_path').optional({ values: 'null' }).isString().isLength({ max: 500 }),
+    body('display_order').optional({ values: 'null' }).isInt({ min: 0 })
 ];
 
 const weaponItemValidation = [
@@ -126,7 +166,7 @@ const weaponItemValidation = [
     body('sharpening').optional().isString().isLength({ max: 10 }),
     body('pommel').optional().isString().isLength({ max: 20 }),
     body('links').optional().isString().isLength({ max: 1500 }),
-    body('comments').optional().isString().isLength({ max: 800 }),
+    body('comments').optional({ values: 'null' }).isString().isLength({ max: 800 }),
     body('source').notEmpty().isString().isLength({ max: 800 }),
     body('category_id').optional().isInt({ min: 1 }),
     body('category_ids').optional().isArray({ min: 1 }).custom((value) => {
@@ -178,7 +218,7 @@ const weaponItemUpdateValidation = [
     body('sharpening').optional().isString().isLength({ max: 10 }),
     body('pommel').optional().isString().isLength({ max: 20 }),
     body('links').optional().isString().isLength({ max: 1500 }),
-    body('comments').optional().isString().isLength({ max: 800 }),
+    body('comments').optional({ values: 'null' }).isString().isLength({ max: 800 }),
     body('source').optional().isString().isLength({ max: 800 }),
     body('category_id').optional().isInt({ min: 1 }),
     body('category_ids').optional().isArray().custom((value) => {
@@ -283,6 +323,27 @@ router.get('/categories/:id', categoryController.getById.bind(categoryController
 router.post('/categories', categoryValidation, categoryController.create.bind(categoryController));
 router.put('/categories/:id', categoryUpdateValidation, categoryController.update.bind(categoryController));
 router.delete('/categories/:id', categoryController.delete.bind(categoryController));
+
+// ================= МАРШРУТИ КЛАСИФІКАЦІЙ =================
+router.get('/classifications', classificationController.getAll.bind(classificationController));
+router.get('/classifications/search', classificationController.search.bind(classificationController));
+router.get('/classifications/count', classificationController.getCount.bind(classificationController));
+router.get('/classifications/max-id', classificationController.getMaxId.bind(classificationController));
+router.get('/classifications/:id', classificationController.getById.bind(classificationController));
+router.post('/classifications', classificationValidation, classificationController.create.bind(classificationController));
+router.put('/classifications/:id', classificationUpdateValidation, classificationController.update.bind(classificationController));
+router.delete('/classifications/:id', classificationController.delete.bind(classificationController));
+
+// Маршрути пунктів класифікації
+router.get('/classification-items/by-classification/:classificationId', classificationItemController.getByClassificationId.bind(classificationItemController));
+router.get('/classification-items', classificationItemController.getAll.bind(classificationItemController));
+router.get('/classification-items/search', classificationItemController.search.bind(classificationItemController));
+router.get('/classification-items/count', classificationItemController.getCount.bind(classificationItemController));
+router.get('/classification-items/max-id', classificationItemController.getMaxId.bind(classificationItemController));
+router.get('/classification-items/:id', classificationItemController.getById.bind(classificationItemController));
+router.post('/classification-items', classificationItemValidation, classificationItemController.create.bind(classificationItemController));
+router.put('/classification-items/:id', classificationItemUpdateValidation, classificationItemController.update.bind(classificationItemController));
+router.delete('/classification-items/:id', classificationItemController.delete.bind(classificationItemController));
 
 // ================= МАРШРУТИ ТЕРИТОРІЙ =================
 router.get('/territories', territoryController.getAll.bind(territoryController));

@@ -6,6 +6,7 @@ import type { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { BaseService } from './base.service';
 import { pool } from '../config/database.config';
 import { getItemImageUrl, ItemImagesService } from './itemImages.service';
+import type { Classification, ClassificationItem } from '../types/base.types';
 
 // ================= UTILITY FUNCTIONS FOR UNIT CONVERSION =================
 
@@ -142,6 +143,36 @@ export class SharpeningService extends BaseService<Sharpening> {
 export class UsageService extends BaseService<Usage> {
     constructor() {
         super('usage');
+    }
+}
+
+// ================= СЕРВІСИ КЛАСИФІКАЦІЙ =================
+
+export class ClassificationService extends BaseService<Classification> {
+    constructor() {
+        super('classifications');
+    }
+}
+
+export class ClassificationItemService extends BaseService<ClassificationItem> {
+    constructor() {
+        super('classification_items');
+    }
+
+    /**
+     * Отримати всі пункти класифікації за ID класифікації
+     */
+    async findByClassificationId(classificationId: number): Promise<ClassificationItem[]> {
+        try {
+            const [rows] = await pool.execute(
+                `SELECT * FROM classification_items WHERE classification_id = ? ORDER BY display_order ASC, id ASC`,
+                [classificationId]
+            ) as [RowDataPacket[], any];
+            return rows as ClassificationItem[];
+        } catch (error) {
+            console.error(`Помилка при отриманні пунктів класифікації ${classificationId}:`, error);
+            throw new Error('Не вдалося отримати пункти класифікації');
+        }
     }
 }
 
