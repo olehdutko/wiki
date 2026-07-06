@@ -33,8 +33,37 @@ export interface ImageItemInfo {
 /**
  * Отримати повний шлях до папки айтема
  */
+/**
+ * Знайти фактичну існуючу папку айтема за його ID.
+ * Якщо папка вже існує (будь-який slug) — використовуємо її, щоб не ламати зображення
+ * після зміни eng_name. Якщо не знайшли — повертаємо ім'я з новим slug.
+ */
+function findExistingItemFolderName(item: ImageItemInfo): string {
+    if (!fs.existsSync(UPLOAD_BASE_DIR)) {
+        return getItemFolderName(item);
+    }
+
+    const targetPrefix = `${item.id}-`;
+    try {
+        const entries = fs.readdirSync(UPLOAD_BASE_DIR, { withFileTypes: true });
+        for (const entry of entries) {
+            if (entry.isDirectory()) {
+                const name = entry.name;
+                // Папка може бути або {id}, або {id}-{slug}
+                if (name === String(item.id) || name.startsWith(targetPrefix)) {
+                    return name;
+                }
+            }
+        }
+    } catch (error) {
+        console.error(`Помилка при пошуку папки для айтема ${item.id}:`, error);
+    }
+
+    return getItemFolderName(item);
+}
+
 export function getItemUploadDir(item: ImageItemInfo): string {
-    const folderName = getItemFolderName(item);
+    const folderName = findExistingItemFolderName(item);
     return path.join(UPLOAD_BASE_DIR, folderName);
 }
 
@@ -42,7 +71,7 @@ export function getItemUploadDir(item: ImageItemInfo): string {
  * Отримати URL до зображення айтема
  */
 export function getItemImageUrl(item: ImageItemInfo, fileName: string): string {
-    const folderName = getItemFolderName(item);
+    const folderName = findExistingItemFolderName(item);
     return `/uploads/items/${folderName}/${fileName}`;
 }
 
