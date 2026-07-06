@@ -291,6 +291,52 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
         supportsInlineEditing: true
     },
 
+    'classifications': {
+        name: 'classifications',
+        displayName: 'Класифікації',
+        apiEndpoint: '/classifications',
+        columns: [
+            { field: 'id', headerName: 'ID', width: 80, type: 'number', valueFormatter: (params: any) => String(params.value) },
+            { field: 'ukr_name', headerName: 'Українська назва', width: 250, editable: false, type: 'string' },
+            { field: 'eng_name', headerName: 'English name', width: 250, editable: false, type: 'string' },
+            { field: 'rus_name', headerName: 'Москальська назва', width: 250, editable: false, type: 'string' }
+        ],
+        formFields: [
+            { name: 'ukr_name', label: 'Українська назва', type: 'text', maxLength: 300, required: true },
+            { name: 'eng_name', label: 'English name', type: 'text', maxLength: 300 },
+            { name: 'rus_name', label: 'Москальська назва', type: 'text', maxLength: 300 },
+            { name: 'description', label: 'Опис', type: 'textarea', maxLength: 5000 },
+            { name: 'image_path', label: 'Зображення', type: 'text', maxLength: 500 }
+        ],
+        useForm: false,
+        supportsInlineEditing: false,
+        defaultPageSize: 25
+    },
+
+    'classification-items': {
+        name: 'classification-items',
+        displayName: 'Пункти класифікації',
+        apiEndpoint: '/classification-items',
+        columns: [
+            { field: 'id', headerName: 'ID', width: 80, type: 'number', valueFormatter: (params: any) => String(params.value) },
+            { field: 'classification_id', headerName: 'ID класифікації', width: 140, type: 'number', editable: false },
+            { field: 'ukr_name', headerName: 'Українська назва', width: 250, editable: false, type: 'string' },
+            { field: 'eng_name', headerName: 'English name', width: 250, editable: false, type: 'string' },
+            { field: 'rus_name', headerName: 'Москальська назва', width: 250, editable: false, type: 'string' }
+        ],
+        formFields: [
+            { name: 'classification_id', label: 'ID класифікації', type: 'number', required: true },
+            { name: 'ukr_name', label: 'Українська назва', type: 'text', maxLength: 300, required: true },
+            { name: 'eng_name', label: 'English name', type: 'text', maxLength: 300 },
+            { name: 'rus_name', label: 'Москальська назва', type: 'text', maxLength: 300 },
+            { name: 'description', label: 'Опис', type: 'textarea', maxLength: 5000 },
+            { name: 'image_path', label: 'Зображення', type: 'text', maxLength: 500 },
+            { name: 'display_order', label: 'Порядок відображення', type: 'number' }
+        ],
+        useForm: false,
+        supportsInlineEditing: false,
+        defaultPageSize: 25
+    },
     'categories': {
         name: 'categories',
         displayName: 'Категорії',

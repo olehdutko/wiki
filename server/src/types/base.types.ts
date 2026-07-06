@@ -57,4 +57,23 @@ export interface ValidationError {
     field: string;
     message: string;
     value?: any;
-} 
+}
+
+export interface Classification extends BaseEntity {
+    ukr_name: string;
+    eng_name?: string | null;
+    rus_name?: string | null;
+    description?: string | null;
+    image_path?: string | null;
+}
+
+export interface ClassificationItem extends BaseEntity {
+    classification_id: number;
+    ukr_name: string;
+    eng_name?: string | null;
+    rus_name?: string | null;
+    description?: string | null;
+    image_path?: string | null;
+    display_order?: number | null;
+}
+

@@ -9,9 +9,10 @@ import type { RowDataPacket } from 'mysql2';
 import {
     PommelService, BladeTypeService, CategoryService, TerritoryService, DollsService, EpohaService,
     GlobalTypeService, GuardTypeService, SharpeningService, UsageService,
-    WeaponItemService
+    WeaponItemService, ClassificationsService, ClassificationItemsService
 } from '../services/entities.services';
 import { PaginationParams } from '../types/base.types';
+import type { Classification, ClassificationItem } from '../types/base.types';
 import {
     Pommel, BladeType, Category, Territory, Dolls, Epoha, GlobalType, GuardType,
     Sharpening, Usage
@@ -155,7 +156,54 @@ export class UsageController extends BaseController<Usage> {
     }
 }
 
+
+// ================= КОНТРОЛЕРИ КЛАСИФІКАЦІЙ =================
+
+export class ClassificationController extends BaseController<Classification> {
+    constructor() {
+        super(new ClassificationsService());
+    }
+}
+
+export class ClassificationItemController extends BaseController<ClassificationItem> {
+    private classificationItemsService: ClassificationItemsService;
+
+    constructor() {
+        super(new ClassificationItemsService());
+        this.classificationItemsService = new ClassificationItemsService();
+    }
+
+    async getByClassificationId(req: Request, res: Response): Promise<void> {
+        try {
+            const classificationId = parseInt(req.params.id);
+            if (isNaN(classificationId)) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Invalid classification ID format'
+                });
+                return;
+            }
+
+            const items = await this.classificationItemsService.getByClassificationId(classificationId);
+
+            res.status(200).json({
+                success: true,
+                data: items,
+                message: 'Classification items retrieved successfully'
+            });
+        } catch (error) {
+            console.error('Error getting classification items:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to get classification items',
+                error: error instanceof Error ? error.message : 'Unknown error'
+            });
+        }
+    }
+}
+
 // ================= ГОЛОВНИЙ КОНТРОЛЕР =================
+
 
 export class WeaponItemController {
     private weaponService: WeaponItemService;

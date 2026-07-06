@@ -7,7 +7,7 @@ import { body } from 'express-validator';
 import {
     PommelController, BladeTypeController, CategoryController, TerritoryController, DollsController,
     EpohaController, GlobalTypeController, GuardTypeController, SharpeningController,
-    UsageController, WeaponItemController
+    UsageController, WeaponItemController, ClassificationController, ClassificationItemController
 } from '../controllers/entities.controllers';
 import { LinksController } from '../controllers/links.controller';
 import { exportDatabaseDump } from '../controllers/database.controller';
@@ -30,6 +30,8 @@ const guardTypeController = new GuardTypeController();
 const sharpeningController = new SharpeningController();
 const usageController = new UsageController();
 const weaponItemController = new WeaponItemController();
+const classificationController = new ClassificationController();
+const classificationItemController = new ClassificationItemController();
 const linksController = new LinksController();
 
 // ================= ВАЛІДАТОРИ =================
@@ -87,6 +89,43 @@ const territoryUpdateValidation = [
     body('ukr_name').optional().isString().isLength({ max: 300 }),
     body('eng_name').optional().isString().isLength({ max: 300 }),
     body('rus_name').optional().isString().isLength({ max: 300 })
+];
+
+
+const classificationValidation = [
+    body('ukr_name').notEmpty().withMessage('Українська назва обов\'язкова').isString().isLength({ max: 300 }),
+    body('eng_name').optional({ nullable: true }).isString().isLength({ max: 300 }),
+    body('rus_name').optional({ nullable: true }).isString().isLength({ max: 300 }),
+    body('description').optional({ nullable: true }).isString().isLength({ max: 5000 }),
+    body('image_path').optional({ nullable: true }).isString().isLength({ max: 500 })
+];
+
+const classificationUpdateValidation = [
+    body('ukr_name').optional().isString().isLength({ max: 300 }),
+    body('eng_name').optional({ nullable: true }).isString().isLength({ max: 300 }),
+    body('rus_name').optional({ nullable: true }).isString().isLength({ max: 300 }),
+    body('description').optional({ nullable: true }).isString().isLength({ max: 5000 }),
+    body('image_path').optional({ nullable: true }).isString().isLength({ max: 500 })
+];
+
+const classificationItemValidation = [
+    body('classification_id').notEmpty().isInt({ min: 1 }).withMessage('ID класифікації обов\'язкове'),
+    body('ukr_name').notEmpty().withMessage('Українська назва обов\'язкова').isString().isLength({ max: 300 }),
+    body('eng_name').optional({ nullable: true }).isString().isLength({ max: 300 }),
+    body('rus_name').optional({ nullable: true }).isString().isLength({ max: 300 }),
+    body('description').optional({ nullable: true }).isString().isLength({ max: 5000 }),
+    body('image_path').optional({ nullable: true }).isString().isLength({ max: 500 }),
+    body('display_order').optional({ nullable: true }).isInt()
+];
+
+const classificationItemUpdateValidation = [
+    body('classification_id').optional().isInt({ min: 1 }),
+    body('ukr_name').optional().isString().isLength({ max: 300 }),
+    body('eng_name').optional({ nullable: true }).isString().isLength({ max: 300 }),
+    body('rus_name').optional({ nullable: true }).isString().isLength({ max: 300 }),
+    body('description').optional({ nullable: true }).isString().isLength({ max: 5000 }),
+    body('image_path').optional({ nullable: true }).isString().isLength({ max: 500 }),
+    body('display_order').optional({ nullable: true }).isInt()
 ];
 
 const weaponItemValidation = [
@@ -293,6 +332,28 @@ router.get('/territories/:id', territoryController.getById.bind(territoryControl
 router.post('/territories', territoryValidation, territoryController.create.bind(territoryController));
 router.put('/territories/:id', territoryUpdateValidation, territoryController.update.bind(territoryController));
 router.delete('/territories/:id', territoryController.delete.bind(territoryController));
+
+
+// ================= МАРШРУТИ КЛАСИФІКАЦІЙ =================
+
+router.get('/classifications', classificationController.getAll.bind(classificationController));
+router.get('/classifications/search', classificationController.search.bind(classificationController));
+router.get('/classifications/count', classificationController.getCount.bind(classificationController));
+router.get('/classifications/max-id', classificationController.getMaxId.bind(classificationController));
+router.get('/classifications/:id', classificationController.getById.bind(classificationController));
+router.post('/classifications', classificationValidation, classificationController.create.bind(classificationController));
+router.put('/classifications/:id', classificationUpdateValidation, classificationController.update.bind(classificationController));
+router.delete('/classifications/:id', classificationController.delete.bind(classificationController));
+
+router.get('/classification-items', classificationItemController.getAll.bind(classificationItemController));
+router.get('/classification-items/search', classificationItemController.search.bind(classificationItemController));
+router.get('/classification-items/count', classificationItemController.getCount.bind(classificationItemController));
+router.get('/classification-items/max-id', classificationItemController.getMaxId.bind(classificationItemController));
+router.get('/classification-items/by-classification/:id', classificationItemController.getByClassificationId.bind(classificationItemController));
+router.get('/classification-items/:id', classificationItemController.getById.bind(classificationItemController));
+router.post('/classification-items', classificationItemValidation, classificationItemController.create.bind(classificationItemController));
+router.put('/classification-items/:id', classificationItemUpdateValidation, classificationItemController.update.bind(classificationItemController));
+router.delete('/classification-items/:id', classificationItemController.delete.bind(classificationItemController));
 
 // ================= ГОЛОВНА СУТНІСТЬ - WEAPON ITEMS =================
 
