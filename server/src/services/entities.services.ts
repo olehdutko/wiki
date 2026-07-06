@@ -146,12 +146,13 @@ export class GlobalTypeService extends BaseService<GlobalType> {
 
             const total = countResult[0].total;
 
+            const sortColumn = sortBy === 'item_count' ? 'item_count' : `t.${sortBy}`;
             const [rows] = await pool.execute(
                 `SELECT t.*, (
                     SELECT COUNT(DISTINCT item_id) FROM items WHERE global_type = t.id
                 ) as item_count
                 FROM \`${this.tableName}\` t
-                ORDER BY t.${sortBy} ${sortOrder}
+                ORDER BY ${sortColumn} ${sortOrder}
                 LIMIT ${limit} OFFSET ${offset}`
             ) as [RowDataPacket[], any];
 
@@ -249,12 +250,13 @@ export class CategoryService extends BaseService<Category> {
 
             const total = countResult[0].total;
 
+            const sortColumn = sortBy === 'item_count' ? 'item_count' : `c.${sortBy}`;
             const [rows] = await pool.execute(
                 `SELECT c.*, (
                     SELECT COUNT(DISTINCT item_id) FROM item_categories WHERE category_id = c.id
                 ) as item_count
                 FROM \`${this.tableName}\` c
-                ORDER BY c.${sortBy} ${sortOrder}
+                ORDER BY ${sortColumn} ${sortOrder}
                 LIMIT ${limit} OFFSET ${offset}`
             ) as [RowDataPacket[], any];
 
@@ -320,12 +322,13 @@ export class TerritoryService extends BaseService<Territory> {
 
             const total = countResult[0].total;
 
+            const sortColumn = sortBy === 'item_count' ? 'item_count' : `t.${sortBy}`;
             const [rows] = await pool.execute(
                 `SELECT t.*, (
                     SELECT COUNT(DISTINCT item_id) FROM item_territories WHERE territory_id = t.id
                 ) as item_count
                 FROM \`${this.tableName}\` t
-                ORDER BY t.${sortBy} ${sortOrder}
+                ORDER BY ${sortColumn} ${sortOrder}
                 LIMIT ${limit} OFFSET ${offset}`
             ) as [RowDataPacket[], any];
 
