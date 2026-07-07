@@ -17,7 +17,8 @@ import {
     Dialog,
     DialogContent,
     Stack,
-    Tooltip
+    Tooltip,
+    TextField
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -117,6 +118,21 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId, open
         } catch (error: any) {
             console.error('Set show failed:', error);
             alert('Не вдалося змінити видимість зображення: ' + (error?.response?.data?.message || error.message));
+        }
+    };
+
+    const handleCommentChange = (imageId: number, value: string) => {
+        setImages(prev => prev.map(img => img.id === imageId ? { ...img, comment: value } : img));
+    };
+
+    const handleCommentSave = async (imageId: number) => {
+        const image = images.find(img => img.id === imageId);
+        if (!image) return;
+        try {
+            await apiService.updateItemImageComment(itemId, imageId, image.comment || null);
+        } catch (error: any) {
+            console.error('Update comment failed:', error);
+            alert('Не вдалося зберегти коментар: ' + (error?.response?.data?.message || error.message));
         }
     };
 
@@ -376,6 +392,19 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId, open
                                         <DeleteIcon />
                                     </IconButton>
                                 </Box>
+                                <TextField
+                                    size="small"
+                                    fullWidth
+                                    multiline
+                                    rows={2}
+                                    label="Коментар"
+                                    value={image.comment || ''}
+                                    onChange={(e) => handleCommentChange(image.id, e.target.value)}
+                                    onBlur={() => handleCommentSave(image.id)}
+                                    inputProps={{ maxLength: 1000 }}
+                                    sx={{ mt: 1 }}
+                                    helperText={`${(image.comment || '').length}/1000`}
+                                />
                             </Paper>
                         </Grid>
                     ))}
