@@ -21,6 +21,7 @@ export interface ItemImage {
     show: boolean;
     created_at: string;
     display_order?: number;
+    comment?: string | null;
 }
 
 export interface ImageItemInfo {
@@ -97,7 +98,7 @@ export class ItemImagesService {
      */
     async getImagesByItemId(itemId: number): Promise<ItemImage[]> {
         const [rows] = await pool.execute(
-            `SELECT id, item_id, file_name, is_primary, \`show\`, created_at, display_order
+            `SELECT id, item_id, file_name, is_primary, \`show\`, created_at, display_order, comment
              FROM item_images
              WHERE item_id = ?
              ORDER BY display_order ASC, is_primary DESC, created_at ASC`,
@@ -161,8 +162,8 @@ export class ItemImagesService {
             // Додаємо запис в БД
             const displayOrder = existingImages.length + i + 1;
             const [result] = await pool.execute(
-                `INSERT INTO item_images (item_id, file_name, is_primary, \`show\`, display_order) VALUES (?, ?, ?, ?, ?)`,
-                [item.id, uniqueFileName, existingImages.length === 0 && i === 0 ? 1 : 0, 1, displayOrder]
+                `INSERT INTO item_images (item_id, file_name, is_primary, \`show\`, display_order, comment) VALUES (?, ?, ?, ?, ?, ?)`,
+                [item.id, uniqueFileName, existingImages.length === 0 && i === 0 ? 1 : 0, 1, displayOrder, null]
             ) as any;
 
             uploadedImages.push({
@@ -265,6 +266,20 @@ export class ItemImagesService {
             throw error;
         } finally {
             connection.release();
+        }
+    }
+
+    /**
+     * Оновити коментар до зображення
+     */
+    async updateComment(itemId: number, imageId: number, comment: string | null): Promise<void> {
+        const [result] = await pool.execute(
+            `UPDATE item_images SET comment = ? WHERE id = ? AND item_id = ?`,
+            [comment, imageId, itemId]
+        ) as any;
+
+        if (result.affectedRows === 0) {
+            throw new Error('Image not found for this item');
         }
     }
 

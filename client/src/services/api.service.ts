@@ -737,6 +737,18 @@ class ApiService {
     }
 
     /**
+     * Оновити коментар до зображення айтема
+     */
+    async updateItemImageComment(itemId: number, imageId: number, comment: string | null): Promise<void> {
+        try {
+            await this.api.patch<ApiResponse<void>>(`/items/${itemId}/images/${imageId}/comment`, { comment });
+        } catch (error: any) {
+            console.error('❌ Помилка оновлення коментаря зображення:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Видалити зображення айтема
      */
     async deleteItemImage(itemId: number, imageId: number): Promise<void> {

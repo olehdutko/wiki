@@ -231,6 +231,54 @@ export class ItemImagesController {
     }
 
     /**
+     * Оновити коментар до зображення
+     */
+    async updateComment(req: Request, res: Response): Promise<void> {
+        try {
+            const itemId = parseInt(req.params.itemId);
+            const imageId = parseInt(req.params.imageId);
+            const { comment } = req.body;
+
+            if (isNaN(itemId) || isNaN(imageId)) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Invalid item ID or image ID'
+                });
+                return;
+            }
+
+            if (comment !== undefined && comment !== null && typeof comment !== 'string') {
+                res.status(400).json({
+                    success: false,
+                    message: 'Comment must be a string'
+                });
+                return;
+            }
+
+            if (comment !== undefined && comment !== null && comment.length > 1000) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Comment must be at most 1000 characters'
+                });
+                return;
+            }
+
+            await this.itemImagesService.updateComment(itemId, imageId, comment || null);
+
+            res.status(200).json({
+                success: true,
+                message: 'Image comment updated'
+            });
+        } catch (error: any) {
+            console.error('Error updating image comment:', error);
+            res.status(500).json({
+                success: false,
+                message: error.message || 'Failed to update image comment'
+            });
+        }
+    }
+
+    /**
      * Видалити зображення
      */
     async deleteImage(req: Request, res: Response): Promise<void> {
