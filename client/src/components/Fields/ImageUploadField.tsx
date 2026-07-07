@@ -44,19 +44,29 @@ export function ImageUploadField({
 }: ImageUploadFieldProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    await processFile(file);
+  };
 
-    // Перевірка типу файлу
+  const handleDelete = async () => {
+    try {
+      await apiService.deleteEntityImage(entityType, entityId);
+      onImageDelete();
+    } catch (err: any) {
+      setError(err.message || 'Помилка видалення зображення');
+    }
+  };
+
+  const processFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       setError('Будь ласка, виберіть файл зображення');
       return;
     }
-
-    // Перевірка розміру (5MB)
     if (file.size > 5 * 1024 * 1024) {
       setError('Файл занадто великий. Максимальний розмір: 5MB');
       return;
@@ -72,20 +82,31 @@ export function ImageUploadField({
       setError(err.message || 'Помилка завантаження зображення');
     } finally {
       setUploading(false);
-      // Очищаємо input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     }
   };
 
-  const handleDelete = async () => {
-    try {
-      await apiService.deleteEntityImage(entityType, entityId);
-      onImageDelete();
-    } catch (err: any) {
-      setError(err.message || 'Помилка видалення зображення');
-    }
+  const handleDrop = async (event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setDragOver(false);
+    const file = event.dataTransfer.files?.[0];
+    if (!file) return;
+    await processFile(file);
+  };
+
+  const handleDragOver = (event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setDragOver(false);
   };
 
   return (
@@ -130,21 +151,40 @@ export function ImageUploadField({
           </IconButton>
         </Box>
       ) : (
-        <Button
-          component="label"
-          variant="outlined"
-          startIcon={uploading ? <CircularProgress size={20} /> : <CloudUpload />}
-          disabled={uploading}
-          sx={{ textTransform: 'none' }}
+        <Box
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          sx={{
+            border: '2px dashed',
+            borderColor: dragOver ? 'primary.main' : 'grey.400',
+            bgcolor: dragOver ? 'rgba(25, 118, 210, 0.08)' : 'rgba(0, 0, 0, 0.02)',
+            borderRadius: 2,
+            p: 3,
+            textAlign: 'center',
+            transition: 'all 0.2s',
+            cursor: 'pointer'
+          }}
         >
-          {uploading ? 'Завантаження...' : 'Вибрати зображення'}
-          <VisuallyHiddenInput
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileSelect}
-          />
-        </Button>
+          <Button
+            component="label"
+            variant="outlined"
+            startIcon={uploading ? <CircularProgress size={20} /> : <CloudUpload />}
+            disabled={uploading}
+            sx={{ textTransform: 'none', mb: 1 }}
+          >
+            {uploading ? 'Завантаження...' : 'Вибрати зображення'}
+            <VisuallyHiddenInput
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+            />
+          </Button>
+          <Typography variant="body2" color="text.secondary">
+            або перетягніть зображення сюди
+          </Typography>
+        </Box>
       )}
     </Box>
   );
