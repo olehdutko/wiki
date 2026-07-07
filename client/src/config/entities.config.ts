@@ -47,6 +47,15 @@ const namedEntityColumns: GridColumn[] = [
     { field: 'item_count', headerName: 'к-сть', width: 150, type: 'number', editable: false }
 ];
 
+const epohaColumns: GridColumn[] = [
+    { field: 'id', headerName: 'ID', width: 80, type: 'number', valueFormatter: (params) => String(params.value) },
+    { field: 'dates', headerName: 'Діапазон дат', width: 200, editable: true, type: 'string' },
+    { field: 'ukr', headerName: 'Українська', width: 200, editable: true, type: 'string' },
+    { field: 'eng', headerName: 'English', width: 200, editable: true, type: 'string' },
+    { field: 'rus', headerName: 'Москальська', width: 200, editable: true, type: 'string' },
+    { field: 'comments', headerName: 'Коментарі', width: 300, editable: true, type: 'string' }
+];
+
 const pommelColumns: GridColumn[] = [
     { field: 'id', headerName: 'ID', width: 80, type: 'number', valueFormatter: (params) => String(params.value) },
     { field: 'ukr', headerName: 'Українська назва', width: 200, editable: true, type: 'string' },
@@ -151,6 +160,14 @@ const namedEntityFormFields: FormField[] = [
     { name: 'rus', label: 'Москальська назва', type: 'text', maxLength: 100 }
 ];
 
+const epohaFormFields: FormField[] = [
+    { name: 'dates', label: 'Діапазон дат', type: 'text', maxLength: 255, required: true },
+    { name: 'ukr', label: 'Українська назва', type: 'text', maxLength: 100, required: true },
+    { name: 'eng', label: 'English name', type: 'text', maxLength: 100 },
+    { name: 'rus', label: 'Москальська назва', type: 'text', maxLength: 100 },
+    { name: 'comments', label: 'Коментарі', type: 'textarea', maxLength: 1000 }
+];
+
 const pommelFormFields: FormField[] = [
     { name: 'ukr', label: 'Українська назва', type: 'text', maxLength: 100 },
     { name: 'eng', label: 'English name', type: 'text', maxLength: 100 },
@@ -247,8 +264,8 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
         name: 'epoha',
         displayName: 'Епохи',
         apiEndpoint: '/epoha',
-        columns: namedEntityColumns,
-        formFields: namedEntityFormFields,
+        columns: epohaColumns,
+        formFields: epohaFormFields,
         useForm: false,
         supportsInlineEditing: true
     },

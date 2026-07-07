@@ -92,23 +92,29 @@ export class Epoha implements NamedEntity {
     @IsNumber()
     id!: number;
 
-    @IsOptional()
+    @IsString()
+    @MaxLength(255)
+    dates!: string;
+
     @IsOptional()
     @IsString()
     @MaxLength(100)
     ukr?: string | null;
 
     @IsOptional()
-    @IsOptional()
     @IsString()
     @MaxLength(100)
     eng?: string | null;
 
     @IsOptional()
-    @IsOptional()
     @IsString()
     @MaxLength(100)
     rus?: string | null;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(1000)
+    comments?: string | null;
 }
 
 export class GlobalType implements NamedEntity {

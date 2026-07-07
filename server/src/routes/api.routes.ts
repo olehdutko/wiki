@@ -42,6 +42,23 @@ const namedEntityValidation = [
     body('rus').optional().isString().isLength({ max: 100 })
 ];
 
+// Валідація для епох (обов'язковий текстовий діапазон дат)
+const epohaValidation = [
+    body('dates').notEmpty().withMessage('Діапазон дат обов\'язковий').isString().isLength({ max: 255 }),
+    body('ukr').optional().isString().isLength({ max: 100 }),
+    body('eng').optional().isString().isLength({ max: 100 }),
+    body('rus').optional().isString().isLength({ max: 100 }),
+    body('comments').optional().isString().isLength({ max: 1000 })
+];
+
+const epohaUpdateValidation = [
+    body('dates').optional().isString().isLength({ max: 255 }),
+    body('ukr').optional().isString().isLength({ max: 100 }),
+    body('eng').optional().isString().isLength({ max: 100 }),
+    body('rus').optional().isString().isLength({ max: 100 }),
+    body('comments').optional().isString().isLength({ max: 1000 })
+];
+
 // Валідація для часткового оновлення (inline редагування)
 const namedEntityUpdateValidation = [
     body('ukr').optional().isString().isLength({ max: 100 }),
@@ -289,8 +306,8 @@ router.get('/epoha/search', epohaController.search.bind(epohaController));
 router.get('/epoha/count', epohaController.getCount.bind(epohaController));
 router.get('/epoha/max-id', epohaController.getMaxId.bind(epohaController));
 router.get('/epoha/:id', epohaController.getById.bind(epohaController));
-router.post('/epoha', namedEntityValidation, epohaController.create.bind(epohaController));
-router.put('/epoha/:id', namedEntityUpdateValidation, epohaController.update.bind(epohaController));
+router.post('/epoha', epohaValidation, epohaController.create.bind(epohaController));
+router.put('/epoha/:id', epohaUpdateValidation, epohaController.update.bind(epohaController));
 router.delete('/epoha/:id', epohaController.delete.bind(epohaController));
 
 // Sharpening (заточення)

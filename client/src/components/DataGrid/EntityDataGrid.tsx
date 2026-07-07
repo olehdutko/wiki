@@ -550,6 +550,8 @@ export function EntityDataGrid<T extends BaseEntity>({
                 return ['ukr_name', 'eng_name', 'rus_name', 'category_ids'];
             case 'pommel':
                 return ['ukr', 'eng', 'type', 'description', 'rus'];
+            case 'epoha':
+                return ['dates', 'ukr', 'eng', 'rus', 'comments'];
             default:
                 return ['ukr', 'eng', 'rus'];
         }
