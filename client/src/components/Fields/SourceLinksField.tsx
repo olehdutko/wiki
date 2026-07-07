@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Box, TextField, Chip, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Box, TextField, Chip, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Tooltip } from '@mui/material';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 interface SourceLinksFieldProps {
   label: string;
@@ -17,6 +18,7 @@ export const SourceLinksField: React.FC<SourceLinksFieldProps> = ({
   const [newItem, setNewItem] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
 
   const items = value
     .split(',')
@@ -47,6 +49,16 @@ export const SourceLinksField: React.FC<SourceLinksFieldProps> = ({
     }
     setDeleteDialogOpen(false);
     setItemToDelete(null);
+  };
+
+  const handleCopy = async (item: string) => {
+    try {
+      await navigator.clipboard.writeText(item);
+      setCopied(item);
+      setTimeout(() => setCopied(null), 1500);
+    } catch (err) {
+      console.error('Copy failed:', err);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -95,6 +107,8 @@ export const SourceLinksField: React.FC<SourceLinksFieldProps> = ({
               maxWidth: '100%',
               height: 'auto',
               backgroundColor: '#e3f2fd',
+              userSelect: 'text',
+              cursor: 'text',
               '&:hover': {
                 backgroundColor: '#bbdefb'
               },
@@ -110,6 +124,23 @@ export const SourceLinksField: React.FC<SourceLinksFieldProps> = ({
                 }
               }
             }}
+            icon={
+              (<Tooltip title={copied === item ? 'Скопійовано!' : 'Копіювати'}>
+                <IconButton
+                  size="small"
+                  onClick={() => handleCopy(item)}
+                  sx={{
+                    p: 0.3,
+                    ml: 0.5,
+                    color: copied === item ? 'success.main' : 'text.secondary',
+                    '&:hover': { color: 'primary.main' }
+                  }}
+                >
+                  <ContentCopyIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Tooltip>
+              ) as unknown as React.ReactElement
+            }
           />
         ))}
       </Box>
