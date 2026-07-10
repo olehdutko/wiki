@@ -375,6 +375,8 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
             { field: 'ukr_name', headerName: 'Українська назва', width: 250, editable: true, type: 'string' },
             { field: 'eng_name', headerName: 'English name', width: 250, editable: true, type: 'string' },
             { field: 'rus_name', headerName: 'Москальська назва', width: 250, editable: true, type: 'string' },
+            { field: 'lat', headerName: 'Широта', width: 120, editable: true, type: 'number' },
+            { field: 'lng', headerName: 'Довгота', width: 120, editable: true, type: 'number' },
             { field: 'item_count', headerName: 'к-сть', width: 150, type: 'number', editable: false }
         ],
         formFields: [
@@ -393,6 +395,15 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
         columns: weaponColumns,
         formFields: weaponFormFields,
         useForm: true // Для зброї використовуємо форми замість грід-редагування
+    },
+
+    'map': {
+        name: 'map',
+        displayName: 'Мапа',
+        apiEndpoint: '/weapons/map',
+        columns: [],
+        formFields: [],
+        useForm: false
     }
 };
 

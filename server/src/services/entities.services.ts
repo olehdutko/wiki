@@ -5,7 +5,9 @@
 import type { RowDataPacket, ResultSetHeader } from 'mysql2';
 import { BaseService } from './base.service';
 import { pool } from '../config/database.config';
+import { geocodeTerritory } from '../utils/geocoding';
 import { getItemImageUrl, ItemImagesService } from './itemImages.service';
+import { findExistingItemFolderName } from './itemImages.service';
 
 // ================= UTILITY FUNCTIONS FOR UNIT CONVERSION =================
 
@@ -383,9 +385,10 @@ export class TerritoryService extends BaseService<Territory> {
                 return existing[0] as Territory;
             }
 
+            const coords = await geocodeTerritory(trimmed);
             const [result] = await pool.execute(
-                `INSERT INTO \`${this.tableName}\` (ukr_name) VALUES (?)`,
-                [trimmed]
+                `INSERT INTO \`${this.tableName}\` (ukr_name, lat, lng) VALUES (?, ?, ?)`,
+                [trimmed, coords?.lat ?? null, coords?.lng ?? null]
             ) as [ResultSetHeader, any];
 
             const created = await this.findById(result.insertId);
@@ -397,6 +400,43 @@ export class TerritoryService extends BaseService<Territory> {
             console.error(`Помилка при пошуку/створенні території:`, error);
             throw new Error('Не вдалося обробити територію');
         }
+    }
+
+    /**
+     * Створити територію з автоматичним геокодуванням координат
+     */
+    override async create(data: Omit<Territory, 'id'>): Promise<Territory> {
+        const query = data.ukr_name || data.eng_name || data.rus_name || '';
+        if (data.lat == null || data.lng == null) {
+            const coords = await geocodeTerritory(query);
+            if (coords) {
+                (data as any).lat = coords.lat;
+                (data as any).lng = coords.lng;
+            }
+        }
+        return super.create(data);
+    }
+
+    /**
+     * Оновити територію з автоматичним геокодуванням, якщо змінилась назва
+     */
+    override async update(id: number, data: Partial<Omit<Territory, 'id'>>): Promise<Territory | null> {
+        if (data.ukr_name != null || data.eng_name != null || data.rus_name != null) {
+            const existing = await this.findById(id);
+            const nameChanged =
+                (data.ukr_name != null && data.ukr_name !== existing?.ukr_name) ||
+                (data.eng_name != null && data.eng_name !== existing?.eng_name) ||
+                (data.rus_name != null && data.rus_name !== existing?.rus_name);
+            if (nameChanged && (data.lat == null || data.lng == null)) {
+                const query = data.ukr_name || data.eng_name || data.rus_name || existing?.ukr_name || '';
+                const coords = await geocodeTerritory(query);
+                if (coords) {
+                    (data as any).lat = coords.lat;
+                    (data as any).lng = coords.lng;
+                }
+            }
+        }
+        return super.update(id, data);
     }
 
     /**
@@ -667,7 +707,7 @@ export class WeaponItemService extends BaseService<WeaponItem> {
      */
     private async getItemTerritories(itemId: number): Promise<Territory[]> {
         const [rows] = await pool.execute(
-            `SELECT it.territory_id, t.ukr_name, t.eng_name, t.rus_name
+            `SELECT it.territory_id, t.ukr_name, t.eng_name, t.rus_name, t.lat, t.lng
              FROM item_territories it
              JOIN territory t ON it.territory_id = t.id
              WHERE it.item_id = ?
@@ -679,8 +719,59 @@ export class WeaponItemService extends BaseService<WeaponItem> {
             id: row.territory_id,
             ukr_name: row.ukr_name,
             eng_name: row.eng_name,
-            rus_name: row.rus_name
+            rus_name: row.rus_name,
+            lat: row.lat,
+            lng: row.lng
         })) as Territory[];
+    }
+
+    /**
+     * Отримати дані для мапи: айтеми з їхніми територіями та primary зображенням.
+     */
+    async getMapData(): Promise<Array<{
+        itemId: number;
+        ukr_name: string;
+        eng_name?: string | null;
+        rus_name?: string | null;
+        territoryId: number;
+        territoryName: string;
+        lat: number;
+        lng: number;
+        primary_image_url: string | null;
+    }>> {
+        // Усі айтеми з хоча б однією територією, що має координати
+        const [rows] = await pool.execute(
+            `SELECT
+                i.id AS itemId,
+                i.ukr_name,
+                i.eng_name,
+                i.rus_name,
+                t.id AS territoryId,
+                t.ukr_name AS territoryName,
+                t.lat,
+                t.lng,
+                ii.file_name AS primaryFileName
+             FROM items i
+             JOIN item_territories it ON it.item_id = i.id
+             JOIN territory t ON t.id = it.territory_id
+             LEFT JOIN item_images ii ON ii.item_id = i.id AND ii.is_primary = 1
+             WHERE t.lat IS NOT NULL AND t.lng IS NOT NULL
+             ORDER BY i.id, t.id`
+        ) as [RowDataPacket[], any];
+
+        return rows.map((row: any) => ({
+            itemId: row.itemId,
+            ukr_name: row.ukr_name,
+            eng_name: row.eng_name,
+            rus_name: row.rus_name,
+            territoryId: row.territoryId,
+            territoryName: row.territoryName,
+            lat: row.lat,
+            lng: row.lng,
+            primary_image_url: row.primaryFileName
+                ? `/uploads/items/${findExistingItemFolderName({ id: row.itemId, eng_name: row.eng_name, ukr_name: row.ukr_name, rus_name: row.rus_name })}/${row.primaryFileName}`
+                : null
+        }));
     }
 
     /**

@@ -314,6 +314,14 @@ export class Territory implements BaseEntity {
     id!: number;
 
     @IsOptional()
+    @IsNumber()
+    lat?: number | null;
+
+    @IsOptional()
+    @IsNumber()
+    lng?: number | null;
+
+    @IsOptional()
     @IsString()
     @MaxLength(300)
     ukr_name!: string;

@@ -43,6 +43,7 @@ import {
   Handshake as UsageIcon,
   Straighten as DollsIcon,
   Map as TerritoriesIcon,
+  Map as MapIcon,
   Layers as ClassificationsIcon
 } from '@mui/icons-material';
 
@@ -51,6 +52,8 @@ import { ClassificationsDataGrid } from './components/DataGrid/ClassificationsDa
 import type { EntityType, BaseEntity } from './types/api.types';
 import { getEntityDisplayName } from './config/entities.config';
 import { apiService } from './services/api.service';
+import { WeaponEditDialog } from './components/WorldMap/WeaponEditDialog';
+import { WorldMapPage } from './components/WorldMap/WorldMapPage';
 
 // Конфігурація ширини бічної панелі
 const DRAWER_WIDTH = 224;
@@ -69,7 +72,8 @@ const ENTITY_ICONS: Record<EntityType, React.ReactElement> = {
   'sharpening': <SharpeningIcon />,
   'usage': <UsageIcon />,
   'dolls': <DollsIcon />,
-  'classification-items': <ClassificationsIcon />
+  'classification-items': <ClassificationsIcon />,
+  'map': <MapIcon />
 };
 
 // Групування сутностей
@@ -91,6 +95,10 @@ const ENTITY_GROUPS: Array<{ title: string; entities: EntityType[] }> = [
       'epoha',
       'territories'
     ]
+  },
+  {
+    title: 'Візуалізація',
+    entities: ['map']
   }
 ];
 
@@ -106,6 +114,7 @@ function App() {
   const [weaponsInitialCategoryId, setWeaponsInitialCategoryId] = useState<number | null>(null);
   const [weaponsInitialTerritoryId, setWeaponsInitialTerritoryId] = useState<number | null>(null);
   const [weaponsInitialFilterLabel, setWeaponsInitialFilterLabel] = useState<string | undefined>(undefined);
+  const [weaponEditDialog, setWeaponEditDialog] = useState<{ open: boolean; itemId: number | null }>({ open: false, itemId: null });
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -113,6 +122,16 @@ function App() {
   // Перевірка здоров'я API при завантаженні
   useEffect(() => {
     checkApiHealth();
+
+    // Відкриття редагування айтема за URL /weapons/:id/
+    const match = window.location.pathname.match(/^\/weapons\/(\d+)\/?$/);
+    if (match) {
+      const itemId = parseInt(match[1], 10);
+      if (!isNaN(itemId)) {
+        setCurrentEntity('weapons');
+        setWeaponEditDialog({ open: true, itemId });
+      }
+    }
   }, []);
 
   const checkApiHealth = async () => {
@@ -152,7 +171,21 @@ function App() {
     // TODO: Відкрити форму редагування
   };
 
-  const handleViewRelatedItems = (payload: { entityType: 'weapons'; filterModel?: any; categoryId?: number; territoryId?: number; filterLabel?: string }) => {
+  const openWeaponEditById = async (itemId: number) => {
+    try {
+      const weapon = await apiService.getWeaponById(itemId);
+      if (weapon) {
+        setCurrentEntity('weapons');
+        setWeaponEditDialog({ open: true, itemId });
+      } else {
+        console.warn('Айтем не знайдено:', itemId);
+      }
+    } catch (error) {
+      console.error('Помилка завантаження айтема:', error);
+    }
+  };
+
+      const handleViewRelatedItems = (payload: { entityType: 'weapons'; filterModel?: any; categoryId?: number; territoryId?: number; filterLabel?: string }) => {
     if (payload.filterModel) {
       setWeaponsInitialFilterModel(payload.filterModel);
       setWeaponsInitialCategoryId(null);
@@ -508,7 +541,9 @@ function App() {
 
         {/* Грід даних */}
         <Container maxWidth={false} disableGutters sx={{ height: 'calc(100vh - 180px)' }}>
-          {currentEntity === 'classifications' || currentEntity === 'classification-items' ? (
+          {currentEntity === 'map' ? (
+            <WorldMapPage />
+          ) : currentEntity === 'classifications' || currentEntity === 'classification-items' ? (
             <ClassificationsDataGrid />
           ) : (
             <EntityDataGrid<BaseEntity>
@@ -544,6 +579,25 @@ function App() {
           </Alert>
         ) : undefined}
       </Snackbar>
+
+      {weaponEditDialog.itemId && (
+        <WeaponEditDialog
+          itemId={weaponEditDialog.itemId}
+          open={weaponEditDialog.open}
+          onClose={() => {
+            setWeaponEditDialog({ open: false, itemId: null });
+            if (window.location.pathname.startsWith('/weapons/')) {
+              window.history.replaceState({}, '', '/');
+            }
+          }}
+          onSave={() => {
+            setWeaponEditDialog({ open: false, itemId: null });
+            if (window.location.pathname.startsWith('/weapons/')) {
+              window.history.replaceState({}, '', '/');
+            }
+          }}
+        />
+      )}
     </Box>
   );
 }

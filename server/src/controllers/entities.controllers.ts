@@ -548,6 +548,24 @@ export class WeaponItemController {
         }
     }
 
+    async getMapData(_req: Request, res: Response): Promise<void> {
+        try {
+            const data = await this.weaponService.getMapData();
+            res.status(200).json({
+                success: true,
+                data,
+                message: 'Дані для мапи успішно отримано'
+            });
+        } catch (error) {
+            console.error('Помилка при отриманні даних для мапи:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Не вдалося отримати дані для мапи',
+                error: error instanceof Error ? error.message : 'Невідома помилка'
+            });
+        }
+    }
+
     async delete(req: Request, res: Response): Promise<void> {
         try {
             const id = parseInt(req.params.id);
