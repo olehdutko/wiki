@@ -6,6 +6,7 @@ import { randomUUID } from 'crypto';
 import { pool } from '../config/database.config';
 import fs from 'fs';
 import path from 'path';
+import sharp from 'sharp';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -30,20 +31,22 @@ export class UploadService {
         file: any
     ): Promise<{ imageUrl: string }> {
         try {
-            // Генеруємо унікальне ім'я файлу
-            const fileExtension = file.originalname.split('.').pop() || 'jpg';
+            // Конвертуємо webp в jpg, інші зображення зберігаємо як є
+            const isWebp = file.mimetype === 'image/webp';
+            const fileExtension = isWebp ? 'jpg' : (file.originalname.split('.').pop() || 'jpg');
             const fileName = `${entityType}_${entityId}_${randomUUID()}.${fileExtension}`;
-            
+
             // Папка для конкретного типу сутності
             const entityDir = path.join(fullUploadDir, entityType);
             if (!fs.existsSync(entityDir)) {
                 fs.mkdirSync(entityDir, { recursive: true });
             }
-            
+
             const filePath = path.join(entityDir, fileName);
-            
-            // Зберігаємо файл
-            fs.writeFileSync(filePath, file.buffer);
+
+            // Зберігаємо файл (webp конвертуємо в jpg)
+            const finalBuffer = isWebp ? await sharp(file.buffer).jpeg({ quality: 92 }).toBuffer() : file.buffer;
+            fs.writeFileSync(filePath, finalBuffer);
             
             // Формуємо URL (відносний шлях)
             const imageUrl = `/uploads/${WIKI_FOLDER}/${entityType}/${fileName}`;

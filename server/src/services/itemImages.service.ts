@@ -4,6 +4,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import sharp from 'sharp';
 import { pool } from '../config/database.config';
 import { getItemFolderName, generateFileName } from '../utils/slug';
 
@@ -11,7 +12,7 @@ import { getItemFolderName, generateFileName } from '../utils/slug';
 const UPLOAD_BASE_DIR = process.env.ITEM_UPLOAD_DIR || '/Users/odutko/projects/wiki/public/uploads/items';
 
 // Дозволені MIME-типи
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png'];
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export interface ItemImage {
     id: number;
@@ -140,7 +141,11 @@ export class ItemImagesService {
 
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
-            const fileName = generateFileName(item, startIndex + i, file.originalname);
+            // Для webp одразу генеруємо ім'я з розширенням .jpg
+            const originalNameForSlug = file.mimetype === 'image/webp'
+                ? file.originalname.replace(/\.webp$/i, '.jpg')
+                : file.originalname;
+            const fileName = generateFileName(item, startIndex + i, originalNameForSlug);
             const filePath = path.join(itemDir, fileName);
 
             // Якщо файл вже існує — додаємо суфікс
@@ -156,8 +161,11 @@ export class ItemImagesService {
                 suffix++;
             }
 
-            // Зберігаємо файл як є — без обробки
-            fs.writeFileSync(uniqueFilePath, file.buffer);
+            // Конвертуємо webp в jpg, інші формати зберігаємо як є
+            const finalBuffer = file.mimetype === 'image/webp'
+                ? await sharp(file.buffer).jpeg({ quality: 92 }).toBuffer()
+                : file.buffer;
+            fs.writeFileSync(uniqueFilePath, finalBuffer);
 
             // Додаємо запис в БД
             const displayOrder = existingImages.length + i + 1;

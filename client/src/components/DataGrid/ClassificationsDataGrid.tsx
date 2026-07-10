@@ -23,6 +23,7 @@ import {
 import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import { ClassificationForm } from '../Forms/ClassificationForm';
 import { ClassificationItemForm } from '../Forms/ClassificationItemForm';
+import { ImagePreviewCell } from './ImagePreviewCell';
 import { apiService } from '../../services/api.service';
 import type { Classification, ClassificationItem } from '../../types/api.types';
 
@@ -209,6 +210,17 @@ export function ClassificationsDataGrid({ initialClassificationId }: Classificat
   const itemColumns: GridColDef<ClassificationItem>[] = [
     { field: 'id', headerName: 'ID', width: 80, type: 'number' },
     { field: 'display_order', headerName: 'Порядок', width: 100, type: 'number' },
+    {
+      field: 'image_path',
+      headerName: 'Зображення',
+      width: 100,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      renderCell: (params) => (
+        <ImagePreviewCell imageUrl={params.value} previewSize={50} />
+      )
+    },
     { field: 'ukr_name', headerName: 'Українська назва', flex: 1 },
     { field: 'eng_name', headerName: 'English name', flex: 1 },
     { field: 'rus_name', headerName: 'Москальська назва', flex: 1 },

@@ -65,7 +65,7 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId, open
     const handleFiles = (files: FileList | null) => {
         if (!files) return;
         const filtered = Array.from(files).filter(
-            file => file.type === 'image/jpeg' || file.type === 'image/png'
+            file => file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp'
         );
         if (filtered.length === 0) return;
         const newFiles = [...selectedFiles, ...filtered];
@@ -281,7 +281,7 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId, open
                     Вибрати зображення
                     <input
                         type="file"
-                        accept="image/jpeg,image/png"
+                        accept="image/jpeg,image/png,image/webp"
                         multiple
                         hidden
                         onChange={handleFileSelect}
