@@ -22,7 +22,21 @@ interface SourceLinksFieldProps {
 
 const parseLinks = (raw: string): LinkItem[] => {
   if (!raw || !raw.trim() || raw.trim() === '-') return [];
-  const trimmed = raw.trim();
+  let trimmed = raw.trim();
+
+  // Fix double-escaped JSON coming from the DB/API: unescape once more
+  if (trimmed.startsWith('[') && trimmed.includes('\"')) {
+    try {
+      const unescaped = trimmed.replace(/\\"/g, '"');
+      const parsed = JSON.parse(unescaped) as LinkItem[];
+      if (Array.isArray(parsed)) {
+        return parsed.filter(item => item && item.url);
+      }
+    } catch (e) {
+      // fallback below
+    }
+  }
+
   if (trimmed.startsWith('[') && trimmed.includes('{')) {
     try {
       const parsed = JSON.parse(trimmed) as LinkItem[];
@@ -33,13 +47,14 @@ const parseLinks = (raw: string): LinkItem[] => {
       // fallback to splitting
     }
   }
+
   // Split by commas outside brackets (for "JSON], url" cases)
   const parts: string[] = [];
   let current = '';
   let depth = 0;
   for (const ch of trimmed) {
-    if (ch === '[') depth++;
-    if (ch === ']') depth--;
+    if (ch === '[' || ch === '{') depth++;
+    if (ch === ']' || ch === '}') depth--;
     if (ch === ',' && depth === 0) {
       parts.push(current);
       current = '';
