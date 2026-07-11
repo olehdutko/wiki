@@ -97,6 +97,14 @@ class ApiService {
     // ================= ЗАГАЛЬНІ CRUD МЕТОДИ =================
 
     /**
+     * Загальний GET запит
+     */
+    async get<T>(endpoint: string): Promise<ApiResponse<T>> {
+        const response = await this.api.get<ApiResponse<T>>(endpoint);
+        return response.data;
+    }
+
+    /**
      * Отримати всі записи з пагінацією
      */
     async getAll<T extends BaseEntity>(

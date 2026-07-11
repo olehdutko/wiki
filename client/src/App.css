@@ -40,3 +40,8 @@
 .read-the-docs {
   color: #888;
 }
+
+.world-map-preview.leaflet-div-icon {
+  background: transparent !important;
+  border: none !important;
+}

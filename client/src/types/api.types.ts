@@ -73,6 +73,8 @@ export interface Category extends BaseEntity {
 }
 
 export interface Territory extends BaseEntity {
+    lat?: number | null;
+    lng?: number | null;
     ukr_name: string;
     eng_name?: string;
     rus_name?: string;
@@ -203,7 +205,8 @@ export type EntityType =
     | 'guard-type'
     | 'sharpening'
     | 'usage'
-    | 'weapons';
+    | 'weapons'
+    | 'map';
 
 // ================= НАЛАШТУВАННЯ ЗАСТОСУНКУ =================
 

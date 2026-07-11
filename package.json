@@ -45,6 +45,7 @@
     },
     "dependencies": {
         "@aws-sdk/client-s3": "^3.967.0",
+        "axios": "^1.18.1",
         "class-transformer": "^0.5.1",
         "class-validator": "^0.14.0",
         "cors": "^2.8.5",

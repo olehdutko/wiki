@@ -375,6 +375,7 @@ router.delete('/classification-items/:id', classificationItemController.delete.b
 // ================= ГОЛОВНА СУТНІСТЬ - WEAPON ITEMS =================
 
 // Основні CRUD операції
+router.get('/weapons/map', weaponItemController.getMapData.bind(weaponItemController));
 router.get('/weapons', weaponItemController.getAllWithCategory.bind(weaponItemController));
 router.get('/weapons/search', weaponItemController.searchWeapons.bind(weaponItemController));
 router.get('/weapons/count', weaponItemController.getCount.bind(weaponItemController));

@@ -40,7 +40,7 @@ export interface ImageItemInfo {
  * Якщо папка вже існує (будь-який slug) — використовуємо її, щоб не ламати зображення
  * після зміни eng_name. Якщо не знайшли — повертаємо ім'я з новим slug.
  */
-function findExistingItemFolderName(item: ImageItemInfo): string {
+export function findExistingItemFolderName(item: ImageItemInfo): string {
     if (!fs.existsSync(UPLOAD_BASE_DIR)) {
         return getItemFolderName(item);
     }
