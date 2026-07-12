@@ -1,10 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Box, TextField, Chip, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions,
-  IconButton, Tooltip, FormControl, InputLabel, Select, MenuItem, Stack
+  IconButton, Tooltip, Stack
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import SaveIcon from '@mui/icons-material/Save';
+import CancelIcon from '@mui/icons-material/Cancel';
+import AddIcon from '@mui/icons-material/Add';
 
 export interface LinkItem {
   url: string;
@@ -24,8 +27,7 @@ const parseLinks = (raw: string): LinkItem[] => {
   if (!raw || !raw.trim() || raw.trim() === '-') return [];
   let trimmed = raw.trim();
 
-  // Fix double-escaped JSON coming from the DB/API: unescape once more
-  if (trimmed.startsWith('[') && trimmed.includes('\"')) {
+  if (trimmed.startsWith('[') && trimmed.includes('\\"')) {
     try {
       const unescaped = trimmed.replace(/\\"/g, '"');
       const parsed = JSON.parse(unescaped) as LinkItem[];
@@ -48,7 +50,6 @@ const parseLinks = (raw: string): LinkItem[] => {
     }
   }
 
-  // Split by commas outside brackets (for "JSON], url" cases)
   const parts: string[] = [];
   let current = '';
   let depth = 0;
@@ -77,7 +78,6 @@ const parseLinks = (raw: string): LinkItem[] => {
         }
       } catch (e) { /* ignore */ }
     }
-    // plain URL
     items.push({ url: p, type: 'website' });
   }
   return items;
@@ -102,48 +102,43 @@ export const SourceLinksField: React.FC<SourceLinksFieldProps> = ({
   disabled = false
 }) => {
   const items = useMemo(() => parseLinks(value || ''), [value]);
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [newUrl, setNewUrl] = useState('');
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [form, setForm] = useState<LinkItem>({ url: '', title: '', type: 'website', notes: '' });
+  const [editUrl, setEditUrl] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
-  const resetForm = () => setForm({ url: '', title: '', type: 'website', notes: '' });
-
-  const handleAddClick = () => {
-    setEditIndex(null);
-    resetForm();
-    setAddDialogOpen(true);
+  const startAdd = () => {
+    const url = newUrl.trim();
+    if (!url) return;
+    const updated = [...items, { url, type: 'website' as LinkItem['type'] }];
+    onChange(serializeLinks(updated));
+    setNewUrl('');
   };
 
-  const handleEditClick = (index: number, e: React.MouseEvent) => {
+  const startEdit = (index: number, e: React.MouseEvent) => {
     e.stopPropagation();
     if (disabled) return;
     setEditIndex(index);
-    setForm({ ...items[index] });
-    setAddDialogOpen(true);
+    setEditUrl(items[index]?.url || '');
   };
 
-  const handleSave = () => {
-    const url = form.url.trim();
+  const saveEdit = () => {
+    if (editIndex === null) return;
+    const url = editUrl.trim();
     if (!url) return;
-    let updated = [...items];
-    const newItem: LinkItem = {
-      url,
-      title: form.title?.trim() || undefined,
-      type: form.type || 'website',
-      notes: form.notes?.trim() || undefined,
-    };
-    if (editIndex !== null) {
-      updated[editIndex] = newItem;
-    } else {
-      updated.push(newItem);
-    }
+    const updated = items.map((item, i) =>
+      i === editIndex ? { ...item, url } : item
+    );
     onChange(serializeLinks(updated));
-    setAddDialogOpen(false);
-    resetForm();
     setEditIndex(null);
+    setEditUrl('');
+  };
+
+  const cancelEdit = () => {
+    setEditIndex(null);
+    setEditUrl('');
   };
 
   const handleDeleteClick = (index: number) => {
@@ -183,140 +178,147 @@ export const SourceLinksField: React.FC<SourceLinksFieldProps> = ({
       </Typography>
 
       {!disabled && (
-        <Button variant="outlined" size="small" onClick={handleAddClick} sx={{ mb: 2 }}>
-          Додати посилання
-        </Button>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
+          <TextField
+            value={newUrl}
+            onChange={(e) => setNewUrl(e.target.value)}
+            size="small"
+            placeholder="URL джерела"
+            fullWidth
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') startAdd();
+            }}
+          />
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<AddIcon />}
+            onClick={startAdd}
+            disabled={!newUrl.trim()}
+          >
+            Додати
+          </Button>
+        </Stack>
       )}
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, maxHeight: 180, overflowY: 'auto', p: 0.5 }}>
         {items.map((item, index) => (
-          <Chip
-            key={index}
-            label={item.title && item.title.trim() ? item.title.trim() : item.url}
-            size="small"
-            onClick={(e) => handleOpen(e, item.url)}
-            onDelete={disabled ? undefined : () => handleDeleteClick(index)}
-            sx={{
-              maxWidth: '100%',
-              height: 'auto',
-              backgroundColor: item.type === 'video' ? '#ffebee' : '#e3f2fd',
-              userSelect: 'text',
-              cursor: 'pointer',
-              '&:hover': {
-                backgroundColor: item.type === 'video' ? '#ffcdd2' : '#bbdefb',
-              },
-              '& .MuiChip-label': {
-                whiteSpace: 'normal',
-                wordBreak: 'break-word',
-                textDecoration: 'underline',
-                textDecorationColor: 'transparent',
-                '&:hover': {
+          editIndex === index ? (
+            <Box
+              key={`edit-${index}`}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                flex: '1 1 100%',
+                maxWidth: '100%'
+              }}
+            >
+              <TextField
+                value={editUrl}
+                onChange={(e) => setEditUrl(e.target.value)}
+                size="small"
+                fullWidth
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveEdit();
+                  if (e.key === 'Escape') cancelEdit();
+                }}
+                sx={{ minWidth: 200 }}
+              />
+              <Tooltip title="Зберегти">
+                <IconButton size="small" color="primary" onClick={saveEdit} disabled={!editUrl.trim()}>
+                  <SaveIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Скасувати">
+                <IconButton size="small" onClick={cancelEdit}>
+                  <CancelIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          ) : (
+            <Chip
+              key={index}
+              label={item.title && item.title.trim() ? item.title.trim() : item.url}
+              size="small"
+              onClick={(e) => handleOpen(e, item.url)}
+              onDelete={disabled ? undefined : () => handleDeleteClick(index)}
+              sx={{
+                maxWidth: '100%',
+                height: 28,
+                backgroundColor: item.type === 'video' ? '#ffebee' : '#e3f2fd',
+                userSelect: 'text',
+                cursor: 'pointer',
+                '& .MuiChip-label': {
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                   textDecoration: 'underline',
-                  textDecorationColor: 'primary.main',
+                  textDecorationColor: 'transparent',
+                  '&:hover': {
+                    textDecoration: 'underline',
+                    textDecorationColor: 'primary.main',
+                  },
                 },
-              },
-              '& .MuiChip-deleteIcon': {
-                color: '#ef9a9a',
-                transition: 'color 0.2s ease',
-                '&:hover': {
-                  color: '#d32f2f',
+                '& .MuiChip-deleteIcon': {
+                  color: '#ef9a9a',
+                  transition: 'color 0.2s ease',
+                  opacity: 0,
+                  '&:hover': {
+                    color: '#d32f2f',
+                  },
                 },
-              },
-            }}
-            icon={(
-              <Box sx={{ display: 'flex', alignItems: 'center', ml: 0.5 }}>
-                <Tooltip title={copied === item.url ? 'Скопійовано!' : 'Копіювати URL'}>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => handleCopy(e, item)}
-                    sx={{
-                      p: 0.3,
-                      color: copied === item.url ? 'success.main' : 'text.secondary',
-                      '&:hover': { color: 'primary.main' },
-                    }}
-                  >
-                    <ContentCopyIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-                </Tooltip>
-                {!disabled && (
-                  <Tooltip title="Редагувати">
+                '&:hover .MuiChip-deleteIcon': {
+                  opacity: 1
+                }
+              }}
+              icon={(
+                <Box sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  ml: 0.5,
+                  '&:hover .edit-link-icon': {
+                    opacity: 1
+                  }
+                }}>
+                  <Tooltip title={copied === item.url ? 'Скопійовано!' : 'Копіювати URL'}>
                     <IconButton
                       size="small"
-                      onClick={(e) => handleEditClick(index, e)}
+                      onClick={(e) => handleCopy(e, item)}
                       sx={{
                         p: 0.3,
-                        color: 'text.secondary',
+                        color: copied === item.url ? 'success.main' : 'text.secondary',
                         '&:hover': { color: 'primary.main' },
                       }}
                     >
-                      <OpenInNewIcon sx={{ fontSize: 16 }} />
+                      <ContentCopyIcon sx={{ fontSize: 16 }} />
                     </IconButton>
                   </Tooltip>
-                )}
-              </Box>
-            ) as unknown as React.ReactElement}
-          />
+                  {!disabled && (
+                    <Tooltip title="Редагувати">
+                      <IconButton
+                        size="small"
+                        className="edit-link-icon"
+                        onClick={(e) => startEdit(index, e)}
+                        sx={{
+                          p: 0.3,
+                          color: 'text.secondary',
+                          opacity: 0,
+                          transition: 'opacity 0.2s ease',
+                          '&:hover': { color: 'primary.main' },
+                        }}
+                      >
+                        <OpenInNewIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </Box>
+              ) as unknown as React.ReactElement}
+            />
+          )
         ))}
       </Box>
-
-      <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{editIndex !== null ? 'Редагувати посилання' : 'Додати посилання'}</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              label="URL"
-              value={form.url}
-              onChange={(e) => setForm({ ...form, url: e.target.value })}
-              fullWidth
-              size="small"
-              required
-            />
-            <TextField
-              label="Назва (title)"
-              value={form.title || ''}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              fullWidth
-              size="small"
-              placeholder="Якщо пусто, покажеться URL"
-            />
-            <FormControl fullWidth size="small">
-              <InputLabel>Тип</InputLabel>
-              <Select
-                value={form.type || 'website'}
-                label="Тип"
-                onChange={(e) => setForm({ ...form, type: e.target.value as LinkItem['type'] })}
-              >
-                <MenuItem value="website">Веб-сайт</MenuItem>
-                <MenuItem value="video">Відео</MenuItem>
-                <MenuItem value="article">Стаття</MenuItem>
-                <MenuItem value="book">Книга</MenuItem>
-                <MenuItem value="other">Інше</MenuItem>
-              </Select>
-            </FormControl>
-            <TextField
-              label="Примітки"
-              value={form.notes || ''}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              fullWidth
-              size="small"
-              multiline
-              rows={2}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => { setAddDialogOpen(false); resetForm(); setEditIndex(null); }}>
-            Скасувати
-          </Button>
-          <Button
-            onClick={handleSave}
-            variant="contained"
-            disabled={!form.url.trim()}
-          >
-            Зберегти
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle>Підтвердження видалення</DialogTitle>
