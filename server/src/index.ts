@@ -15,7 +15,7 @@ import path from 'path';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const DEFAULT_PORT = parseInt(process.env.PORT || '3001', 10);
 
 // ================= MIDDLEWARE =================
 
@@ -128,7 +128,7 @@ app.use((err: any, _req: express.Request, res: express.Response, next: express.N
 
 // ================= ЗАПУСК СЕРВЕРА =================
 
-async function startServer() {
+async function startServer(port: number = DEFAULT_PORT) {
     try {
         // Тестуємо підключення до бази даних
         const dbConnected = await testConnection();
@@ -139,7 +139,7 @@ async function startServer() {
         }
 
         // Запускаємо сервер
-        const server = app.listen(PORT, () => {
+        const server = app.listen(port, () => {
             if (!process.env.DUMP_SECRET) {
                 console.warn(
                     '⚠️ DUMP_SECRET не задано: /api/database/dump доступний без секрету. ' +
@@ -148,11 +148,21 @@ async function startServer() {
             }
             console.log('=================================');
             console.log('🚀 Сервер успішно запущено!');
-            console.log(`📍 Адреса: http://localhost:${PORT}`);
+            console.log(`📍 Адреса: http://localhost:${port}`);
             console.log(`🔧 Середовище: ${process.env.NODE_ENV || 'development'}`);
-            console.log(`📚 API документація: http://localhost:${PORT}/api/info`);
-            console.log(`💚 Здоров'я API: http://localhost:${PORT}/api/health`);
+            console.log(`📚 API документація: http://localhost:${port}/api/info`);
+            console.log(`💚 Здоров'я API: http://localhost:${port}/api/health`);
             console.log('=================================');
+        });
+
+        server.on('error', (err: any) => {
+            if (err.code === 'EADDRINUSE') {
+                console.warn(`⚠️ Порт ${port} зайнятий, пробую порт ${port + 1}`);
+                startServer(port + 1);
+            } else {
+                console.error('❌ Помилка сервера:', err);
+                process.exit(1);
+            }
         });
 
         // Graceful shutdown
@@ -195,4 +205,4 @@ async function startServer() {
 }
 
 // Запускаємо сервер
-startServer(); 
+startServer(DEFAULT_PORT);

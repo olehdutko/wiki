@@ -248,4 +248,5 @@ client/.vite/
 
 # Server build directory
 server/dist/
-server/build/ 
+server/build/
+.server-port
