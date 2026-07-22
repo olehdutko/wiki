@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { ImagePreviewCell } from './ImagePreviewCell';
+import { GridImageDropCell } from './GridImageDropCell';
 import {
     DataGrid,
     GridToolbar
@@ -910,7 +911,18 @@ export function EntityDataGrid<T extends BaseEntity>({
 
     // Оновлюємо конфігурацію колонок
     const columns: GridColDef[] = [
-        // Колонка з діями (перша колонка)
+        // Колонка Готовність (тільки для weapons) — індекс 0
+        ...(entityType === 'weapons' ? [{
+            field: 'ready',
+            headerName: 'Готовність',
+            width: 50,
+            type: 'boolean',
+            sortable: true,
+            filterable: true,
+            editable: false,
+            renderCell: renderBooleanCell
+        }] : []),
+        // Колонка з діями
         ...(enableEdit || enableDelete ? [{
             field: 'actions',
             headerName: 'Дії',
@@ -940,7 +952,15 @@ export function EntityDataGrid<T extends BaseEntity>({
             filterable: false,
             disableColumnMenu: true,
             renderCell: (params: any) => (
-                <ImagePreviewCell imageUrl={params.value} previewSize={50} />
+                <GridImageDropCell 
+                    itemId={params.row.id}
+                    imageUrl={params.value}
+                    previewSize={50}
+                    onImageUploaded={() => {
+                        // Refresh data after upload
+                        params.api.refreshRows([params.id]);
+                    }}
+                />
             )
         }] : []),
         // Інші колонки
@@ -954,10 +974,16 @@ export function EntityDataGrid<T extends BaseEntity>({
                 editable: isEditable,
                 type: col.type,
                 valueGetter: col.valueGetter,
+                headerAlign: col.field === 'id' ? 'center' : undefined,
+                align: col.field === 'id' ? 'center' : undefined,
 renderCell: (params: any) => {
                     // Спеціальний рендеринг для нового рядка
                     if (params.row.isNew && getNewRowFields(entityType).includes(col.field)) {
                         return renderNewRowTextField(params, col.field);
+                    }
+                    // Центрування для ID
+                    if (col.field === 'id') {
+                        return <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>{params.formattedValue || params.value}</Box>;
                     }
 
                     return col.type === 'boolean' ? renderBooleanCell(params) : (col.renderCell ? col.renderCell(params) : params.value);

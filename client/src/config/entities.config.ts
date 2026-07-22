@@ -81,9 +81,8 @@ const territoryColumns: GridColumn[] = [
 ];
 
 const weaponColumns: GridColumn[] = [
-    { field: 'id', headerName: 'ID', width: 58, type: 'number', valueFormatter: (params) => String(params.value) },
-    { field: 'ready', headerName: 'Готовність', width: 100, type: 'boolean', editable: false },
-    { field: 'ukr_name', headerName: 'Українська назва', width: 200, editable: false },
+    { field: 'id', headerName: 'ID', width: 80, type: 'number', valueFormatter: (params) => String(params.value) },
+    { field: 'ukr_name', headerName: 'Українська назва', width: 250, editable: false },
     { field: 'eng_name', headerName: 'English name', width: 200, editable: false },
     { field: 'rus_name', headerName: 'Москальська назва', width: 200, editable: false },
     { field: 'description_ukr', headerName: 'Опис українською', width: 180, editable: false },
