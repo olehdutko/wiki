@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import { CloudUpload } from '@mui/icons-material';
 import { apiService } from '../../services/api.service';
+import { ImagePreviewCell } from './ImagePreviewCell';
 
 interface GridImageDropCellProps {
     itemId: number;
@@ -65,30 +66,44 @@ export function GridImageDropCell({ itemId, imageUrl, previewSize = 50, onImageU
         }
     }, [itemId, onImageUploaded]);
 
-    // If image exists — show preview
+    // If image exists — show preview with hover popup and allow drag-and-drop replacement
     if (uploadedImageUrl) {
         return (
             <Box
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
                 sx={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     height: '100%',
-                    width: '100%'
+                    width: '100%',
+                    border: '2px dashed',
+                    borderColor: dragOver ? 'primary.main' : 'transparent',
+                    bgcolor: dragOver ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
+                    borderRadius: 1,
+                    transition: 'all 0.2s',
+                    position: 'relative',
+                    cursor: 'pointer'
                 }}
             >
-                <img
-                    src={uploadedImageUrl}
-                    alt=""
-                    style={{
-                        width: previewSize,
-                        height: previewSize,
-                        objectFit: 'cover',
-                        borderRadius: 4,
-                        border: '1px solid #e0e0e0',
-                        display: 'block'
-                    }}
-                />
+                <ImagePreviewCell imageUrl={uploadedImageUrl} previewSize={previewSize} />
+                {error && (
+                    <Typography
+                        variant="caption"
+                        color="error"
+                        sx={{
+                            position: 'absolute',
+                            bottom: 2,
+                            fontSize: '10px',
+                            textAlign: 'center',
+                            width: '100%'
+                        }}
+                    >
+                        {error}
+                    </Typography>
+                )}
             </Box>
         );
     }

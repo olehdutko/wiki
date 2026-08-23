@@ -1147,6 +1147,7 @@ export function EditEntityForm<T extends BaseEntity>({
               value={value || ''}
               onChange={(val) => handleInputChange(field.name, val)}
               disabled={isReadOnly}
+              placeholder={field.name === 'source' ? 'URL джерела інформації' : 'URL додаткових матеріалів'}
             />
           );
         }
@@ -2108,7 +2109,7 @@ export function EditEntityForm<T extends BaseEntity>({
           <Tab label="Опис англійською" />
           <Tab label="Опис москальською" />
           {mode !== 'create' && <Tab label="Схожі об'єкти" />}
-          <Tab label="Зображення" />
+          {mode !== 'create' && <Tab label="Зображення" />}
         </Tabs>
       </DialogTitle>
 
@@ -2138,7 +2139,7 @@ export function EditEntityForm<T extends BaseEntity>({
           {activeTab === 2 && renderDescriptionTab('description_eng')}
           {activeTab === 3 && renderDescriptionTab('description_rus')}
           {mode !== 'create' && activeTab === 4 && renderSimilarObjectsTab()}
-          {activeTab === (mode === 'create' ? 4 : 5) && <ItemImageGallery itemId={entity?.id || 0} open={open} />}
+          {mode !== 'create' && activeTab === 5 && <ItemImageGallery itemId={entity?.id || 0} open={open} />}
         </Box>
       </DialogContent>
 
@@ -2182,6 +2183,7 @@ export function EditEntityForm<T extends BaseEntity>({
         currentItemId={entity?.id || 0}
         currentItemName={(entity as any)?.ukr_name || (entity as any)?.eng_name || ''}
         onLinkAdded={loadLinkedObjects}
+        existingLinkedIds={linkedObjects.map(obj => obj.other_item)}
       />
     </Dialog>
   );

@@ -61,7 +61,8 @@ export function ImagePreviewCell({ imageUrl, previewSize = 50 }: ImagePreviewCel
                 style={{
                     width: previewSize,
                     height: previewSize,
-                    objectFit: 'cover',
+                    objectFit: 'contain',
+                    backgroundColor: '#f5f5f5',
                     borderRadius: 4,
                     border: '1px solid #e0e0e0',
                     cursor: 'pointer',

@@ -21,6 +21,7 @@ interface SourceLinksFieldProps {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  placeholder?: string;
 }
 
 const parseLinks = (raw: string): LinkItem[] => {
@@ -99,7 +100,8 @@ export const SourceLinksField: React.FC<SourceLinksFieldProps> = ({
   label,
   value,
   onChange,
-  disabled = false
+  disabled = false,
+  placeholder = 'URL'
 }) => {
   const items = useMemo(() => parseLinks(value || ''), [value]);
   const [newUrl, setNewUrl] = useState('');
@@ -183,7 +185,7 @@ export const SourceLinksField: React.FC<SourceLinksFieldProps> = ({
             value={newUrl}
             onChange={(e) => setNewUrl(e.target.value)}
             size="small"
-            placeholder="URL джерела"
+            placeholder={placeholder}
             fullWidth
             onKeyDown={(e) => {
               if (e.key === 'Enter') startAdd();
