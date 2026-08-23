@@ -358,7 +358,8 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId, open
                                     sx={{
                                         width: '100%',
                                         height: 140,
-                                        objectFit: 'cover',
+                                        objectFit: 'contain',
+                                        backgroundColor: '#f5f5f5',
                                         cursor: 'pointer',
                                         display: 'block',
                                         filter: image.show ? 'none' : 'grayscale(100%)',
@@ -431,7 +432,8 @@ export const ItemImageGallery: React.FC<ItemImageGalleryProps> = ({ itemId, open
                                 sx={{
                                     width: '100%',
                                     height: 120,
-                                    objectFit: 'cover',
+                                    objectFit: 'contain',
+                                    backgroundColor: '#f5f5f5',
                                     cursor: 'pointer',
                                     border: image.is_primary ? '2px solid #1976d2' : '2px solid transparent',
                                     borderRadius: 1,

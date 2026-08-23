@@ -220,8 +220,8 @@ const weaponFormFields: FormField[] = [
 
     // Додаткова інформація
     { name: 'category_ids', label: 'Категорії', type: 'multiselect', required: true },
-    { name: 'source', label: 'Джерело', type: 'textarea', maxLength: 800 },
-    { name: 'links', label: 'Посилання', type: 'textarea', maxLength: 1500 },
+    { name: 'source', label: 'Джерело інформації', type: 'textarea', maxLength: 800 },
+    { name: 'links', label: 'Додаткові матеріали', type: 'textarea', maxLength: 1500 },
     { name: 'comments', label: 'Коментарі', type: 'textarea', maxLength: 800 }
 ];
 
@@ -291,7 +291,7 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
 
     'sharpening': {
         name: 'sharpening',
-        displayName: 'Заточення',
+        displayName: 'Тип заточування',
         apiEndpoint: '/sharpening',
         columns: namedEntityColumns,
         formFields: namedEntityFormFields,
@@ -311,7 +311,7 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
 
     'classifications': {
         name: 'classifications',
-        displayName: 'Класифікації',
+        displayName: 'Типології',
         apiEndpoint: '/classifications',
         columns: [
             { field: 'id', headerName: 'ID', width: 80, type: 'number', valueFormatter: (params: any) => String(params.value) },

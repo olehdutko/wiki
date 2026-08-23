@@ -27,6 +27,7 @@ interface AddLinkModalProps {
   currentItemId: number;
   currentItemName: string;
   onLinkAdded: () => void;
+  existingLinkedIds?: number[];
 }
 
 interface ItemPreview {
@@ -41,7 +42,8 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
   onClose,
   currentItemId,
   currentItemName,
-  onLinkAdded
+  onLinkAdded,
+  existingLinkedIds = []
 }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [itemId, setItemId] = useState('');
@@ -139,8 +141,9 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
 
     try {
       const results = await apiService.searchItems(searchQuery);
-      // Фільтруємо поточний айтем
-      const filtered = results.filter(item => item.id !== currentItemId);
+      // Фільтруємо поточний айтем та вже наявні зв'язки
+      const existingSet = new Set([currentItemId, ...existingLinkedIds]);
+      const filtered = results.filter(item => !existingSet.has(item.id));
       setSearchResults(filtered);
     } catch (err) {
       setError('Помилка при пошуку');
@@ -156,13 +159,12 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({
     try {
       await apiService.createLink(currentItemId, otherItemId);
       setSuccessMessage('Зв\'язок успішно додано! Можна додати ще.');
-      
-      // Скидаємо форму
+
+      // Скидаємо тільки форму по ID, пошук залишаємо відкритим
       setItemId('');
       setPreviewItem(null);
-      setSearchQuery('');
-      setSearchResults([]);
-      
+      setSearchResults(prev => prev.filter(item => item.id !== otherItemId));
+
       // Оновлюємо батьківський компонент
       onLinkAdded();
     } catch (err: any) {

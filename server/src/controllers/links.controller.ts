@@ -5,6 +5,7 @@ import type { RowDataPacket, ResultSetHeader } from 'mysql2';
 interface LinkedObject extends RowDataPacket {
     id: number;
     item_id: number;
+    other_item: number;
     ukr_name: string;
     eng_name: string;
     rus_name: string;
@@ -38,6 +39,10 @@ export class LinksController {
                 SELECT 
                     l.id,
                     i.id as item_id,
+                    CASE 
+                        WHEN l.item_id = ? THEN l.other_item
+                        WHEN l.other_item = ? THEN l.item_id
+                    END as other_item,
                     i.ukr_name,
                     i.eng_name,
                     i.rus_name
@@ -54,7 +59,7 @@ export class LinksController {
                     l.item_id = ? OR l.other_item = ?
                 ORDER BY 
                     i.ukr_name ASC
-            `, [itemId, itemId, itemId, itemId]);
+            `, [itemId, itemId, itemId, itemId, itemId, itemId]);
 
             console.log('Знайдено пов\'язані об\'єкти:', rows);
 
