@@ -27,7 +27,7 @@ import {
   Tooltip,
   DialogContentText
 } from '@mui/material';
-import { VolumeUp, Delete, Add as AddIcon } from '@mui/icons-material';
+import { VolumeUp, Delete, Add as AddIcon, ChevronLeft, ChevronRight } from '@mui/icons-material';
 
 import { DataGrid } from '@mui/x-data-grid';
 import { getEntityDisplayName } from '../../config/entities.config';
@@ -83,6 +83,12 @@ interface EditEntityFormProps<T extends BaseEntity> {
   mode?: 'edit' | 'create';
   headerColor?: string;
   saveButtonText?: string;
+  /** Масив сусідніх записів для навігації вперед/назад */
+  siblings?: T[];
+  /** Поточний індекс entity у масиві siblings (1-based для відображення) */
+  currentIndex?: number;
+  /** Викликається при навігації до сусіднього запису. Аргумент — новий індекс (0-based). */
+  onNavigate?: (index: number) => void;
 }
 
 interface FormData {
@@ -127,9 +133,13 @@ export function EditEntityForm<T extends BaseEntity>({
   onDelete,
   mode = 'edit',
   headerColor,
-  saveButtonText
+  saveButtonText,
+  siblings = [],
+  currentIndex,
+  onNavigate
 }: EditEntityFormProps<T>) {
   const [formData, setFormData] = useState<FormData>({});
+  const [initialFormData, setInitialFormData] = useState<FormData | null>(null);
   const [territoryInputValue, setTerritoryInputValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -492,6 +502,7 @@ export function EditEntityForm<T extends BaseEntity>({
 
       console.log('📝 Ініціалізація форми:', initialData);
       setFormData(initialData);
+      setInitialFormData(initialData);
       setError(null);
     }
   }, [entity, open, config]);
@@ -705,7 +716,8 @@ export function EditEntityForm<T extends BaseEntity>({
       }
 
       onSave(updatedEntity as T);
-      onClose();
+      // Після збереження залишаємо вікно відкритим і скидаємо dirty-стан
+      setInitialFormData({ ...formData });
     } catch (error: any) {
       setError(error.message || 'Помилка збереження');
     } finally {
@@ -715,6 +727,40 @@ export function EditEntityForm<T extends BaseEntity>({
 
   const handleCancel = () => {
     onClose();
+  };
+
+  const isFormDirty = useCallback((): boolean => {
+    if (!initialFormData) return false;
+    const keys = new Set([
+      ...Object.keys(initialFormData),
+      ...Object.keys(formData)
+    ]);
+    for (const key of keys) {
+      const a = initialFormData[key];
+      const b = formData[key];
+      if (Array.isArray(a) || Array.isArray(b)) {
+        const aa = Array.isArray(a) ? a : [];
+        const bb = Array.isArray(b) ? b : [];
+        if (aa.length !== bb.length || !aa.every((v: any, i: number) => v === bb[i])) {
+          return true;
+        }
+      } else if ((a ?? '') !== (b ?? '')) {
+        return true;
+      }
+    }
+    return false;
+  }, [initialFormData, formData]);
+
+  const handleNavigatePrevious = () => {
+    if (onNavigate && currentIndex !== undefined && currentIndex > 0) {
+      onNavigate(currentIndex - 1);
+    }
+  };
+
+  const handleNavigateNext = () => {
+    if (onNavigate && currentIndex !== undefined && currentIndex < siblings.length - 1) {
+      onNavigate(currentIndex + 1);
+    }
   };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -1921,196 +1967,280 @@ export function EditEntityForm<T extends BaseEntity>({
           background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.25) 50%, transparent 100%)'
         }
       }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5, lineHeight: 1.2 }}>
-              {getItemName()}
-            </Typography>
-            {mode !== 'create' && (
-              <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.8rem', display: 'block', mt: 0 }}>
-                ID: {entity.id}
+        <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+          {/* Верхній рядок: назва + ID зліва, кнопки справа */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', mb: 0.5 }}>
+            <Box sx={{ minWidth: 0, flexShrink: 1, pr: 2 }}>
+              <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5, lineHeight: 1.2 }}>
+                {getItemName()}
               </Typography>
-            )}
-          </Box>
-          <Box sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-            flexWrap: 'nowrap'
-          }}>
-            {readyField && (
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData[readyField.name] === null || formData[readyField.name] === undefined || formData[readyField.name] === '' ? false : Boolean(formData[readyField.name])}
-                    onChange={(e) => handleInputChange(readyField.name, e.target.checked)}
+              {mode !== 'create' && (
+                <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.8rem', display: 'block', mt: 0 }}>
+                  ID: {entity.id}
+                </Typography>
+              )}
+            </Box>
+
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              flexWrap: 'nowrap',
+              flexShrink: 0
+            }}>
+              {/* Навігація вперед/назад (тільки в режимі редагування) */}
+              {mode === 'edit' && siblings.length > 0 && currentIndex !== undefined && (
+                <Box sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  flexShrink: 0
+                }}>
+                  <IconButton
+                    onClick={handleNavigatePrevious}
+                    disabled={currentIndex === 0 || isFormDirty() || loading}
+                    size="small"
                     sx={{
-                      '& .MuiSwitch-switchBase.Mui-checked': {
-                        color: 'white',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.08)'
-                        }
-                      },
-                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.5)'
-                      },
-                      '& .MuiSwitch-switchBase': {
-                        color: 'rgba(255, 255, 255, 0.7)',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.08)'
-                        }
-                      },
-                      '& .MuiSwitch-track': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.3)'
-                      }
+                      color: 'white',
+                      border: '1px solid rgba(255,255,255,0.4)',
+                      borderRadius: 1,
+                      '&:hover': { background: 'rgba(255,255,255,0.12)' },
+                      '&.Mui-disabled': { color: 'rgba(255,255,255,0.35)', borderColor: 'rgba(255,255,255,0.15)' }
                     }}
-                  />
-                }
-                label={
+                  >
+                    <ChevronLeft />
+                  </IconButton>
                   <Typography variant="body2" sx={{
                     color: 'white',
                     fontWeight: 500,
-                    fontSize: '0.8rem',
-                    whiteSpace: 'nowrap'
+                    fontSize: '0.85rem',
+                    minWidth: 42,
+                    textAlign: 'center',
+                    opacity: 0.95
                   }}>
-                    {readyField.label}
+                    {currentIndex + 1} / {siblings.length}
                   </Typography>
-                }
-                sx={{
-                  margin: 0,
-                  mr: 1,
-                  '& .MuiFormControlLabel-label': {
-                    marginLeft: 0.5
-                  }
-                }}
-              />
-            )}
+                  <IconButton
+                    onClick={handleNavigateNext}
+                    disabled={currentIndex === siblings.length - 1 || isFormDirty() || loading}
+                    size="small"
+                    sx={{
+                      color: 'white',
+                      border: '1px solid rgba(255,255,255,0.4)',
+                      borderRadius: 1,
+                      '&:hover': { background: 'rgba(255,255,255,0.12)' },
+                      '&.Mui-disabled': { color: 'rgba(255,255,255,0.35)', borderColor: 'rgba(255,255,255,0.15)' }
+                    }}
+                  >
+                    <ChevronRight />
+                  </IconButton>
+                </Box>
+              )}
 
-            {mode === 'edit' && (
+              {readyField && (
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData[readyField.name] === null || formData[readyField.name] === undefined || formData[readyField.name] === '' ? false : Boolean(formData[readyField.name])}
+                      onChange={(e) => handleInputChange(readyField.name, e.target.checked)}
+                      sx={{
+                        '& .MuiSwitch-switchBase.Mui-checked': {
+                          color: 'white',
+                          '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.08)'
+                          }
+                        },
+                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.5)'
+                        },
+                        '& .MuiSwitch-switchBase': {
+                          color: 'rgba(255, 255, 255, 0.7)',
+                          '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.08)'
+                          }
+                        },
+                        '& .MuiSwitch-track': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.3)'
+                        }
+                      }}
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" sx={{
+                      color: 'white',
+                      fontWeight: 500,
+                      fontSize: '0.8rem',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {readyField.label}
+                    </Typography>
+                  }
+                  sx={{
+                    margin: 0,
+                    mr: 1,
+                    '& .MuiFormControlLabel-label': {
+                      marginLeft: 0.5
+                    }
+                  }}
+                />
+              )}
+
+              {mode === 'edit' && (
+                <Button
+                  onClick={handleItemDeleteClick}
+                  disabled={loading || isDeletingItem}
+                  variant="text"
+                  size="small"
+                  startIcon={<Delete fontSize="small" />}
+                  sx={{
+                    textTransform: 'none',
+                    fontSize: '0.8rem',
+                    color: 'rgba(255,255,255,0.9)',
+                    minWidth: 'auto',
+                    px: 1,
+                    py: 0.5,
+                    '&:hover': {
+                      backgroundColor: 'rgba(211, 47, 47, 0.85)',
+                      color: '#fff'
+                    }
+                  }}
+                >
+                  Видалити
+                </Button>
+              )}
+
               <Button
-                onClick={handleItemDeleteClick}
-                disabled={loading || isDeletingItem}
-                variant="text"
+                onClick={handleCancel}
+                disabled={loading}
+                variant="outlined"
                 size="small"
-                startIcon={<Delete fontSize="small" />}
                 sx={{
                   textTransform: 'none',
                   fontSize: '0.8rem',
-                  color: 'rgba(255,255,255,0.9)',
+                  color: 'white',
+                  borderColor: 'rgba(255,255,255,0.5)',
                   minWidth: 'auto',
-                  px: 1,
+                  px: 1.5,
                   py: 0.5,
                   '&:hover': {
-                    backgroundColor: 'rgba(211, 47, 47, 0.85)',
-                    color: '#fff'
+                    borderColor: 'white',
+                    background: 'rgba(255,255,255,0.12)'
+                  },
+                  '&.Mui-disabled': {
+                    color: 'rgba(255,255,255,0.5)',
+                    borderColor: 'rgba(255,255,255,0.3)'
                   }
                 }}
               >
-                Видалити
+                Скасувати
               </Button>
-            )}
-
-            <Button
-              onClick={handleCancel}
-              disabled={loading}
-              variant="outlined"
-              size="small"
-              sx={{
-                textTransform: 'none',
-                fontSize: '0.8rem',
-                color: 'white',
-                borderColor: 'rgba(255,255,255,0.5)',
-                minWidth: 'auto',
-                px: 1.5,
-                py: 0.5,
-                '&:hover': {
-                  borderColor: 'white',
-                  background: 'rgba(255,255,255,0.12)'
-                },
-                '&.Mui-disabled': {
-                  color: 'rgba(255,255,255,0.5)',
-                  borderColor: 'rgba(255,255,255,0.3)'
-                }
-              }}
-            >
-              Скасувати
-            </Button>
-            <Button
-              onClick={handleSave}
-              variant="contained"
-              disabled={loading || !isFormValid()}
-              size="small"
-              startIcon={loading ? <CircularProgress size={16} /> : null}
-              sx={{
-                textTransform: 'none',
-                fontSize: '0.8rem',
-                fontWeight: 500,
-                px: 2,
-                py: 0.5,
-                background: 'white',
-                color: '#1565c0',
-                boxShadow: 'none',
-                '&:hover': {
-                  background: 'rgba(255,255,255,0.9)',
-                  boxShadow: 'none'
-                },
-                '&.Mui-disabled': {
-                  background: 'rgba(255,255,255,0.55)',
-                  color: 'rgba(21, 101, 192, 0.6)'
-                }
-              }}
-            >
-              {isFormValid() ? (saveButtonText || 'Зберегти') : `${saveButtonText || 'Зберегти'} (${getFormErrors().length} помилок)`}
-            </Button>
+              <Button
+                onClick={handleSave}
+                variant="contained"
+                disabled={loading || !isFormValid()}
+                size="small"
+                startIcon={loading ? <CircularProgress size={16} sx={{ color: '#1565c0' }} /> : null}
+                sx={{
+                  textTransform: 'none',
+                  fontSize: '0.8rem',
+                  fontWeight: 500,
+                  px: 2,
+                  py: 0.5,
+                  minWidth: 140,
+                  background: 'white',
+                  color: '#1565c0',
+                  boxShadow: 'none',
+                  '&:hover': {
+                    background: 'rgba(255,255,255,0.9)',
+                    boxShadow: 'none'
+                  },
+                  '&.Mui-disabled': {
+                    background: 'rgba(255,255,255,0.55)',
+                    color: 'rgba(21, 101, 192, 0.6)'
+                  }
+                }}
+              >
+                {isFormValid() ? (saveButtonText || 'Зберегти') : `${saveButtonText || 'Зберегти'} (${getFormErrors().length} помилок)`}
+              </Button>
+            </Box>
           </Box>
-        </Box>
 
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          variant="scrollable"
-          scrollButtons="auto"
-          allowScrollButtonsMobile
-          aria-label="edit form tabs"
-          sx={{
-            mt: 0.75,
-            mx: -0.5,
-            minHeight: 0,
-            '& .MuiTab-root': {
-              minHeight: 32,
-              borderRadius: 1.5,
-              mx: 0.5,
-              py: 0.4,
-              px: 1.25,
-              fontWeight: 500,
-              textTransform: 'none',
-              fontSize: '0.8rem',
-              color: 'rgba(255,255,255,0.82)',
-              '&.Mui-selected': {
-                color: '#0f172a',
-                background: 'rgba(255,255,255,0.95)',
-                boxShadow: 'none'
-              },
-              '&:not(.Mui-selected):hover': {
-                color: 'white',
-                background: 'rgba(255,255,255,0.12)'
-              }
-            },
-            '& .MuiTabs-indicator': {
-              display: 'none'
-            },
-            '& .MuiTabs-scrollButtons': {
-              color: 'rgba(255,255,255,0.9)'
-            }
-          }}
-        >
-          <Tab label="Основна інформація" />
-          <Tab label="Опис українською" />
-          <Tab label="Опис англійською" />
-          <Tab label="Опис москальською" />
-          {mode !== 'create' && <Tab label="Схожі об'єкти" />}
-          {mode !== 'create' && <Tab label="Зображення" />}
-        </Tabs>
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            width: '100%',
+            mt: 0.75
+          }}>
+            <Tabs
+              value={activeTab}
+              onChange={handleTabChange}
+              variant="scrollable"
+              scrollButtons="auto"
+              allowScrollButtonsMobile
+              aria-label="edit form tabs"
+              sx={{
+                flexShrink: 0,
+                mx: -0.5,
+                minHeight: 0,
+                '& .MuiTab-root': {
+                  minHeight: 32,
+                  borderRadius: 1.5,
+                  mx: 0.5,
+                  py: 0.4,
+                  px: 1.25,
+                  fontWeight: 500,
+                  textTransform: 'none',
+                  fontSize: '0.8rem',
+                  color: 'rgba(255,255,255,0.82)',
+                  '&.Mui-selected': {
+                    color: '#0f172a',
+                    background: 'rgba(255,255,255,0.95)',
+                    boxShadow: 'none'
+                  },
+                  '&:not(.Mui-selected):hover': {
+                    color: 'white',
+                    background: 'rgba(255,255,255,0.12)'
+                  }
+                },
+                '& .MuiTabs-indicator': {
+                  display: 'none'
+                },
+                '& .MuiTabs-scrollButtons': {
+                  color: 'rgba(255,255,255,0.9)'
+                }
+              }}
+            >
+              <Tab label="Основна інформація" />
+              <Tab label="Опис українською" />
+              <Tab label="Опис англійською" />
+              <Tab label="Опис москальською" />
+              {mode !== 'create' && <Tab label="Схожі об'єкти" />}
+              {mode !== 'create' && <Tab label="Зображення" />}
+            </Tabs>
+
+            {/* Повідомлення про незбережені зміни — у вільному місці справа від табів */}
+            <Box sx={{
+              flex: 1,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minWidth: 0,
+              pl: 2
+            }}>
+              {isFormDirty() && (
+                <Typography sx={{
+                  color: '#ff5252',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.25)'
+                }}>
+                  ⚠️ Є незбережені зміни
+                </Typography>
+              )}
+            </Box>
+          </Box>
+      </Box>
       </DialogTitle>
 
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', p: 0, overflow: 'hidden' }}>
