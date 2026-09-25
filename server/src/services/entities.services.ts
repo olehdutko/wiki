@@ -871,6 +871,28 @@ export class WeaponItemService extends BaseService<WeaponItem> {
         }
     }
 
+    private applyAdvancedFilter(
+        advancedFilter: string,
+        whereConditions: string[],
+        joins: string[],
+        _queryParams: any[]
+    ): void {
+        switch (advancedFilter) {
+            case 'missingSource':
+                whereConditions.push("COALESCE(i.source, '') = ''");
+                break;
+            case 'hasComments':
+                whereConditions.push("i.comments IS NOT NULL AND TRIM(i.comments) != '' AND i.comments != '-'");
+                break;
+            case 'noLinks':
+                if (!joins.some(j => j.includes(' item_links '))) {
+                    joins.push('LEFT JOIN item_links il_adv ON il_adv.item_id = i.id OR il_adv.other_item = i.id');
+                }
+                whereConditions.push('il_adv.id IS NULL');
+                break;
+        }
+    }
+
     async findAllWithCategories(params: PaginationParams, filterParams?: any): Promise<PaginatedResponse<WeaponItemResponse>> {
         const {
             page = 1,
@@ -960,6 +982,11 @@ export class WeaponItemService extends BaseService<WeaponItem> {
                         }
                     }
                     filterIndex++;
+                }
+
+                // Додатковий фільтр для weapons
+                if (filterParams.advancedFilter) {
+                    this.applyAdvancedFilter(filterParams.advancedFilter, whereConditions, joins, queryParams);
                 }
             }
 
@@ -1192,7 +1219,7 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
     /**
      * Extended search method with pagination support
      */
-    async searchWithPagination(searchTerm: string, params: PaginationParams): Promise<PaginatedResponse<WeaponItemResponse>> {
+    async searchWithPagination(searchTerm: string, params: PaginationParams, filterParams?: any): Promise<PaginatedResponse<WeaponItemResponse>> {
         const {
             page = 1,
             limit = 20,
@@ -1204,25 +1231,106 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
         const searchPattern = `%${searchTerm}%`;
 
         try {
-            // Get total count for search (including ID)
-            const [countResult] = await pool.execute(
-                `SELECT COUNT(*) as total FROM items 
-                WHERE ukr_name LIKE ? OR eng_name LIKE ? OR rus_name LIKE ? OR CAST(id AS CHAR) LIKE ?`,
-                [searchPattern, searchPattern, searchPattern, searchPattern]
-            ) as [RowDataPacket[], any];
+            // Build WHERE clause from filter params
+            let whereConditions: string[] = [];
+            let queryParams: any[] = [];
+            const joins: string[] = [];
+
+            whereConditions.push('(i.ukr_name LIKE ? OR i.eng_name LIKE ? OR i.rus_name LIKE ? OR CAST(i.id AS CHAR) LIKE ?)');
+            queryParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
+
+            if (filterParams) {
+                let filterIndex = 0;
+                while (filterParams[`filterField${filterIndex > 0 ? filterIndex : ''}`]) {
+                    const suffix = filterIndex > 0 ? `${filterIndex}` : '';
+                    const field = filterParams[`filterField${suffix}`];
+                    const operator = filterParams[`filterOperator${suffix}`];
+                    const value = filterParams[`filterValue${suffix}`];
+
+                    if (field && operator && value !== undefined) {
+                        if (field === 'id') {
+                            const numValue = parseInt(value);
+                            if (!isNaN(numValue)) {
+                                switch (operator) {
+                                    case '=':
+                                    case 'eq':
+                                    case 'equals':
+                                        whereConditions.push(`i.id = ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '!=':
+                                    case 'notEq':
+                                    case 'notEquals':
+                                        whereConditions.push(`i.id != ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '>':
+                                    case 'gt':
+                                        whereConditions.push(`i.id > ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '>=':
+                                    case 'gte':
+                                        whereConditions.push(`i.id >= ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '<':
+                                    case 'lt':
+                                        whereConditions.push(`i.id < ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                    case '<=':
+                                    case 'lte':
+                                        whereConditions.push(`i.id <= ?`);
+                                        queryParams.push(numValue);
+                                        break;
+                                }
+                            }
+                        } else if (WeaponItemService.REFERENCE_NAME_FIELDS[field]) {
+                            const mapping = WeaponItemService.REFERENCE_NAME_FIELDS[field];
+                            const alias = `ref_${mapping.itemField}`;
+                            if (!joins.some(j => j.includes(` ${alias} `) || j.endsWith(` ${alias}`))) {
+                                joins.push(`LEFT JOIN ${WeaponItemService.escapeIdentifier(mapping.refTable)} ${alias} ON i.${mapping.itemField} = ${alias}.id`);
+                            }
+                            const strValue = `%${value}%`;
+                            whereConditions.push(`${alias}.ukr LIKE ?`);
+                            queryParams.push(strValue);
+                        } else {
+                            if (operator === '=' || operator === 'eq' || operator === 'equals') {
+                                whereConditions.push(`i.${field} = ?`);
+                                queryParams.push(value);
+                            } else {
+                                const strValue = `%${value}%`;
+                                whereConditions.push(`i.${field} LIKE ?`);
+                                queryParams.push(strValue);
+                            }
+                        }
+                    }
+                    filterIndex++;
+                }
+
+                // Додатковий фільтр для weapons
+                if (filterParams.advancedFilter) {
+                    this.applyAdvancedFilter(filterParams.advancedFilter, whereConditions, joins, queryParams);
+                }
+            }
+
+            const whereClause = whereConditions.join(' AND ');
+
+            // Get total count for search with filters
+            let countQuery = 'SELECT COUNT(DISTINCT i.id) as total FROM items i';
+            if (joins.length > 0) {
+                countQuery += ' ' + joins.join(' ');
+            }
+            countQuery += ` WHERE ${whereClause}`;
+            const [countResult] = await pool.execute(countQuery, queryParams) as [RowDataPacket[], any];
 
             const total = countResult[0].total;
 
             // Get search results (including ID)
             const [rows] = await pool.query(
-                this.buildItemWithCategoriesQuery(
-                    'i.ukr_name LIKE ? OR i.eng_name LIKE ? OR i.rus_name LIKE ? OR CAST(i.id AS CHAR) LIKE ?',
-                    `i.${sortBy} ${sortOrder}`,
-                    [],
-                    limit,
-                    offset
-                ),
-                [searchPattern, searchPattern, searchPattern, searchPattern]
+                this.buildItemWithCategoriesQuery(whereClause, `i.${sortBy} ${sortOrder}`, joins, limit, offset),
+                queryParams
             );
 
             const items = (rows as any[]).map(row => {
@@ -1357,6 +1465,11 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
                         }
                     }
                     filterIndex++;
+                }
+
+                // Додатковий фільтр для weapons
+                if (filterParams.advancedFilter) {
+                    this.applyAdvancedFilter(filterParams.advancedFilter, whereConditions, joins, queryParams);
                 }
             }
 
@@ -1525,6 +1638,11 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
                     }
                     filterIndex++;
                 }
+
+                // Додатковий фільтр для weapons
+                if (filterParams.advancedFilter) {
+                    this.applyAdvancedFilter(filterParams.advancedFilter, whereConditions, joins, queryParams);
+                }
             }
 
             if (forceEmptyResult) {
@@ -1691,6 +1809,11 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
                         }
                     }
                     filterIndex++;
+                }
+
+                // Додатковий фільтр для weapons
+                if (filterParams.advancedFilter) {
+                    this.applyAdvancedFilter(filterParams.advancedFilter, whereConditions, joins, queryParams);
                 }
             }
 
