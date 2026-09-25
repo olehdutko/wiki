@@ -439,10 +439,11 @@ export function EntityDataGrid<T extends BaseEntity>({
         setEditDialog({ open: true, row });
     };
 
-    const handleEditSave = (_updatedEntity: T) => {
-        // Закриваємо діалог і перезавантажуємо дані з сервера,
-        // щоб отримати актуальний рядок з усіма обчисленими полями (category_name, epoha_name тощо).
-        setEditDialog({ open: false, row: null });
+    const handleEditSave = (updatedEntity: T) => {
+        // Оновлюємо рядок локально, не закриваючи діалог
+        setAllCategoryData(prev => prev.map(row => row.id === updatedEntity.id ? updatedEntity as BaseEntity : row));
+        setData(prev => prev.map(row => row.id === updatedEntity.id ? updatedEntity as BaseEntity : row));
+        // Перезавантажуємо дані у фоні для актуальності обчислених полів
         fetchData();
     };
 
@@ -1386,6 +1387,14 @@ renderCell: (params: any) => {
                 open={editDialog.open}
                 entity={editDialog.row}
                 entityType={entityType}
+                siblings={data}
+                currentIndex={editDialog.row ? data.findIndex(row => row.id === editDialog.row!.id) : -1}
+                onNavigate={(index) => {
+                    const targetRow = data[index];
+                    if (targetRow) {
+                        setEditDialog({ open: true, row: targetRow as T });
+                    }
+                }}
                 onClose={() => setEditDialog({ open: false, row: null })}
                 onSave={handleEditSave}
                 onDelete={(deletedId) => {
