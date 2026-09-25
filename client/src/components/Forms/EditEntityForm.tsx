@@ -625,6 +625,12 @@ export function EditEntityForm<T extends BaseEntity>({
   const handleSave = async () => {
     if (!entity || !config) return;
 
+    // Якщо немає незбережених змін — закриваємо вікно
+    if (!isFormDirty()) {
+      onClose();
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -2137,7 +2143,7 @@ export function EditEntityForm<T extends BaseEntity>({
               <Button
                 onClick={handleSave}
                 variant="contained"
-                disabled={loading || !isFormValid()}
+                disabled={loading || (isFormDirty() && !isFormValid())}
                 size="small"
                 startIcon={loading ? <CircularProgress size={16} sx={{ color: '#1565c0' }} /> : null}
                 sx={{
@@ -2160,7 +2166,9 @@ export function EditEntityForm<T extends BaseEntity>({
                   }
                 }}
               >
-                {isFormValid() ? (saveButtonText || 'Зберегти') : `${saveButtonText || 'Зберегти'} (${getFormErrors().length} помилок)`}
+                {isFormDirty()
+                  ? (isFormValid() ? 'Зберегти' : `Зберегти (${getFormErrors().length} помилок)`)
+                  : 'Закрити'}
               </Button>
             </Box>
           </Box>
