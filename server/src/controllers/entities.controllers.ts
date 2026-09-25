@@ -212,6 +212,22 @@ export class WeaponItemController {
         this.weaponService = new WeaponItemService();
     }
 
+    private extractFilterParams(req: Request): any {
+        const filterParams: any = {};
+        let filterIndex = 0;
+        while (req.query[`filterField${filterIndex > 0 ? filterIndex : ''}`]) {
+            const suffix = filterIndex > 0 ? `${filterIndex}` : '';
+            filterParams[`filterField${suffix}`] = req.query[`filterField${suffix}`];
+            filterParams[`filterOperator${suffix}`] = req.query[`filterOperator${suffix}`];
+            filterParams[`filterValue${suffix}`] = req.query[`filterValue${suffix}`];
+            filterIndex++;
+        }
+        if (req.query.advancedFilter) {
+            filterParams.advancedFilter = req.query.advancedFilter;
+        }
+        return filterParams;
+    }
+
     async getAllWithCategory(req: Request, res: Response): Promise<void> {
         try {
             const params: PaginationParams = {
@@ -221,16 +237,7 @@ export class WeaponItemController {
                 sortOrder: (req.query.sortOrder as 'ASC' | 'DESC') || 'DESC'
             };
             
-            // Extract filter parameters
-            const filterParams: any = {};
-            let filterIndex = 0;
-            while (req.query[`filterField${filterIndex > 0 ? filterIndex : ''}`]) {
-                const suffix = filterIndex > 0 ? `${filterIndex}` : '';
-                filterParams[`filterField${suffix}`] = req.query[`filterField${suffix}`];
-                filterParams[`filterOperator${suffix}`] = req.query[`filterOperator${suffix}`];
-                filterParams[`filterValue${suffix}`] = req.query[`filterValue${suffix}`];
-                filterIndex++;
-            }
+            const filterParams = this.extractFilterParams(req);
 
             const result = await this.weaponService.findAllWithCategories(params, filterParams);
 
@@ -303,15 +310,7 @@ export class WeaponItemController {
                 sortOrder: (req.query.sortOrder as 'ASC' | 'DESC') || 'DESC'
             };
 
-            const filterParams: any = {};
-            let filterIndex = 0;
-            while (req.query[`filterField${filterIndex > 0 ? filterIndex : ''}`]) {
-                const suffix = filterIndex > 0 ? `${filterIndex}` : '';
-                filterParams[`filterField${suffix}`] = req.query[`filterField${suffix}`];
-                filterParams[`filterOperator${suffix}`] = req.query[`filterOperator${suffix}`];
-                filterParams[`filterValue${suffix}`] = req.query[`filterValue${suffix}`];
-                filterIndex++;
-            }
+            const filterParams = this.extractFilterParams(req);
 
             const result = await this.weaponService.findByTerritory(territoryId, params, filterParams);
 
@@ -348,16 +347,7 @@ export class WeaponItemController {
                 sortOrder: (req.query.sortOrder as 'ASC' | 'DESC') || 'DESC'
             };
 
-            // Extract filter parameters
-            const filterParams: any = {};
-            let filterIndex = 0;
-            while (req.query[`filterField${filterIndex > 0 ? filterIndex : ''}`]) {
-                const suffix = filterIndex > 0 ? `${filterIndex}` : '';
-                filterParams[`filterField${suffix}`] = req.query[`filterField${suffix}`];
-                filterParams[`filterOperator${suffix}`] = req.query[`filterOperator${suffix}`];
-                filterParams[`filterValue${suffix}`] = req.query[`filterValue${suffix}`];
-                filterIndex++;
-            }
+            const filterParams = this.extractFilterParams(req);
 
             const result = await this.weaponService.findByCategory(categoryId, params, filterParams);
 
@@ -395,16 +385,7 @@ export class WeaponItemController {
                 sortOrder: (req.query.sortOrder as 'ASC' | 'DESC') || 'DESC'
             };
 
-            // Extract filter parameters
-            const filterParams: any = {};
-            let filterIndex = 0;
-            while (req.query[`filterField${filterIndex > 0 ? filterIndex : ''}`]) {
-                const suffix = filterIndex > 0 ? `${filterIndex}` : '';
-                filterParams[`filterField${suffix}`] = req.query[`filterField${suffix}`];
-                filterParams[`filterOperator${suffix}`] = req.query[`filterOperator${suffix}`];
-                filterParams[`filterValue${suffix}`] = req.query[`filterValue${suffix}`];
-                filterIndex++;
-            }
+            const filterParams = this.extractFilterParams(req);
 
             const result = await this.weaponService.findByCategoryAndTerritory(categoryId, territoryId, params, filterParams);
 
@@ -439,7 +420,9 @@ export class WeaponItemController {
                 return;
             }
 
-            const result = await this.weaponService.searchWithPagination(searchTerm.trim(), params);
+            const filterParams = this.extractFilterParams(req);
+
+            const result = await this.weaponService.searchWithPagination(searchTerm.trim(), params, filterParams);
 
             res.status(200).json({
                 success: true,

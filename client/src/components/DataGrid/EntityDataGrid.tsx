@@ -57,6 +57,17 @@ import { ImageUploadField } from '../Fields/ImageUploadField';
 
 // ================= ТИПИ =================
 
+// Типи для додаткового фільтра зброї
+type AdvancedWeaponFilter = 'missingSource' | 'hasComments' | 'noLinks' | null;
+
+const ADVANCED_FILTER_OPTIONS: { value: Exclude<AdvancedWeaponFilter, null>; label: string }[] = [
+    { value: 'missingSource', label: 'Без джерела' },
+    { value: 'hasComments', label: 'Є коментарі' },
+    { value: 'noLinks', label: 'Без зв’язків' }
+];
+
+
+
 interface EntityDataGridProps<T extends BaseEntity> {
     entityType: EntityType;
     title?: string;
@@ -175,6 +186,9 @@ export function EntityDataGrid<T extends BaseEntity>({
     });
     const [territoriesLoading, setTerritoriesLoading] = useState(false);
 
+    // Стан для додаткового фільтра (тільки для weapons)
+    const [advancedFilter, setAdvancedFilter] = useState<AdvancedWeaponFilter>(null);
+
     // ================= ФУНКЦІЇ =================
 
     const supportsInlineEditing = (entityType: EntityType): boolean => {
@@ -233,6 +247,9 @@ export function EntityDataGrid<T extends BaseEntity>({
                         filterParams[`filterValue${suffix}`] = item.value;
                     }
                 });
+            }
+            if (entityType === 'weapons' && advancedFilter) {
+                filterParams.advancedFilter = advancedFilter;
             }
             
             if (entityType === 'weapons' && isSearchActive && searchQuery.trim().length >= 2) {
@@ -310,7 +327,7 @@ export function EntityDataGrid<T extends BaseEntity>({
         } finally {
             setLoading(prev => ({ ...prev, loading: false }));
         }
-    }, [entityType, pagination.page, pagination.pageSize, selectedCategoryId, selectedTerritoryId, filterModel, isSearchActive, searchQuery, sortModel]);
+    }, [entityType, pagination.page, pagination.pageSize, selectedCategoryId, selectedTerritoryId, filterModel, isSearchActive, searchQuery, sortModel, advancedFilter]);
 
     // Live search: debounce searchInput into searchQuery
     useEffect(() => {
@@ -1067,6 +1084,7 @@ renderCell: (params: any) => {
 
     const clearFilters = () => {
         setFilterModel({ items: [] });
+        setAdvancedFilter(null);
         if (selectedCategoryId) {
             handleCategoryChange(null);
         }
@@ -1159,6 +1177,28 @@ renderCell: (params: any) => {
                                         </MenuItem>
                                     ))
                                 )}
+                            </Select>
+                        </FormControl>
+                    )}
+
+                    {/* Dropdown для додаткового фільтра (тільки для weapons) */}
+                    {entityType === 'weapons' && (
+                        <FormControl size="small" sx={{ minWidth: 200 }}>
+                            <InputLabel id="advanced-filter-label">Додатковий фільтр</InputLabel>
+                            <Select
+                                labelId="advanced-filter-label"
+                                value={advancedFilter || ''}
+                                label="Додатковий фільтр"
+                                onChange={(e) => setAdvancedFilter((e.target.value as AdvancedWeaponFilter) || null)}
+                            >
+                                <MenuItem value="">
+                                    <em>Без додаткового фільтру</em>
+                                </MenuItem>
+                                {ADVANCED_FILTER_OPTIONS.map((option) => (
+                                    <MenuItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </MenuItem>
+                                ))}
                             </Select>
                         </FormControl>
                     )}

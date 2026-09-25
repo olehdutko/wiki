@@ -368,9 +368,10 @@ class ApiService {
     }
 
     async searchWeapons(query: string, params?: PaginationParams) {
+        const { q, ...rest } = { q: query, ...params } as any;
         const response = await this.api.get<ApiResponse<PaginatedResponse<WeaponItemResponse>>>(
             '/weapons/search',
-            { params: { q: query, ...params } }
+            { params: { q, ...rest } }
         );
         return response.data.data!;
     }
