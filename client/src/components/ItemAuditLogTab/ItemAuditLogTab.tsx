@@ -191,6 +191,7 @@ export function ItemAuditLogTab({ itemId, onRestore }: ItemAuditLogTabProps) {
             <TableRow>
               <TableCell>Дата</TableCell>
               <TableCell>Дія</TableCell>
+              <TableCell>Хто змінив</TableCell>
               <TableCell>Поле / Опис</TableCell>
               <TableCell>Було</TableCell>
               <TableCell>Стало</TableCell>
@@ -220,6 +221,9 @@ export function ItemAuditLogTab({ itemId, onRestore }: ItemAuditLogTabProps) {
                         size="small"
                         variant="outlined"
                       />
+                    </TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                      {log.changed_by || '—'}
                     </TableCell>
                     <TableCell>
                       {log.field_name ? (

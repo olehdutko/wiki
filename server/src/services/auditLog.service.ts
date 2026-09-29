@@ -27,7 +27,7 @@ export interface AuditLogChange {
     newValue: any;
 }
 
-const DEFAULT_CHANGED_BY = 'odutko';
+const DEFAULT_CHANGED_BY = 'Лея';
 
 /**
  * Serialize a value for storage. Arrays/objects become JSON; null/undefined become null.
