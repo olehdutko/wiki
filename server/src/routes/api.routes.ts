@@ -10,6 +10,7 @@ import {
     UsageController, WeaponItemController, ClassificationController, ClassificationItemController
 } from '../controllers/entities.controllers';
 import { LinksController } from '../controllers/links.controller';
+import { AuditLogController } from '../controllers/auditLog.controller';
 import { exportDatabaseDump } from '../controllers/database.controller';
 import multer from 'multer';
 import { UploadController } from '../controllers/upload.controller';
@@ -33,6 +34,7 @@ const weaponItemController = new WeaponItemController();
 const classificationController = new ClassificationController();
 const classificationItemController = new ClassificationItemController();
 const linksController = new LinksController();
+const auditLogController = new AuditLogController();
 
 // ================= ВАЛІДАТОРИ =================
 
@@ -467,5 +469,9 @@ router.delete('/upload/:entityType/:entityId', uploadController.deleteEntityImag
 
 // ================= РОУТИ ДЛЯ ЗОБРАЖЕНЬ АЙТЕМІВ =================
 router.use('/items', itemImagesRoutes);
+
+// ================= АУДИТ-ЛОГИ АЙТЕМІВ =================
+router.get('/weapons/:id/audit-logs', auditLogController.getItemAuditLogs.bind(auditLogController));
+router.post('/weapons/:id/restore-audit-log/:logId', auditLogController.restoreAuditLog.bind(auditLogController));
 
 export default router; 

@@ -8,6 +8,7 @@ import { pool } from '../config/database.config';
 import { geocodeTerritory } from '../utils/geocoding';
 import { getItemImageUrl, ItemImagesService } from './itemImages.service';
 import { findExistingItemFolderName } from './itemImages.service';
+import { auditLogService } from './auditLog.service';
 
 // ================= UTILITY FUNCTIONS FOR UNIT CONVERSION =================
 
@@ -854,6 +855,7 @@ export class WeaponItemService extends BaseService<WeaponItem> {
      * Видалити запис зброї та всі зв'язки з категоріями
      */
     async delete(id: number): Promise<boolean> {
+        const oldRecord = await this.findByIdWithCategories(id);
         const connection = await pool.getConnection();
         try {
             await connection.beginTransaction();
@@ -862,6 +864,11 @@ export class WeaponItemService extends BaseService<WeaponItem> {
             await connection.execute('DELETE FROM item_images WHERE item_id = ?', [id]);
             await connection.execute('DELETE FROM items WHERE id = ?', [id]);
             await connection.commit();
+
+            if (oldRecord) {
+                await auditLogService.logDelete(id, { ...oldRecord, categories: oldRecord.categories, territories: oldRecord.territories });
+            }
+
             return true;
         } catch (error) {
             await connection.rollback();
@@ -1145,10 +1152,60 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
                 throw new Error('Створений запис не знайдено');
             }
 
+            await auditLogService.logCreate(withCategories.id, { ...withCategories, categories: withCategories.categories, territories: withCategories.territories });
+
             return withCategories;
         } catch (error) {
             console.error('Помилка при створенні запису зброї:', error);
             throw new Error('Не вдалося створити запис зброї');
+        }
+    }
+
+    /**
+     * Відновити одне поле айтема з аудит-логу.
+     */
+    async restoreField(
+        id: number,
+        fieldName: string,
+        value: any,
+        changedBy: string = 'odutko'
+    ): Promise<WeaponItemResponse | null> {
+        try {
+            const oldRecord = await this.findByIdWithCategories(id);
+            if (!oldRecord) {
+                throw new Error(`Айтем з ID ${id} не знайдено`);
+            }
+
+            if (fieldName === 'categories' || fieldName === 'territories' || fieldName === 'links') {
+                // For relation changes we do not auto-restore from audit log; user must edit manually
+                throw new Error(`Відновлення зв'язків з аудит-логу не підтримується`);
+            }
+
+            const updateData: any = { [fieldName]: value };
+            // Auto-compute derived imperial fields if restoring a metric field
+            if (fieldName === 'total_len') updateData.total_len_in = mmToInches(value);
+            if (fieldName === 'blade_len') updateData.blade_len_in = mmToInches(value);
+            if (fieldName === 'handle_len') updateData.handle_len_in = mmToInches(value);
+            if (fieldName === 'handle_len_w') updateData.handle_len_w_in = mmToInches(value);
+            if (fieldName === 'width') updateData.width_in = mmToInches(value);
+            if (fieldName === 'guard_width') updateData.guard_width_in = mmToInches(value);
+            if (fieldName === 'thikness') updateData.thikness_in = mmToInches(value);
+            if (fieldName === 'weight') updateData.weight_lb = gramsToPounds(value);
+
+            const updated = await this.update(id, updateData);
+            if (!updated) {
+                return null;
+            }
+
+            const newRecord = await this.findByIdWithCategories(id);
+            if (oldRecord && newRecord) {
+                await auditLogService.logUpdate(id, { ...oldRecord, categories: oldRecord.categories, territories: oldRecord.territories }, { ...newRecord, categories: newRecord.categories, territories: newRecord.territories }, changedBy);
+            }
+
+            return newRecord;
+        } catch (error) {
+            console.error(`Помилка при відновленні поля ${fieldName} для айтема ${id}:`, error);
+            throw error;
         }
     }
 
@@ -1183,6 +1240,8 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
                 itemData.category_id = uniqueIds.length > 0 ? uniqueIds[0] : null;
             }
 
+            const oldRecord = await this.findByIdWithCategories(id);
+
             const updated = await this.update(id, itemData);
             if (!updated) {
                 return null;
@@ -1197,7 +1256,12 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
                 await this.saveItemTerritories(id, territoryIds);
             }
 
-            return await this.findByIdWithCategories(id);
+            const newRecord = await this.findByIdWithCategories(id);
+            if (oldRecord && newRecord) {
+                await auditLogService.logUpdate(id, { ...oldRecord, categories: oldRecord.categories, territories: oldRecord.territories }, { ...newRecord, categories: newRecord.categories, territories: newRecord.territories });
+            }
+
+            return newRecord;
         } catch (error) {
             console.error(`Помилка при оновленні запису зброї з ID ${id}:`, error);
             throw new Error(`Не вдалося оновити запис зброї з ID ${id}`);
@@ -1935,3 +1999,6 @@ export class ServiceFactory {
         return this.instances.get(entityName);
     }
 }
+
+
+export const weaponItemService = new WeaponItemService();

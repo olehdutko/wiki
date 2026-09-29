@@ -535,6 +535,8 @@ export interface UpdateWeaponItemDto extends Partial<CreateWeaponItemDto> { }
 export interface WeaponItemResponse extends WeaponItem {
     category?: Category;
     category_name?: string;
+    categories?: Category[];
+    territories?: Territory[];
     categories_data?: Category[];
     territories_data?: Territory[];
     epoha_data?: Epoha;
