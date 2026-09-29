@@ -211,7 +211,13 @@ export function ItemAuditLogTab({ itemId, onRestore }: ItemAuditLogTabProps) {
                   <TableRow
                     key={`row-${log.id}`}
                     hover
-                    sx={isRestored ? { backgroundColor: 'rgba(0, 0, 0, 0.04)' } : undefined}
+                    sx={
+                      isRestored
+                        ? { backgroundColor: 'rgba(0, 0, 0, 0.04)' }
+                        : log.changed_by === 'Лея'
+                        ? { backgroundColor: 'rgba(33, 150, 243, 0.18)' }
+                        : undefined
+                    }
                   >
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDate(log.changed_at)}</TableCell>
                     <TableCell>
