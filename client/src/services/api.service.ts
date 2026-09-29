@@ -504,6 +504,51 @@ class ApiService {
     // ================= МЕТОДИ ДЛЯ ПОШУКУ ЗВ'ЯЗКІВ =================
 
     /**
+     * Отримати аудит-логи для заданого ID айтема
+     */
+    async getItemAuditLogs(itemId: number): Promise<Array<{
+        id: number;
+        item_id: number;
+        action: 'CREATE' | 'UPDATE' | 'DELETE';
+        field_name: string | null;
+        old_value: string | null;
+        new_value: string | null;
+        changed_by: string | null;
+        changed_at: string;
+        restored_at: string | null;
+        restored_by: string | null;
+    }>> {
+        try {
+            const response = await this.api.get<ApiResponse<Array<{
+                id: number;
+                item_id: number;
+                action: 'CREATE' | 'UPDATE' | 'DELETE';
+                field_name: string | null;
+                old_value: string | null;
+                new_value: string | null;
+                changed_by: string | null;
+                changed_at: string;
+                restored_at: string | null;
+                restored_by: string | null;
+            }>>>(`/weapons/${itemId}/audit-logs`);
+            return response.data.data || [];
+        } catch (error) {
+            console.error('❌ Помилка отримання аудит-логів:', error);
+            return [];
+        }
+    }
+
+    async restoreAuditLog(itemId: number, logId: number): Promise<{ success: boolean; message: string }> {
+        try {
+            const response = await this.api.post<ApiResponse<{ success: boolean; message: string }>>(`/weapons/${itemId}/restore-audit-log/${logId}`);
+            return response.data.data || { success: true, message: 'Відновлено' };
+        } catch (error: any) {
+            console.error('❌ Помилка відновлення аудит-логу:', error);
+            throw new Error(error.response?.data?.message || 'Не вдалося відновити зміну');
+        }
+    }
+
+    /**
      * Отримати пов'язані об'єкти для заданого ID
      */
     async getLinkedObjects(itemId: number) {

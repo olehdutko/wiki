@@ -36,6 +36,7 @@ import { NotesField } from '../Fields/NotesField';
 import { ImageUploadField } from '../Fields/ImageUploadField';
 import { AddLinkModal } from '../Modals/AddLinkModal';
 import { ItemImageGallery } from '../ItemImageGallery/ItemImageGallery';
+import { ItemAuditLogTab } from '../ItemAuditLogTab/ItemAuditLogTab';
 
 // Типи
 interface BaseEntity {
@@ -140,6 +141,7 @@ export function EditEntityForm<T extends BaseEntity>({
 }: EditEntityFormProps<T>) {
   const [formData, setFormData] = useState<FormData>({});
   const [initialFormData, setInitialFormData] = useState<FormData | null>(null);
+  const [localEntity, setLocalEntity] = useState<T | null>(entity);
   const [territoryInputValue, setTerritoryInputValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -376,17 +378,18 @@ export function EditEntityForm<T extends BaseEntity>({
 
   // Функція для отримання назви предмету
   const getItemName = () => {
-    if (!entity) return '';
+    const currentEntity = localEntity || entity;
+    if (!currentEntity) return '';
 
     if (mode === 'create') {
       if (entityType === 'weapons') {
-        const ukrName = (entity as any).ukr_name;
-        const engName = (entity as any).eng_name;
+        const ukrName = (currentEntity as any).ukr_name;
+        const engName = (currentEntity as any).eng_name;
         const name = ukrName || engName;
         if (name) return name;
       } else {
-        const ukrName = (entity as any).ukr || (entity as any).ukr_name;
-        const engName = (entity as any).eng || (entity as any).eng_name;
+        const ukrName = (currentEntity as any).ukr || (currentEntity as any).ukr_name;
+        const engName = (currentEntity as any).eng || (currentEntity as any).eng_name;
         const name = ukrName || engName;
         if (name) return name;
       }
@@ -395,15 +398,15 @@ export function EditEntityForm<T extends BaseEntity>({
 
     // Для зброї спробуємо отримати українську назву, потім англійську
     if (entityType === 'weapons') {
-      const ukrName = (entity as any).ukr_name;
-      const engName = (entity as any).eng_name;
-      return ukrName || engName || `ID: ${entity.id}`;
+      const ukrName = (currentEntity as any).ukr_name;
+      const engName = (currentEntity as any).eng_name;
+      return ukrName || engName || `ID: ${currentEntity.id}`;
     }
 
     // Для інших сутностей спробуємо отримати назву з поля ukr або ukr_name
-    const ukrName = (entity as any).ukr || (entity as any).ukr_name;
-    const engName = (entity as any).eng || (entity as any).eng_name;
-    return ukrName || engName || `ID: ${entity.id}`;
+    const ukrName = (currentEntity as any).ukr || (currentEntity as any).ukr_name;
+    const engName = (currentEntity as any).eng || (currentEntity as any).eng_name;
+    return ukrName || engName || `ID: ${currentEntity.id}`;
   };
 
   // Завантаження конфігурації при зміні типу сутності
@@ -506,6 +509,11 @@ export function EditEntityForm<T extends BaseEntity>({
       setError(null);
     }
   }, [entity, open, config]);
+
+  // Синхронізуємо локальний entity з пропсом при зміні
+  useEffect(() => {
+    setLocalEntity(entity);
+  }, [entity]);
 
   // Завантаження категорій та довідкових даних для зброї
   useEffect(() => {
@@ -620,6 +628,49 @@ export function EditEntityForm<T extends BaseEntity>({
       console.log(`📝 Новий formData для ${fieldName}:`, newData);
       return newData;
     });
+  };
+
+  const reloadEntity = async () => {
+    if (!entity || !config || entityType !== 'weapons') return;
+    try {
+      setLoading(true);
+      const { apiService } = await import('../../services/api.service');
+      const reloaded = await apiService.getWeaponById(entity.id);
+      if (reloaded) {
+        onSave(reloaded as T);
+        setLocalEntity(reloaded as T);
+        // Force local form data update so UI repaints without waiting for parent re-render
+        const updatedData: FormData = {};
+        config.formFields.forEach(field => {
+          let value: any = (reloaded as any)[field.name];
+          if (field.type === 'multiselect') {
+            value = value && Array.isArray(value) ? value.map((v: any) => Number(v)) : [];
+          } else if (field.type === 'boolean') {
+            value = value === null || value === undefined || value === '' ? false : Boolean(value);
+          } else if (field.type === 'number' || field.type === 'select') {
+            value = value && !isNaN(Number(value)) ? Number(value) : value || '';
+          } else {
+            value = value || '';
+          }
+          updatedData[field.name] = value;
+        });
+        const reloadedAny = reloaded as any;
+        updatedData.total_len_in = reloadedAny.total_len_in || '';
+        updatedData.blade_len_in = reloadedAny.blade_len_in || '';
+        updatedData.handle_len_in = reloadedAny.handle_len_in || '';
+        updatedData.handle_len_w_in = reloadedAny.handle_len_w_in || '';
+        updatedData.width_in = reloadedAny.width_in || '';
+        updatedData.guard_width_in = reloadedAny.guard_width_in || '';
+        updatedData.thikness_in = reloadedAny.thikness_in || '';
+        updatedData.weight_lb = reloadedAny.weight_lb || '';
+        setFormData(updatedData);
+        setInitialFormData(updatedData);
+      }
+    } catch (error: any) {
+      setError(error.message || 'Помилка оновлення даних після відновлення');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -1866,6 +1917,9 @@ export function EditEntityForm<T extends BaseEntity>({
                 pagination
                 sx={{
                   border: 'none',
+                  '& .MuiDataGrid-iconButtonContainer': { display: 'none' },
+                  '& .MuiDataGrid-sortIcon': { display: 'none !important' },
+                  '& .MuiDataGrid-menuIcon': { display: 'none !important' },
                   '& .MuiDataGrid-cell': {
                     borderColor: '#f1f5f9',
                     fontSize: '0.875rem',
@@ -1942,7 +1996,7 @@ export function EditEntityForm<T extends BaseEntity>({
       fullWidth
       PaperProps={{
         sx: {
-          maxHeight: '98vh',
+          height: '90vh',
           width: '98vw',
           maxWidth: '1600px',
           borderRadius: 2,
@@ -1982,7 +2036,7 @@ export function EditEntityForm<T extends BaseEntity>({
               </Typography>
               {mode !== 'create' && (
                 <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.8rem', display: 'block', mt: 0 }}>
-                  ID: {entity.id}
+                  ID: {(localEntity || entity)?.id}
                 </Typography>
               )}
             </Box>
@@ -2224,6 +2278,7 @@ export function EditEntityForm<T extends BaseEntity>({
               <Tab label="Опис москальською" />
               {mode !== 'create' && <Tab label="Схожі об'єкти" />}
               {mode !== 'create' && <Tab label="Зображення" />}
+              {mode !== 'create' && <Tab label="Історія змін" />}
             </Tabs>
 
             {/* Повідомлення про незбережені зміни — у вільному місці справа від табів */}
@@ -2270,14 +2325,46 @@ export function EditEntityForm<T extends BaseEntity>({
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
           border: '1px solid rgba(0, 0, 0, 0.06)',
           p: 2,
-          overflow: 'auto'
+          overflow: 'auto',
+          position: 'relative'
         }}>
-          {activeTab === 0 && renderMainInfoTab()}
-          {activeTab === 1 && renderDescriptionTab('description_ukr')}
-          {activeTab === 2 && renderDescriptionTab('description_eng')}
-          {activeTab === 3 && renderDescriptionTab('description_rus')}
-          {mode !== 'create' && activeTab === 4 && renderSimilarObjectsTab()}
-          {mode !== 'create' && activeTab === 5 && <ItemImageGallery itemId={entity?.id || 0} open={open} />}
+          {[0, 1, 2, 3].map((tabIndex) => (
+            <Box
+              key={tabIndex}
+              sx={{
+                position: tabIndex === activeTab ? 'relative' : 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                minHeight: '100%',
+                visibility: tabIndex === activeTab ? 'visible' : 'hidden',
+                ...(tabIndex !== activeTab && { height: 'auto', overflow: 'hidden' })
+              }}
+            >
+              {tabIndex === 0 && renderMainInfoTab()}
+              {tabIndex === 1 && renderDescriptionTab('description_ukr')}
+              {tabIndex === 2 && renderDescriptionTab('description_eng')}
+              {tabIndex === 3 && renderDescriptionTab('description_rus')}
+            </Box>
+          ))}
+          {mode !== 'create' && [4, 5, 6].map((tabIndex) => (
+            <Box
+              key={tabIndex}
+              sx={{
+                position: tabIndex === activeTab ? 'relative' : 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                minHeight: '100%',
+                visibility: tabIndex === activeTab ? 'visible' : 'hidden',
+                ...(tabIndex !== activeTab && { height: 'auto', overflow: 'hidden' })
+              }}
+            >
+              {tabIndex === 4 && renderSimilarObjectsTab()}
+              {tabIndex === 5 && <ItemImageGallery itemId={entity?.id || 0} open={open} />}
+              {tabIndex === 6 && <ItemAuditLogTab itemId={entity?.id || 0} onRestore={reloadEntity} />}
+            </Box>
+          ))}
         </Box>
       </DialogContent>
 

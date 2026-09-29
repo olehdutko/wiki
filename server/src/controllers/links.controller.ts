@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { pool } from '../config/database.config';
+import { auditLogService } from '../services/auditLog.service';
 import type { RowDataPacket, ResultSetHeader } from 'mysql2';
 
 interface LinkedObject extends RowDataPacket {
@@ -23,6 +24,18 @@ interface ExistingLink extends RowDataPacket {
 }
 
 export class LinksController {
+    /**
+     * Get a snapshot of linked item IDs for an item.
+     */
+    private async getLinksSnapshot(itemId: number): Promise<number[]> {
+        const [rows] = await pool.query<LinkedObject[]>(`
+            SELECT other_item AS linked_id FROM item_links WHERE item_id = ?
+            UNION
+            SELECT item_id AS linked_id FROM item_links WHERE other_item = ?
+        `, [itemId, itemId]);
+        return rows.map(row => row.linked_id).sort((a, b) => a - b);
+    }
+
     async getLinkedObjects(req: Request, res: Response): Promise<void> {
         try {
             const itemId = parseInt(req.params.id);
@@ -138,11 +151,20 @@ export class LinksController {
                 return;
             }
 
+            const oldFromLinks = await this.getLinksSnapshot(fromId);
+            const oldToLinks = await this.getLinksSnapshot(toId);
+
             // Створюємо зв'язок
             const [result] = await pool.execute<ResultSetHeader>(
                 'INSERT INTO item_links (item_id, other_item) VALUES (?, ?)',
                 [fromId, toId]
             );
+
+            const newFromLinks = await this.getLinksSnapshot(fromId);
+            const newToLinks = await this.getLinksSnapshot(toId);
+
+            await auditLogService.logRelationChange(fromId, 'links', oldFromLinks, newFromLinks);
+            await auditLogService.logRelationChange(toId, 'links', oldToLinks, newToLinks);
 
             res.status(201).json({
                 success: true,
@@ -174,12 +196,29 @@ export class LinksController {
             }
 
             // Оновлено: таблиця links -> item_links
+            const [linkRows] = await pool.query<LinkedObject[]>(
+                'SELECT item_id, other_item FROM item_links WHERE id = ?',
+                [linkId]
+            );
+
+            const oldFromLinks = linkRows[0] ? await this.getLinksSnapshot(linkRows[0].item_id) : null;
+            const oldToLinks = linkRows[0] ? await this.getLinksSnapshot(linkRows[0].other_item) : null;
+
             const [result] = await pool.execute(
                 'DELETE FROM item_links WHERE id = ?',
                 [linkId]
             );
 
             const deleteResult = result as { affectedRows: number };
+
+            if (linkRows[0]) {
+                const fromId = linkRows[0].item_id;
+                const toId = linkRows[0].other_item;
+                const newFromLinks = await this.getLinksSnapshot(fromId);
+                const newToLinks = await this.getLinksSnapshot(toId);
+                await auditLogService.logRelationChange(fromId, 'links', oldFromLinks, newFromLinks);
+                await auditLogService.logRelationChange(toId, 'links', oldToLinks, newToLinks);
+            }
 
             if (deleteResult.affectedRows === 0) {
                 res.status(404).json({
