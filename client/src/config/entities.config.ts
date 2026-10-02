@@ -389,7 +389,7 @@ export const entitiesConfig: Record<EntityType, EntityConfig> = {
 
     'weapons': {
         name: 'weapons',
-        displayName: 'Зброя',
+        displayName: 'Зброя та Обладунки',
         apiEndpoint: '/weapons',
         columns: weaponColumns,
         formFields: weaponFormFields,
