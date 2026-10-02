@@ -887,6 +887,11 @@ export function EditEntityForm<T extends BaseEntity>({
     // Групуємо поля по категоріях
     const basicInfoFields = ['ukr_name', 'eng_name', 'rus_name'];
     const sizeFields = ['total_len', 'blade_len', 'handle_len', 'handle_len_w', 'width', 'guard_width', 'thikness', 'weight'];
+    // Перевіряємо, чи вибрано категорію "Міфічна Зброя" (id = 44)
+    const selectedCategoryIds = Array.isArray(formData.category_ids) ? formData.category_ids : [];
+    const isMythicalWeapon = selectedCategoryIds.some((id: any) => Number(id) === 44);
+    const isArmorItem = selectedCategoryIds.some((id: any) => Number(id) === 56);
+
     const imperialSizeFields = [
       { name: 'total_len_in', label: 'Загальна довжина (in)' },
       { name: 'blade_len_in', label: 'Довжина клинка (in)' },
@@ -898,18 +903,19 @@ export function EditEntityForm<T extends BaseEntity>({
       { name: 'weight_lb', label: 'Вага (lb)' }
     ];
     const bottomFields = ['source', 'links', 'comments'];
+    const weaponSpecificFields = isArmorItem
+      ? ['archaeological_period', 'epoha_id', 'global_type_id', 'blade_type_id', 'dolls_id', 'pommel_id', 'sharpening_id', 'guard_type_id', 'use_id']
+      : [];
+
     const otherFields = mainFields.filter(field =>
       !basicInfoFields.includes(field.name) &&
       !sizeFields.includes(field.name) &&
       !bottomFields.includes(field.name) &&
+      !weaponSpecificFields.includes(field.name) &&
       field.name !== 'ready' &&
       field.name !== 'category_ids' &&
       field.name !== 'territory_ids'
     );
-
-    // Перевіряємо, чи вибрано категорію "Міфічна Зброя" (id = 44)
-    const selectedCategoryIds = Array.isArray(formData.category_ids) ? formData.category_ids : [];
-    const isMythicalWeapon = selectedCategoryIds.some((id: any) => Number(id) === 44);
 
     // Функція для групування полів по 3 в ряд
     const groupFieldsByThree = (fields: FormField[]) => {
@@ -980,12 +986,18 @@ export function EditEntityForm<T extends BaseEntity>({
 
           {(() => {
             const territoryField = mainFields.find(field => field.name === 'territory_ids');
+            const centuryField = mainFields.find(field => field.name === 'century');
             if (territoryField) {
               return (
                 <Grid container spacing={2} sx={{ mb: 2 }}>
-                  <Grid size={{ xs: 12 }}>
+                  <Grid size={{ xs: 12, sm: isArmorItem ? 6 : 12, md: isArmorItem ? 6 : 12, lg: isArmorItem ? 6 : 12 }} sx={{ flex: 1 }}>
                     {renderField(territoryField)}
                   </Grid>
+                  {isArmorItem && centuryField && (
+                    <Grid size={{ xs: 12, sm: 6, md: 6, lg: 6 }} sx={{ flex: 1 }}>
+                      {renderField(centuryField)}
+                    </Grid>
+                  )}
                 </Grid>
               );
             }
@@ -1002,10 +1014,11 @@ export function EditEntityForm<T extends BaseEntity>({
               ))}
             </Grid>
           ))}
+
         </Box>
 
         {/* Розміри */}
-        {!isMythicalWeapon && (
+        {!isMythicalWeapon && !isArmorItem && (
         <Box sx={{ mb: 2 }}>
           <Typography variant="h6" sx={{
             mb: 1.25,
@@ -1084,7 +1097,7 @@ export function EditEntityForm<T extends BaseEntity>({
         )}
 
         {/* Інше */}
-        {!isMythicalWeapon && (
+        {!isMythicalWeapon && !isArmorItem && (
         <Box sx={{ mb: 2.5 }}>
           <Typography variant="h6" sx={{
             mb: 1.25,
