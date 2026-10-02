@@ -388,6 +388,7 @@ router.get('/weapons/category/:categoryId', weaponItemController.getByCategory.b
 router.get('/weapons/:id', weaponItemController.getByIdWithCategory.bind(weaponItemController));
 router.post('/weapons', weaponItemValidation, weaponItemController.createWeapon.bind(weaponItemController));
 router.put('/weapons/:id', weaponItemUpdateValidation, weaponItemController.updateWeapon.bind(weaponItemController));
+router.put('/weapons/:id/agent-update', weaponItemUpdateValidation, weaponItemController.agentUpdateWeapon.bind(weaponItemController));
 router.delete('/weapons/:id', weaponItemController.delete.bind(weaponItemController));
 
 // ================= РОУТИ ДЛЯ ЗВ'ЯЗКІВ =================

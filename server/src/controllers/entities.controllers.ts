@@ -494,6 +494,45 @@ export class WeaponItemController {
         }
     }
 
+    /**
+     * Агентське оновлення запису від імені Леї.
+     */
+    async agentUpdateWeapon(req: Request, res: Response): Promise<void> {
+        try {
+            const id = parseInt(req.params.id);
+            if (isNaN(id)) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Невірний формат ID'
+                });
+                return;
+            }
+
+            const result = await this.weaponService.agentUpdateWeaponItem(id, req.body);
+
+            if (!result) {
+                res.status(404).json({
+                    success: false,
+                    message: `Запис з ID ${id} не знайдено`
+                });
+                return;
+            }
+
+            res.status(200).json({
+                success: true,
+                data: result,
+                message: 'Запис успішно оновлено агентом'
+            });
+        } catch (error) {
+            console.error('Помилка при агентському оновленні запису:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Не вдалося оновити запис агентом',
+                error: error instanceof Error ? error.message : 'Невідома помилка'
+            });
+        }
+    }
+
     // Add missing methods
     async getCount(_req: Request, res: Response): Promise<void> {
         try {
