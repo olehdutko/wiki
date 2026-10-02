@@ -1269,6 +1269,70 @@ const converted = this.convertDatabaseValues(items[0]) as WeaponItemResponse;
     }
 
     /**
+     * Оновити запис зброї від імені агента (Лея).
+     * Використовується автоматичними cron job, щоб відрізнятися від ручних правок користувача.
+     */
+    async agentUpdateWeaponItem(id: number, data: UpdateWeaponItemDto): Promise<WeaponItemResponse | null> {
+        try {
+            const categoryIds = data.category_ids;
+
+            // Видаляємо масиви категорій і територій перед базовим update
+            const itemData = { ...data } as any;
+            delete itemData.category_ids;
+            delete itemData.territory_ids;
+
+            // Автоматично додаємо імперські одиниці
+            itemData.total_len_in = mmToInches(itemData.total_len);
+            itemData.blade_len_in = mmToInches(itemData.blade_len);
+            itemData.handle_len_in = mmToInches(itemData.handle_len);
+            if (itemData.handle_len_w) {
+                itemData.handle_len_w_in = mmToInches(itemData.handle_len_w);
+            }
+            itemData.width_in = mmToInches(itemData.width);
+            itemData.guard_width_in = mmToInches(itemData.guard_width);
+            itemData.thikness_in = mmToInches(itemData.thikness);
+            itemData.weight_lb = gramsToPounds(itemData.weight);
+
+            // Якщо прийшов новий масив — синхронізуємо category_id в items
+            if (categoryIds && Array.isArray(categoryIds)) {
+                const uniqueIds = [...new Set(categoryIds.filter(id => Number.isInteger(id) && id > 0))];
+                itemData.category_id = uniqueIds.length > 0 ? uniqueIds[0] : null;
+            }
+
+            const oldRecord = await this.findByIdWithCategories(id);
+
+            const updated = await this.update(id, itemData);
+            if (!updated) {
+                return null;
+            }
+
+            if (categoryIds !== undefined) {
+                await this.saveItemCategories(id, categoryIds, itemData.category_id);
+            }
+
+            const territoryIds = data.territory_ids;
+            if (territoryIds !== undefined) {
+                await this.saveItemTerritories(id, territoryIds);
+            }
+
+            const newRecord = await this.findByIdWithCategories(id);
+            if (oldRecord && newRecord) {
+                await auditLogService.logUpdate(
+                    id,
+                    { ...oldRecord, categories: oldRecord.categories, territories: oldRecord.territories },
+                    { ...newRecord, categories: newRecord.categories, territories: newRecord.territories },
+                    'Лея'
+                );
+            }
+
+            return newRecord;
+        } catch (error) {
+            console.error(`Помилка при агентському оновленні запису зброї з ID ${id}:`, error);
+            throw new Error(`Не вдалося оновити запис зброї з ID ${id}`);
+        }
+    }
+
+    /**
      * Override the base search method to support pagination
      */
     override async search(searchTerm: string, _fields?: string[]): Promise<WeaponItem[]> {

@@ -363,6 +363,11 @@ class ApiService {
         return this.update<WeaponItemResponse>('/weapons', id, data);
     }
 
+    async agentUpdateWeapon(id: number, data: UpdateWeaponItemDto) {
+        const response = await this.api.put<ApiResponse<WeaponItemResponse>>(`/weapons/${id}/agent-update`, data);
+        return response.data.data;
+    }
+
     async deleteWeapon(id: number) {
         return this.delete('/weapons', id);
     }
