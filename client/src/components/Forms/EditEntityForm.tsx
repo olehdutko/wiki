@@ -880,7 +880,7 @@ export function EditEntityForm<T extends BaseEntity>({
     if (!config) return null;
 
     const mainFields = config.formFields.filter(field =>
-      !field.name.includes('description_') &&
+      !field.name.startsWith('description_') &&
       field.name !== 'id'
     );
 
@@ -912,6 +912,8 @@ export function EditEntityForm<T extends BaseEntity>({
       !sizeFields.includes(field.name) &&
       !bottomFields.includes(field.name) &&
       !weaponSpecificFields.includes(field.name) &&
+      !field.name.startsWith('short_description_') &&
+      !field.name.startsWith('description_') &&
       field.name !== 'ready' &&
       field.name !== 'category_ids' &&
       field.name !== 'territory_ids'
@@ -1157,36 +1159,44 @@ export function EditEntityForm<T extends BaseEntity>({
     if (!field) return null;
 
     const isUkrainianDescription = descriptionField === 'description_ukr';
+    const isEnglishDescription = descriptionField === 'description_eng';
+    const shortFieldName = isUkrainianDescription ? 'short_description_ukr' : isEnglishDescription ? 'short_description_eng' : null;
+    const shortField = shortFieldName ? config.formFields.find(f => f.name === shortFieldName) : null;
     const textToRead = formData[descriptionField] || '';
 
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 2 }}>
-        {/* Компактна кнопка озвучування для українського опису */}
-        {isUkrainianDescription && (
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
-            <Tooltip title={isSpeaking ? "Зупинити озвучування" : "Озвучити текст українською"}>
-              <IconButton
-                onClick={() => isSpeaking ? stopSpeaking() : speakText(textToRead, 'uk-UA')}
-                size="small"
-                sx={{
-                  color: isSpeaking ? '#dc2626' : '#0369a1',
-                  background: isSpeaking ? '#fef2f2' : '#f0f9ff',
-                  '&:hover': {
-                    background: isSpeaking ? '#fee2e2' : '#e0f2fe',
-                    transform: 'scale(1.05)'
-                  },
-                  transition: 'all 0.2s ease-in-out'
-                }}
-              >
-                <VolumeUp />
-              </IconButton>
-            </Tooltip>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {/* Короткий опис */}
+        {shortField && (
+          <Box sx={{ mt: '10px', mb: 0 }}>
+            {renderField(shortField)}
           </Box>
         )}
 
-        {/* Поле вводу опису */}
-        <Box sx={{ flex: 1, minHeight: 0 }}>
+        {/* Поле вводу опису з кнопкою озвучування */}
+        <Box sx={{ position: 'relative', mt: '10px' }}>
           {renderField(field)}
+          {isUkrainianDescription && (
+            <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}>
+              <Tooltip title={isSpeaking ? "Зупинити озвучування" : "Озвучити текст українською"}>
+                <IconButton
+                  onClick={() => isSpeaking ? stopSpeaking() : speakText(textToRead, 'uk-UA')}
+                  size="small"
+                  sx={{
+                    color: isSpeaking ? '#dc2626' : '#0369a1',
+                    background: isSpeaking ? '#fef2f2' : '#f0f9ff',
+                    '&:hover': {
+                      background: isSpeaking ? '#fee2e2' : '#e0f2fe',
+                      transform: 'scale(1.05)'
+                    },
+                    transition: 'all 0.2s ease-in-out'
+                  }}
+                >
+                  <VolumeUp />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
         </Box>
       </Box>
     );
@@ -1285,7 +1295,7 @@ export function EditEntityForm<T extends BaseEntity>({
           <TextField
             fullWidth
             multiline
-            rows={field.name.includes('description_') ? 12 : 2}
+            rows={field.name.startsWith('short_description_') ? 2 : field.name.startsWith('description_') ? 20 : 2}
             label={getLabel()}
             value={value || ''}
             onChange={(e) => handleInputChange(field.name, e.target.value)}
@@ -1306,24 +1316,11 @@ export function EditEntityForm<T extends BaseEntity>({
               ) : undefined
             }}
             sx={{
-              ...(!field.name.includes('description_') ? COMPACT_INPUT_STYLES : {}),
-              ...(field.name.includes('description_') ? {
-                height: '100%',
-                '& .MuiInputBase-root': {
-                  height: '100%',
-                  minHeight: '400px'
-                },
-                '& .MuiInputBase-input': {
-                  height: '100% !important',
-                  minHeight: '400px',
-                  overflow: 'visible',
-                  resize: 'none'
-                }
-              } : {}),
+              ...COMPACT_INPUT_STYLES,
               '& .MuiOutlinedInput-root': {
                 borderRadius: 1,
                 background: isReadOnly ? '#f8fafc' : 'white',
-                minHeight: field.name.includes('description_') ? '500px' : COMPACT_FIELD_HEIGHT,
+                minHeight: COMPACT_FIELD_HEIGHT,
                 '&:hover': {
                   '& .MuiOutlinedInput-notchedOutline': {
                     borderColor: fieldError ? '#d32f2f' : '#1976d2'
@@ -2010,6 +2007,7 @@ export function EditEntityForm<T extends BaseEntity>({
       PaperProps={{
         sx: {
           height: '90vh',
+          maxHeight: '90vh',
           width: '98vw',
           maxWidth: '1600px',
           borderRadius: 2,
@@ -2017,7 +2015,8 @@ export function EditEntityForm<T extends BaseEntity>({
           background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
           border: '1px solid rgba(0, 0, 0, 0.08)',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          overflow: 'hidden'
         }
       }}
     >
@@ -2338,7 +2337,7 @@ export function EditEntityForm<T extends BaseEntity>({
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
           border: '1px solid rgba(0, 0, 0, 0.06)',
           p: 2,
-          overflow: 'auto',
+          overflow: 'hidden',
           position: 'relative'
         }}>
           {[0, 1, 2, 3].map((tabIndex) => (
@@ -2349,9 +2348,10 @@ export function EditEntityForm<T extends BaseEntity>({
                 top: 0,
                 left: 0,
                 right: 0,
-                minHeight: '100%',
-                visibility: tabIndex === activeTab ? 'visible' : 'hidden',
-                ...(tabIndex !== activeTab && { height: 'auto', overflow: 'hidden' })
+                bottom: 0,
+                height: '100%',
+                overflow: tabIndex === activeTab ? 'auto' : 'hidden',
+                visibility: tabIndex === activeTab ? 'visible' : 'hidden'
               }}
             >
               {tabIndex === 0 && renderMainInfoTab()}
@@ -2368,9 +2368,10 @@ export function EditEntityForm<T extends BaseEntity>({
                 top: 0,
                 left: 0,
                 right: 0,
-                minHeight: '100%',
-                visibility: tabIndex === activeTab ? 'visible' : 'hidden',
-                ...(tabIndex !== activeTab && { height: 'auto', overflow: 'hidden' })
+                bottom: 0,
+                height: '100%',
+                overflow: tabIndex === activeTab ? 'auto' : 'hidden',
+                visibility: tabIndex === activeTab ? 'visible' : 'hidden'
               }}
             >
               {tabIndex === 4 && renderSimilarObjectsTab()}

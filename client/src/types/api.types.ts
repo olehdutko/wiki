@@ -85,6 +85,8 @@ export interface WeaponItem extends BaseEntity {
     description_ukr?: string | null;
     description_eng?: string | null;
     description_rus?: string | null;
+    short_description_ukr?: string | null;
+    short_description_eng?: string | null;
     ukr_name?: string | null;
     eng_name?: string | null;
     rus_name?: string | null;

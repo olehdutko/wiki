@@ -359,6 +359,16 @@ export class WeaponItem implements BaseEntity {
     description_eng?: string | null;
 
     @IsOptional()
+    @IsString()
+    @MaxLength(600)
+    short_description_ukr?: string | null;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(600)
+    short_description_eng?: string | null;
+
+    @IsOptional()
     @IsOptional()
     @IsString()
     @MaxLength(6300)
