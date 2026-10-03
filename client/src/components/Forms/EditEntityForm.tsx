@@ -158,6 +158,7 @@ export function EditEntityForm<T extends BaseEntity>({
   const [config, setConfig] = useState<EntityConfig | null>(null);
   const [activeTab, setActiveTab] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [unsavedConfirmOpen, setUnsavedConfirmOpen] = useState(false);
 
   const [linkedObjects, setLinkedObjects] = useState<Array<{
     id: number;
@@ -673,13 +674,15 @@ export function EditEntityForm<T extends BaseEntity>({
     }
   };
 
-  const handleSave = async () => {
-    if (!entity || !config) return;
+  const handleSave = async (andClose = false) => {
+    if (!entity || !config) return false;
 
     // Якщо немає незбережених змін — закриваємо вікно
     if (!isFormDirty()) {
-      onClose();
-      return;
+      if (andClose) {
+        onClose();
+      }
+      return true;
     }
 
     setLoading(true);
@@ -775,15 +778,37 @@ export function EditEntityForm<T extends BaseEntity>({
       onSave(updatedEntity as T);
       // Після збереження залишаємо вікно відкритим і скидаємо dirty-стан
       setInitialFormData({ ...formData });
+      if (andClose) {
+        onClose();
+      }
     } catch (error: any) {
       setError(error.message || 'Помилка збереження');
+      return false;
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancel = () => {
+    if (isFormDirty()) {
+      setUnsavedConfirmOpen(true);
+    } else {
+      onClose();
+    }
+  };
+
+  const handleConfirmSave = async () => {
+    setUnsavedConfirmOpen(false);
+    await handleSave(true);
+  };
+
+  const handleConfirmDiscard = () => {
+    setUnsavedConfirmOpen(false);
     onClose();
+  };
+
+  const handleConfirmCancel = () => {
+    setUnsavedConfirmOpen(false);
   };
 
   const isFormDirty = useCallback((): boolean => {
@@ -2381,6 +2406,33 @@ export function EditEntityForm<T extends BaseEntity>({
           ))}
         </Box>
       </DialogContent>
+
+      {/* Діалог підтвердження збереження незбережених змін */}
+      <Dialog
+        open={unsavedConfirmOpen}
+        onClose={handleConfirmCancel}
+        aria-labelledby="unsaved-confirm-dialog-title"
+      >
+        <DialogTitle id="unsaved-confirm-dialog-title">
+          Є незбережені зміни
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            У формі є незбережені зміни. Зберегти їх перед закриттям?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleConfirmCancel} color="inherit">
+            Скасувати
+          </Button>
+          <Button onClick={handleConfirmDiscard} color="error" variant="outlined">
+            Не зберігати
+          </Button>
+          <Button onClick={handleConfirmSave} color="primary" variant="contained" autoFocus>
+            Зберегти
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Діалог підтвердження видалення айтема */}
       <Dialog
