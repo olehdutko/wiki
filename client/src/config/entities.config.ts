@@ -190,7 +190,9 @@ const weaponFormFields: FormField[] = [
 
     // Описи
     { name: 'description_ukr', label: 'Опис українською', type: 'textarea', maxLength: 6300 },
+    { name: 'short_description_ukr', label: 'Короткий опис українською', type: 'textarea', maxLength: 600 },
     { name: 'description_eng', label: 'Description in English', type: 'textarea', maxLength: 6300 },
+    { name: 'short_description_eng', label: 'Short description in English', type: 'textarea', maxLength: 600 },
     { name: 'description_rus', label: 'Опис москальською', type: 'textarea', maxLength: 6300 },
 
     // Розміри

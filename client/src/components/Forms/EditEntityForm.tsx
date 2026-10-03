@@ -1157,6 +1157,9 @@ export function EditEntityForm<T extends BaseEntity>({
     if (!field) return null;
 
     const isUkrainianDescription = descriptionField === 'description_ukr';
+    const isEnglishDescription = descriptionField === 'description_eng';
+    const shortFieldName = isUkrainianDescription ? 'short_description_ukr' : isEnglishDescription ? 'short_description_eng' : null;
+    const shortField = shortFieldName ? config.formFields.find(f => f.name === shortFieldName) : null;
     const textToRead = formData[descriptionField] || '';
 
     return (
@@ -1181,6 +1184,13 @@ export function EditEntityForm<T extends BaseEntity>({
                 <VolumeUp />
               </IconButton>
             </Tooltip>
+          </Box>
+        )}
+
+        {/* Короткий опис */}
+        {shortField && (
+          <Box sx={{ mb: 2 }}>
+            {renderField(shortField)}
           </Box>
         )}
 
