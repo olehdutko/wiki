@@ -621,14 +621,26 @@ export function EditEntityForm<T extends BaseEntity>({
       value = Boolean(value);
     }
 
-    // Автоматично додаємо категорію "Обладунки" (id 56) при виборі "Шоломи" (57) або "Особливі обладунки" (59)
+    // Автоматично додаємо категорії-батьки при виборі підкатегорій
     if (fieldName === 'category_ids' && Array.isArray(value)) {
       const selectedIds = value.map((v: any) => Number(v));
-      const hasHelmets = selectedIds.includes(57);
-      const hasSpecialArmors = selectedIds.includes(59);
-      const hasArmors = selectedIds.includes(56);
-      if ((hasHelmets || hasSpecialArmors) && !hasArmors) {
-        value = [...selectedIds, 56];
+      const parentMappings: Array<{ child: number; parent: number }> = [
+        { child: 57, parent: 56 }, // Шоломи -> Обладунки
+        { child: 59, parent: 56 }, // Особливі обладунки -> Обладунки
+        { child: 58, parent: 56 }, // Щит -> Обладунки
+        { child: 31, parent: 33 }, // Кинджал -> Короткоклинкова зброя
+        { child: 29, parent: 25 }, // Алебарди -> Держакова (Древкова) зброя
+      ];
+      const newIds = [...selectedIds];
+      let changed = false;
+      for (const { child, parent } of parentMappings) {
+        if (newIds.includes(child) && !newIds.includes(parent)) {
+          newIds.push(parent);
+          changed = true;
+        }
+      }
+      if (changed) {
+        value = newIds;
       }
     }
 
