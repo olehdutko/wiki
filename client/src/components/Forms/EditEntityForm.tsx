@@ -621,6 +621,17 @@ export function EditEntityForm<T extends BaseEntity>({
       value = Boolean(value);
     }
 
+    // Автоматично додаємо категорію "Обладунки" (id 56) при виборі "Шоломи" (57) або "Особливі обладунки" (59)
+    if (fieldName === 'category_ids' && Array.isArray(value)) {
+      const selectedIds = value.map((v: any) => Number(v));
+      const hasHelmets = selectedIds.includes(57);
+      const hasSpecialArmors = selectedIds.includes(59);
+      const hasArmors = selectedIds.includes(56);
+      if ((hasHelmets || hasSpecialArmors) && !hasArmors) {
+        value = [...selectedIds, 56];
+      }
+    }
+
     setFormData(prev => {
       const newData = {
         ...prev,
@@ -2046,7 +2057,9 @@ export function EditEntityForm<T extends BaseEntity>({
       }}
     >
       <DialogTitle sx={{
-        background: headerColor || 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+        background: ((Array.isArray(formData.category_ids) ? formData.category_ids.map((v: any) => Number(v)) : []).includes(56)
+          ? 'linear-gradient(135deg, #a05a2c 0%, #7a3f1e 100%)'
+          : (headerColor || 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)')),
         color: 'white',
         borderRadius: '12px 12px 0 0',
         pt: 1,
