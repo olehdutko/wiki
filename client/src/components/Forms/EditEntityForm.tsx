@@ -621,6 +621,29 @@ export function EditEntityForm<T extends BaseEntity>({
       value = Boolean(value);
     }
 
+    // Автоматично додаємо категорії-батьки при виборі підкатегорій
+    if (fieldName === 'category_ids' && Array.isArray(value)) {
+      const selectedIds = value.map((v: any) => Number(v));
+      const parentMappings: Array<{ child: number; parent: number }> = [
+        { child: 57, parent: 56 }, // Шоломи -> Обладунки
+        { child: 59, parent: 56 }, // Особливі обладунки -> Обладунки
+        { child: 58, parent: 56 }, // Щит -> Обладунки
+        { child: 31, parent: 33 }, // Кинджал -> Короткоклинкова зброя
+        { child: 29, parent: 25 }, // Алебарди -> Держакова (Древкова) зброя
+      ];
+      const newIds = [...selectedIds];
+      let changed = false;
+      for (const { child, parent } of parentMappings) {
+        if (newIds.includes(child) && !newIds.includes(parent)) {
+          newIds.push(parent);
+          changed = true;
+        }
+      }
+      if (changed) {
+        value = newIds;
+      }
+    }
+
     setFormData(prev => {
       const newData = {
         ...prev,
@@ -2046,7 +2069,9 @@ export function EditEntityForm<T extends BaseEntity>({
       }}
     >
       <DialogTitle sx={{
-        background: headerColor || 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+        background: ((Array.isArray(formData.category_ids) ? formData.category_ids.map((v: any) => Number(v)) : []).includes(56)
+          ? 'linear-gradient(135deg, #a05a2c 0%, #7a3f1e 100%)'
+          : (headerColor || 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)')),
         color: 'white',
         borderRadius: '12px 12px 0 0',
         pt: 1,
