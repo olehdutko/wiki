@@ -697,14 +697,12 @@ export function EditEntityForm<T extends BaseEntity>({
     }
   };
 
-  const handleSave = async (andClose = false) => {
+  const handleSave = async () => {
     if (!entity || !config) return false;
 
-    // Якщо немає незбережених змін — закриваємо вікно
+    // Якщо немає незбережених змін — кнопка працює як Закрити
     if (!isFormDirty()) {
-      if (andClose) {
-        onClose();
-      }
+      onClose();
       return true;
     }
 
@@ -801,9 +799,6 @@ export function EditEntityForm<T extends BaseEntity>({
       onSave(updatedEntity as T);
       // Після збереження залишаємо вікно відкритим і скидаємо dirty-стан
       setInitialFormData({ ...formData });
-      if (andClose) {
-        onClose();
-      }
     } catch (error: any) {
       setError(error.message || 'Помилка збереження');
       return false;
@@ -822,7 +817,7 @@ export function EditEntityForm<T extends BaseEntity>({
 
   const handleConfirmSave = async () => {
     setUnsavedConfirmOpen(false);
-    await handleSave(true);
+    await handleSave();
   };
 
   const handleConfirmDiscard = () => {
